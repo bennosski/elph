@@ -83,11 +83,9 @@ PIm = 2*omega PIp
 class params:
     pass
 
-# params
-
 params.Nw    = 512
-params.Nk    = 20
-params.beta  = 1.0
+params.Nk    = 8
+params.beta  = 10.0
 params.omega = float(sys.argv[1])
 params.lamb  = 0.125
 params.W     = 8.0

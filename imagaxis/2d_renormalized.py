@@ -17,20 +17,21 @@ def band(kxs, kys):
     #return -2.0*(cos(kxs) + cos(kys)) + 4.0*0.3*cos(kxs)*cos(kys)
 
 def init():
-    Nw, Nk, beta, omega, lamb, W, g0, dens = params.Nw, params.Nk, params.beta, params.omega, params.lamb, params.g0, params.dens
+    Nw, Nk, beta, omega, lamb, W, g0, dens = params.Nw, params.Nk, params.beta, params.omega, params.lamb, params.W, params.g0, params.dens
     
-    print('beta %1.3f'%beta)
-    print('g0 = %1.3f'%g0)
-    print('lamb = %1.3f'%lamb)
+    print(f'beta {beta:.3f}')
+    print(f'Nk {Nk}')
+    print(f'g0 = {g0:.3f}')
+    print(f'lamb = {lamb:.3f}')
     
     #savedir = f'data/data_renormalized_{Nk}b{Nk}_lamb{lamb:.3f}_beta{beta:.1f}/' #%(Nk,Nk,lamb,beta)
-    savedir = f'data/data_renormalized_{Nk}b{Nk}_lamb{lamb:.3f}_Nw{Nw}_omega{omega}/'
+    savedir = f'data/data_renormalized_{Nk}b{Nk}_lamb{lamb:.3f}_Nw{Nw}_omega{omega}_dens{dens:.3f}/'
     if not os.path.exists('data/'): os.mkdir('data/')
     if not os.path.exists(savedir): os.mkdir(savedir)
 
-    iwm    = 1j * pi/beta * (2*arange(-Nw//2, Nw//2) + 1)
-    vn     = pi/beta * 2*arange(-Nw//2, Nw//2+1)
-
+    wn = pi/beta * (2*arange(Nw)+1)
+    vn = pi/beta * (2*arange(Nw+1))
+    
     kys, kxs = meshgrid(arange(-pi, pi, 2*pi/Nk), arange(-pi, pi, 2*pi/Nk))
 
     ek = band(kxs, kys)
@@ -45,7 +46,7 @@ def init():
     print('mu optimized = %1.3f'%mu)
     print('dndmu = %1.3f'%dndmu)
 
-    return savedir, iwm, vn, ek, mu, deriv, dndmu
+    return savedir, wn, vn, ek, mu, deriv, dndmu
 
 def compute_fill(G):
     beta, Nk = params.beta, params.Nk
@@ -53,16 +54,23 @@ def compute_fill(G):
 
 def compute_S(G, D):
     g0, beta, Nk, Nw = params.g0, params.beta, params.Nk, params.Nw
-    return -g0**2/(beta * Nk**2) * conv(G, D, ['k-q,q','k-q,q','m,n-m'], [0,1,2], [True,True,False])[:,:,:Nw]
+    return -g0**2/Nk**2 * conv(G, D, ['k-q,q','k-q,q','m,n-m'], [0,1,2], [True,True,False], params, kinds=('fermion','boson','fermion'))
 
 def compute_PI(G):
     g0, beta, Nk, Nw = params.g0, params.beta, params.Nk, params.Nw    
-    return 2.0*params.g0**2/(params.beta * Nk**2) * conv(G, G, ['k,k+q','k,k+q','m,m+n'], [0,1,2], [True,True,False])[:,:,:Nw+1]
+    return 2.0*params.g0**2/Nk**2 * conv(G, G, ['k,k+q','k,k+q','m,m+n'], [0,1,2], [True,True,False], params, kinds=('fermion','fermion','boson'))
+
+def compute_G(wn, ek, mu, S):
+    return 1.0/(1j*wn[None,None,:] - (ek[:,:,None]-mu) - S)
+
+def compute_D(vn, omega, PI):
+    return 1.0/(-((vn**2)[None,None,:] + omega**2)/(2.0*omega) - PI)
+    
 
 def selfconsistency(S0=None, PI0=None):
-    Nw, Nk, beta, omega, lamb, W, g0, dens = params.Nw, params.Nk, params.beta, params.omega, params.lamb, params.g0, params.dens    
+    Nw, Nk, beta, omega, lamb, W, g0, dens = params.Nw, params.Nk, params.beta, params.omega, params.lamb, params.W, params.g0, params.dens    
     
-    savedir, iwm, vn, ek, mu, deriv, dndmu = init()
+    savedir, wn, vn, ek, mu, deriv, dndmu = init()
 
     if S0 is None or PI0 is None:
         S  = zeros([Nk,Nk,Nw], dtype=complex)
@@ -71,14 +79,14 @@ def selfconsistency(S0=None, PI0=None):
         S  = S0
         PI = PI0
 
-    G  = 1.0/(iwm[None,None,:] - (ek[:,:,None]-mu) - S)
-    D  = 1.0/(-((vn**2)[None,None,:] + omega**2)/(2.0*omega) - PI)
-
+    G = compute_G(wn, ek, mu, S)
+    D = compute_D(vn, omega, PI) 
+    
     # solve Matsubara piece
     print('\n Solving Matsubara piece')
 
     change = [0, 0]
-    frac = 0.6
+    frac = 0.9
     for i in range(100):
         S0  = S[:]
         PI0 = PI[:]
@@ -91,11 +99,11 @@ def selfconsistency(S0=None, PI0=None):
         change[1] = mean(abs(PI-PI0))/mean(abs(PI+PI0))
         PI = frac*PI + (1-frac)*PI0
 
-        G = 1.0/(iwm[None,None,:] - (ek[:,:,None]-mu) - S)
-        D = 1.0/(-((vn**2)[None,None,:] + omega**2)/(2.0*omega) - PI) 
+        G = compute_G(wn, ek, mu, S)
+        D = compute_D(vn, omega, PI) 
 
         n = compute_fill(G)
-        mu += 0.25*(n-dens)/dndmu
+        mu += 0.5*(n-dens)/dndmu
 
         print('change = %1.3e, %1.3e and fill = %.13f'%(change[0], change[1], compute_fill(G)))
 
@@ -105,7 +113,8 @@ def selfconsistency(S0=None, PI0=None):
         #    save(savedir+'S', S)
         #    save(savedir+'PI', PI)
 
-    save(savedir+'iwm', iwm)
+    save(savedir+'wn', wn)
+    save(savedir+'vn', vn)
     save(savedir+'Nk', [Nk])
     save(savedir+'lamb', [lamb])
     save(savedir+'omega', [omega])
@@ -175,10 +184,14 @@ if __name__=='__main__':
         print('Using data from %s\n'%savedir)
     '''
 
-    S0, PI0  = None, None
 
     print('running renormalized ME')
 
+    S0, PI0  = None, None
+    G, D, S, PI = selfconsistency(S0, PI0)
+
+
+    """    
     dbeta = 2.0
 
     Xscs = []
@@ -189,7 +202,7 @@ if __name__=='__main__':
 
         G, D, S, PI = selfconsistency(S0, PI0)
 
-        Xsc, Xcdw = susceptibilities(G, PI)
+        #Xsc, Xcdw = susceptibilities(G, PI)
         
         if Xsc is None or Xcdw is None:
             dbeta /= 2.0
@@ -199,7 +212,7 @@ if __name__=='__main__':
 
         params.beta += dbeta
     
-        save(savedir + 'Xscs.npy', array(Xscs))
+        #save(savedir + 'Xscs.npy', array(Xscs))
         
-
+    """
 
