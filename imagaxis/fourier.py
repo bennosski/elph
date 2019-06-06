@@ -1,16 +1,15 @@
 import numpy as np
 from matplotlib.pyplot import *
 
-def W(t):
-    N = len(t)
-    #print(t[np.argmin(np.abs(t))])
-    if np.abs(t[np.argmin(np.abs(t))])<1e-10:
-        out = np.zeros(len(t), dtype=complex)
-        out[0] = 1.0
-        out[1:] = 2.0*(1.0-np.cos(t[1:]))/t[1:]**2
-        return out
+def W_fermion(t):
     return 2.0*(1.0-np.cos(t))/t**2
 
+def W_boson(t):
+    out = np.zeros(len(t), dtype=complex)
+    out[0] = 1.0
+    out[1:] = 2.0*(1.0-np.cos(t[1:]))/t[1:]**2
+    return out
+    
 def alpha0(t):
     return -(1.0-np.cos(t))/t**2 + 1j*(t-np.sin(t))/t**2
 
@@ -32,7 +31,7 @@ def t2w_fermion_alpha0(h, beta):
     w  = np.fft.fftfreq(2*N, beta/(np.pi*2*N))[1::2]
     theta = w*delta
     h_ = np.concatenate((h[:-1], -h[:-1]))
-    I = W(theta) * 0.5 * np.fft.ifft(h_)[1::2]*2*N + alpha0(theta)*(h[0]+h[-1])
+    I = W_fermion(theta) * 0.5 * np.fft.ifft(h_)[1::2]*2*N + alpha0(theta)*(h[0]+h[-1])
     I *= delta
     return I[:N//2]
 
@@ -47,7 +46,7 @@ def w2t_fermion_alpha0(I, beta):
     # extend to negative frequencies
     I = np.concatenate((I, np.conj(I)[::-1]))
     
-    I = 2.0*(I - alpha0(theta)*(-1)*delta)/(delta*W(theta))
+    I = 2.0*(I - alpha0(theta)*(-1)*delta)/(delta * W_fermion(theta))
     I_ = np.zeros(2*N, dtype=complex)
     I_[1::2] = I
 
@@ -63,7 +62,7 @@ def t2w_fermion_jump(h, beta):
     theta = w * delta
     h  = h + 0.5 # account for jump (make continuous)
     h_ = np.concatenate((h, -h[1:]))
-    I = 0.5 * delta * W(theta) * np.fft.ifft(h_[:-1])[1::2] * 2*N + 1.0/(1j*w)
+    I = 0.5 * delta * W_fermion(theta) * np.fft.ifft(h_[:-1])[1::2] * 2*N + 1.0/(1j*w)
     return I[:N//2]
     
 def w2t_fermion_jump(I, beta):
@@ -72,7 +71,7 @@ def w2t_fermion_jump(I, beta):
     w  = np.fft.fftfreq(2*N, beta/(np.pi*2*N))[1::2]
     theta = w * delta
     I = np.concatenate((I, np.conj(I)[::-1]))    
-    I = 2.0*(I - 1.0/(1j*w))/(delta*W(theta))
+    I = 2.0*(I - 1.0/(1j*w))/(delta*W_fermion(theta))
     I_ = np.zeros(2*N, dtype=complex)
     I_[1::2] = I
     out = np.zeros(N+1, dtype=complex)
@@ -85,7 +84,7 @@ def t2w_boson(h, beta):
     delta = beta/N
     w  = np.fft.fftfreq(N, beta/(np.pi*2*N))
     theta = w*delta
-    I = delta * W(theta) * np.fft.ifft(h[:-1]) * N
+    I = delta * W_boson(theta) * np.fft.ifft(h[:-1]) * N
     return I[:N//2+1]
 
 def w2t_boson(I, beta):
@@ -94,7 +93,7 @@ def w2t_boson(I, beta):
     w  = np.fft.fftfreq(N, beta/(np.pi*2*N))
     theta = w*delta
     I = np.concatenate((I, np.conj(I)[-2:0:-1]))
-    I = I / (delta * W(theta))
+    I = I / (delta * W_boson(theta))
     out = np.zeros(N+1, dtype=complex)
     out[:N] = np.fft.fft(I)/N
     out[-1] = out[0]

@@ -34,16 +34,15 @@ def conv(a, b, indices_list, axes, circular_list, beta=None, kinds=(None,None,No
     '''
             
     for indices, axis, circular in zip(indices_list, axes, circular_list):
-        comma = indices.index(',')
-        
         if circular:
             a = fft.fft(a, axis=axis)
             b = fft.fft(b, axis=axis)
         else:
-            
             a = apply_along_axis(fourier.w2t, axis, a, beta, kind=kinds[0])
             b = apply_along_axis(fourier.w2t, axis, b, beta, kind=kinds[1])
-            
+
+        comma = indices.index(',')
+                    
         if '+' in indices:
             if comma==1:
                 a = flip(a, axis=axis)
@@ -57,7 +56,6 @@ def conv(a, b, indices_list, axes, circular_list, beta=None, kinds=(None,None,No
                 raise ValueError            
             
     x = einsum(op, a, b)
-    #x = fft.ifftn(einsum(op, a, b), axes=axes)
     for axis, circular in zip(axes, circular_list):
         if circular:
             x = fft.ifft(x, axis=axis)
