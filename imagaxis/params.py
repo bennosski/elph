@@ -87,16 +87,32 @@ lambda_ilya = lamb_phil * W * rhoEF = lamb_phil * 2.4
 
 '''
 
-class params:
-    def init():
-        params.g0 = sqrt(params.lamb * params.omega * params.W / 2.0)
+#class params:
+#    pass
 
-params.Nw    = 512
-params.Nk    = 12
-params.beta  = 16.0
-params.omega = 0.17
-params.lamb  = 0.125
-params.W     = 8.0
-#params.g0    = sqrt(params.lamb * params.omega * params.W / 2.0)
-params.dens  = 0.8
-params.init()
+#@classmethod
+#    def init(cls):
+#        cls.g0 = sqrt(params.lamb * params.omega * params.W / 2.0)
+
+
+# Parameters below are all fundamental parameters
+# These parameters plus band-structure completely specifies the simulation
+# other "parameters" which derive from these are computed on setup
+
+from numpy import *
+def band(Nk):
+    #return -2.0*(cos(kxs) + cos(kys))  #+ alpha**2
+    kys, kxs = meshgrid(arange(-pi, pi, 2*pi/Nk), arange(-pi, pi, 2*pi/Nk))
+    ek = -2.0*(cos(kxs) + cos(kys)) + 4.0*0.3*cos(kxs)*cos(kys)
+    return ek
+
+params = {}
+params['Nw']    = 512
+params['Nk']    = 12
+params['beta']  = 16.0
+params['omega'] = 0.17
+params['g0']    = 0.125
+params['dens']  = 0.8
+params['renormalized'] = True
+params['sc']    = 0
+params['band']  = band

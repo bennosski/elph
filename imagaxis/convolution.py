@@ -1,7 +1,7 @@
 from numpy import *
 import fourier
 
-def conv(a, b, indices_list, axes, circular_list, params, kinds, op='...,...'):
+def conv(a, b, indices_list, axes, circular_list, beta=None, kinds=(None,None,None), op='...,...'):
     '''
     
     todo: write optional zeros argument
@@ -41,8 +41,8 @@ def conv(a, b, indices_list, axes, circular_list, params, kinds, op='...,...'):
             b = fft.fft(b, axis=axis)
         else:
             
-            a = apply_along_axis(fourier.w2t, axis, a, params.beta, kind=kinds[0])
-            b = apply_along_axis(fourier.w2t, axis, b, params.beta, kind=kinds[1])
+            a = apply_along_axis(fourier.w2t, axis, a, beta, kind=kinds[0])
+            b = apply_along_axis(fourier.w2t, axis, b, beta, kind=kinds[1])
             
         if '+' in indices:
             if comma==1:
@@ -62,7 +62,7 @@ def conv(a, b, indices_list, axes, circular_list, params, kinds, op='...,...'):
         if circular:
             x = fft.ifft(x, axis=axis)
         else:
-            x = apply_along_axis(fourier.t2w, axis, x, params.beta, kind=kinds[2])
+            x = apply_along_axis(fourier.t2w, axis, x, beta, kind=kinds[2])
             
     for axis, circular in zip(axes, circular_list):
         if circular:
