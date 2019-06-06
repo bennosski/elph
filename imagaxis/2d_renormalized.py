@@ -8,20 +8,26 @@ from scipy import optimize
 from params import params
 
 class Migdal:
-
+    #---------------------------------------------------------------------------
     def __init__(self, params):
         for key in params:
             setattr(self, key, params[key])
-
+    #---------------------------------------------------------------------------
     def myp(x):
         print(mean(abs(x.real)), mean(abs(x.imag)))
-
+    #---------------------------------------------------------------------------
     def setup(self):
+        print('\nParameters\n----------------------------')
 
-        print('beta {:.3f}'.format(self.beta))
-        print('Nk {}'.format(self.Nk))
-        print('g0 = {:.3f}'.format(self.g0))
-        
+        print('Nw     = {}'.format(self.Nw))
+        print('Nk     = {}'.format(self.Nk))
+        print('beta   = {:.3f}'.format(self.beta))
+        print('omega  = {}'.format(self.omega))
+        print('g0     = {:.3f}'.format(self.g0))
+        print('dens   = {}'.format(self.dens))
+        print('renorm = {}'.format(self.renormalized))
+        print('SC     = {}'.format(self.sc))
+        print('dim    = {}'.format(len(shape(self.band(1)))))     
         savedir = 'data/data_renormalized_Nk{}_dim{}_g0{:.5f}_Nw{}_omega{:.3f}_dens{:.3f}/'.format(self.Nk, len(shape(self.band(1))), self.g0, self.Nw, self.omega, self.dens)
         if not os.path.exists('data/'): os.mkdir('data/')
         if not os.path.exists(savedir): os.mkdir(savedir)
@@ -43,26 +49,26 @@ class Migdal:
         print('dndmu = %1.3f'%dndmu)
 
         return savedir, wn, vn, ek, mu, deriv, dndmu
-
+    #---------------------------------------------------------------------------
     def compute_fill(self, G):
         return 1.0 + 2.0/(self.beta * self.Nk**2) * np.sum(G).real
-
+    #---------------------------------------------------------------------------
     def compute_G(self, wn, ek, mu, S):
         return 1.0/(1j*wn[None,None,:] - (ek[:,:,None]-mu) - S)
-
+    #---------------------------------------------------------------------------
     def compute_D(self, vn, PI):
         return 1.0/(-((vn**2)[None,None,:] + self.omega**2)/(2.0*self.omega) - PI)
-
+    #---------------------------------------------------------------------------
     def compute_S(self, G, D):
         return -self.g0**2/self.Nk**2 * conv(G, D, ['k-q,q','k-q,q','m,n-m'], [0,1,2], [True,True,False], self.beta, kinds=('fermion','boson','fermion'))
-
+    #---------------------------------------------------------------------------
     def compute_PI(self, G):
         return 2.0*self.g0**2/self.Nk**2 * conv(G, G, ['k,k+q','k,k+q','m,m+n'], [0,1,2], [True,True,False], self.beta, kinds=('fermion','fermion','boson'))
-
-
+    #---------------------------------------------------------------------------
     def selfconsistency(self, sc_iter, frac=0.9, alpha=0.5, S0=None, PI0=None):
-
         savedir, wn, vn, ek, mu, deriv, dndmu = self.setup()
+
+        print('\nSelfconsistency\n--------------------------')
 
         if S0 is None or PI0 is None:
             S  = zeros([self.Nk,self.Nk,self.Nw], dtype=complex)
@@ -74,8 +80,6 @@ class Migdal:
         G = self.compute_G(wn, ek, mu, S)
         D = self.compute_D(vn, PI) 
 
-        # solve Matsubara piece
-        print('\n Solving Matsubara piece')
         change = [0, 0]
         for i in range(sc_iter):
             S0  = S[:]
@@ -109,8 +113,9 @@ class Migdal:
         save(savedir+'sc',    [self.sc])
 
         return savedir, G, D, S, PI
-
+    #---------------------------------------------------------------------------
     def susceptibilities(self, sc_iter, G, D, PI, frac=0.9): 
+        print('\nComputing Susceptibilities\n--------------------------')
 
         F0 = G * np.conj(G)
         T  = ones([self.Nk,self.Nk,self.Nw])
@@ -127,14 +132,13 @@ class Migdal:
             T = frac*T + (1-frac)*T0
 
             change = mean(abs(T-T0))/mean(abs(T+T0))
+            print(f'change = {change:.5e}')
 
             iteration += 1
             
             if change < 1e-10:
                 break
-            if iteration%2==0:
-                print(change)
-
+            
         Xsc = 1.0/(self.Nk**2*self.beta) * real(sum(F0*T))
         Xsc = 2.0*Xsc # factor of two because need to sum negative frequencies as well
 
@@ -155,7 +159,7 @@ class Migdal:
             return None, None
 
         return Xsc, Xcdw
-
+    #---------------------------------------------------------------------------
     def doubled_susceptibilities(self, G, D, PI, frac=0.9): 
 
         # compute susceptibilities
@@ -219,21 +223,22 @@ class Migdal:
             return None, None
 
         return Xsc, Xcdw
-
-        
+#---------------------------------------------------------------------------        
 
 if __name__=='__main__':
     
-    print('running renormalized ME')
+    print('2D Renormalized Migdal')
 
     migdal = Migdal(params)
 
+    sc_iter = 10
     S0, PI0  = None, None
-    savedir, G, D, S, PI = migdal.selfconsistency(10, S0=S0, PI0=PI0)
+    savedir, G, D, S, PI = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0)
     save(savedir + 'S.npy', S)
     save(savedir + 'PI.npy', PI)
 
-    Xsc, Xcdw = migdal.susceptibilities(10, G, D, PI)
+    sc_iter = 10
+    Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, PI)
     save(savedir + 'Xsc.npy',  [Xsc])
     save(savedir + 'Xcdw.npy', [Xcdw])
 
