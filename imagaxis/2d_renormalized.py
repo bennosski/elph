@@ -13,8 +13,8 @@ def myp(x):
     print(mean(abs(x.real)), mean(abs(x.imag)))
 
 def band(kxs, kys):
-    return -2.0*(cos(kxs) + cos(kys))  #+ alpha**2
-    #return -2.0*(cos(kxs) + cos(kys)) + 4.0*0.3*cos(kxs)*cos(kys)
+    #return -2.0*(cos(kxs) + cos(kys))  #+ alpha**2
+    return -2.0*(cos(kxs) + cos(kys)) + 4.0*0.3*cos(kxs)*cos(kys)
 
 def init():
     Nw, Nk, beta, omega, lamb, W, g0, dens = params.Nw, params.Nk, params.beta, params.omega, params.lamb, params.W, params.g0, params.dens
@@ -24,7 +24,7 @@ def init():
     print(f'g0 = {g0:.3f}')
     print(f'lamb = {lamb:.3f}')
     
-    #savedir = f'data/data_renormalized_{Nk}b{Nk}_lamb{lamb:.3f}_beta{beta:.1f}/' #%(Nk,Nk,lamb,beta)
+    #savedir = f'data/data_renormalized_{Nk}b{Nk}_lamb{lamb:.3f}_beta{beita:.1f}/' #%(Nk,Nk,lamb,beta)
     savedir = f'data/data_renormalized_{Nk}b{Nk}_lamb{lamb:.3f}_Nw{Nw}_omega{omega}_dens{dens:.3f}/'
     if not os.path.exists('data/'): os.mkdir('data/')
     if not os.path.exists(savedir): os.mkdir(savedir)
@@ -86,7 +86,7 @@ def selfconsistency(S0=None, PI0=None):
     print('\n Solving Matsubara piece')
 
     change = [0, 0]
-    frac = 0.9
+    frac = 0.4
     for i in range(100):
         S0  = S[:]
         PI0 = PI[:]
@@ -119,9 +119,9 @@ def selfconsistency(S0=None, PI0=None):
     save(savedir+'lamb', [lamb])
     save(savedir+'omega', [omega])
 
-    return G, D, S, PI
+    return savedir, G, D, S, PI
 
-def susceptibilities(G, PI): 
+def old_susceptibilities(G, D): 
     Nw, Nk, beta, omega, lamb, W, g0, dens = params.Nw, params.Nk, params.beta, params.omega, params.lamb, params.W, params.g0, params.dens
 
     # compute susceptibilities
@@ -170,13 +170,129 @@ def susceptibilities(G, PI):
     a = argmax(abs(Xcdw))
     print('Xcdw = %1.4f'%Xcdw[a])
 
-    if Xsc<0.0 or any(Xcdw<0.0): return None, None
+    if Xsc<0.0 or any(Xcdw<0.0): 
+        return None, None
 
     return Xsc, Xcdw
 
+def doubled_susceptibilities(G, D, PI): 
+    Nw, Nk, beta, omega, lamb, W, g0, dens = params.Nw, params.Nk, params.beta, params.omega, params.lamb, params.W, params.g0, params.dens
+
+    # compute susceptibilities
+
+    print('shapeG', shape(G))
+    print('shapeD', shape(D))
+
+    # extend to + and - freqs
+    Nw = 2*Nw
+    G_ = concatenate((conj(G[:, :, ::-1]), G), axis=-1)
+    D_ = concatenate((conj(D[:, :, :0:-1]), D), axis=-1)
+
+    print('shapeG_', shape(G_))
+    print('shapeD_', shape(D_))
+
+    F0 = G_ * G_[:,:,::-1]
+    T  = ones([Nk,Nk,Nw])
+
+    tmp = zeros([Nk,Nk,2*Nw], dtype=complex)
+    tmp[:,:,:Nw+1] = D_
+    tmp = fft.fftn(tmp)
+
+    change = 1
+    iteration = 0
+    frac = 0.6
+    while change > 1e-10:
+        T0 = T.copy()
+
+        m = zeros([Nk,Nk,2*Nw], dtype=complex)
+        m[:,:,:Nw] = F0*T
+        m = fft.fftn(m)
+        T = fft.ifftn(m * tmp)
+        T = roll(T, (-Nk//2, -Nk//2, -Nw//2), axis=(0,1,2))[:,:,:Nw]
+        T *= -g0**2/(beta*Nk**2) 
+        T += 1.0
+
+        change = mean(abs(T-T0))/mean(abs(T+T0))
+        if iteration%100==0: print('change : %1.3e'%change)
+
+        T = frac*T + (1-frac)*T0
+
+        iteration += 1
+        if iteration>2000: exit()
+
+    Xsc = 1.0/(Nk**2*beta) * real(sum(F0*T))
+    #save(savedir+'Xsc.npy', [Xsc])
+    print('Xsc = %1.4f'%real(Xsc))
+
+    # compute the CDW susceptibility
+    #X0 = -PI[:,:,Nw//2]/alpha**2
+    #Xcdw = real(X0/(1.0 - alpha**2/omega**2 * X0))
+
+    X0 = -PI[:,:,0]/g0**2
+    Xcdw = real(X0/(1.0 - 2.0*g0**2/omega * X0))
+    #save(savedir+'Xcdw.npy', Xcdw)
+
+    Xcdw = ravel(Xcdw)
+    a = argmax(abs(Xcdw))
+    print('Xcdw = %1.4f'%Xcdw[a])
+
+    if Xsc<0.0 or any(Xcdw<0.0): 
+        return None, None
+
+    return Xsc, Xcdw
+
+def susceptibilities(G, D, PI): 
+    Nw, Nk, beta, omega, lamb, W, g0, dens = params.Nw, params.Nk, params.beta, params.omega, params.lamb, params.W, params.g0, params.dens
+    
+    F0 = G * np.conj(G)
+    T  = ones([Nk,Nk,Nw])
+
+    change = 1
+    iteration = 0
+    frac = 0.9
+    while change > 1e-10:
+        T0 = T.copy()
+
+        T = conv(F0*T, D, ['k-q,q','k-q,q','m,n-m'], [0,1,2], [True,True,False], params, kinds=('fermion','boson','fermion')) 
+        T *= -g0**2/(Nk**2) 
+        T += 1.0
+
+        T = frac*T + (1-frac)*T0
+
+        change = mean(abs(T-T0))/mean(abs(T+T0))
+
+        iteration += 1
+        if iteration>200: exit()
+        if iteration%2==0:
+            print(change)
+
+    Xsc = 1.0/(Nk**2*beta) * real(sum(F0*T))
+    Xsc = 2.0*Xsc # factor of two because need to sum negative frequencies as well
+
+    #save(savedir+'Xsc.npy', [Xsc])
+    print('Xsc = %1.4f'%real(Xsc))
+
+    # compute the CDW susceptibility
+    #X0 = -PI[:,:,Nw//2]/alpha**2
+    #Xcdw = real(X0/(1.0 - alpha**2/omega**2 * X0))
+
+    X0 = -PI[:,:,0]/g0**2
+    Xcdw = real(X0/(1.0 - 2.0*g0**2/omega * X0))
+    #save(savedir+'Xcdw.npy', Xcdw)
+
+    Xcdw = ravel(Xcdw)
+    a = argmax(abs(Xcdw))
+    print('Xcdw = %1.4f'%Xcdw[a])
+
+    if Xsc<0.0 or any(Xcdw<0.0): 
+        return None, None
+
+    return Xsc, Xcdw
+
+
+
 if __name__=='__main__':
     
-
     '''
     savedir = None
     if len(sys.argv)>1:
@@ -184,11 +300,43 @@ if __name__=='__main__':
         print('Using data from %s\n'%savedir)
     '''
 
-
     print('running renormalized ME')
 
+    
+    """
+    lamb = 0.05
+    dlamb = 0.05
+
+    while dlamb > 0.024:
+
+        params.lamb = 0.6 / 2.4
+        params.init()
+
+        S0, PI0  = None, None
+        savedir, G, D, S, PI = selfconsistency(S0, PI0)
+
+        save(savedir + 'S.npy', S)
+        save(savedir + 'PI.npy', PI)
+    
+        Xsc, Xcdw = susceptibilities(G, D, PI)
+        save(savedir + 'Xsc.npy',  [Xsc])
+        save(savedir + 'Xcdw.npy', [Xcdw])
+        
+    """
+
+
+    params.lamb = 0.45 / 2.4
+    params.init()
+
     S0, PI0  = None, None
-    G, D, S, PI = selfconsistency(S0, PI0)
+    savedir, G, D, S, PI = selfconsistency(S0, PI0)
+
+    save(savedir + 'S.npy', S)
+    save(savedir + 'PI.npy', PI)
+
+    Xsc, Xcdw = susceptibilities(G, D, PI)
+    save(savedir + 'Xsc.npy',  [Xsc])
+    save(savedir + 'Xcdw.npy', [Xcdw])
 
 
     """    

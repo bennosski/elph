@@ -77,17 +77,26 @@ Dm = 2*omega Dp
 
 PIm = 2*omega PIp
 
+--------
+Ilya
+--------
+
+rhoEf = 0.3?
+lambda_ilya = lamb_phil * W * rhoEF = lamb_phil * 2.4
+
 
 '''
 
 class params:
-    pass
+    def init():
+        params.g0 = sqrt(params.lamb * params.omega * params.W / 2.0)
 
 params.Nw    = 512
-params.Nk    = 8
-params.beta  = 10.0
-params.omega = float(sys.argv[1])
+params.Nk    = 12
+params.beta  = 16.0
+params.omega = 0.17
 params.lamb  = 0.125
 params.W     = 8.0
-params.g0    = sqrt(params.lamb * params.omega * params.W / 2.0)
+#params.g0    = sqrt(params.lamb * params.omega * params.W / 2.0)
 params.dens  = 0.8
+params.init()
