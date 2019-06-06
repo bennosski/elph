@@ -325,7 +325,7 @@ if __name__=='__main__':
     """
 
 
-    params.lamb = 0.45 / 2.4
+    params.lamb = 0.01 / 2.4
     params.init()
 
     S0, PI0  = None, None
