@@ -1,5 +1,4 @@
 from numpy import *
-import numpy as np
 import time
 from convolution import conv
 import os
@@ -51,7 +50,7 @@ class Migdal:
         return savedir, wn, vn, ek, mu, deriv, dndmu
     #---------------------------------------------------------------------------
     def compute_fill(self, G):
-        return 1.0 + 2.0/(self.beta * self.Nk**2) * np.sum(G).real
+        return 1.0 + 2.0/(self.beta * self.Nk**2) * sum(G, axis=None).real
     #---------------------------------------------------------------------------
     def compute_G(self, wn, ek, mu, S):
         return 1.0/(1j*wn[None,None,:] - (ek[:,:,None]-mu) - S)
@@ -117,7 +116,7 @@ class Migdal:
     def susceptibilities(self, sc_iter, G, D, PI, frac=0.9): 
         print('\nComputing Susceptibilities\n--------------------------')
 
-        F0 = G * np.conj(G)
+        F0 = G * conj(G)
         T  = ones([self.Nk,self.Nk,self.Nw])
 
         change = 1

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+ml py-scipystack/1.0_py36
