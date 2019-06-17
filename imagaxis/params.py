@@ -95,7 +95,7 @@ lambda_ilya = lamb_phil * W * rhoEF = lamb_phil * 2.4
 #        cls.g0 = sqrt(params.lamb * params.omega * params.W / 2.0)
 
 
-# Parameters below are all fundamental parameters
+# ParametersI below are all fundamental parameters
 # These parameters plus band-structure completely specifies the simulation
 # other "parameters" which derive from these are computed on setup
 

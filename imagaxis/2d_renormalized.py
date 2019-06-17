@@ -98,7 +98,7 @@ class Migdal:
             n = self.compute_fill(G)
             mu += alpha*(n-self.dens)/dndmu
 
-            print('change = %1.3e, %1.3e and fill = %.13f'%(change[0], change[1], self.compute_fill(G)))
+            print('change = {:.3e}, {:.3e} and fill = {:.13f}'.format(change[0], change[1], self.compute_fill(G)))
 
             if i>10 and change[0]<1e-14 and change[1]<1e-14: break
 
@@ -131,7 +131,7 @@ class Migdal:
             T = frac*T + (1-frac)*T0
 
             change = mean(abs(T-T0))/mean(abs(T+T0))
-            print(f'change = {change:.5e}')
+            print('change = {:.5e}'.format(change))
 
             iteration += 1
             
@@ -228,16 +228,20 @@ if __name__=='__main__':
     
     print('2D Renormalized Migdal')
 
+    lamb = 0.6
+    W    = 8.0
+    params['g0'] = sqrt(0.5 * lamb / 2.4 * params['omega'] * W)
+
     migdal = Migdal(params)
 
-    sc_iter = 10
+    sc_iter = 100
     S0, PI0  = None, None
-    savedir, G, D, S, PI = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0)
+    savedir, G, D, S, PI = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, frac=0.5)
     save(savedir + 'S.npy', S)
     save(savedir + 'PI.npy', PI)
 
-    sc_iter = 10
-    Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, PI)
+    sc_iter = 100
+    Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, PI, frac=0.5)
     save(savedir + 'Xsc.npy',  [Xsc])
     save(savedir + 'Xcdw.npy', [Xcdw])
 
