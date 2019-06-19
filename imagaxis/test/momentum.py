@@ -30,5 +30,5 @@ def test_conv2(N):
     print(amax(abs(w-z)))
 
 
-test_conv1(4)
-test_conv2(4)
+test_conv1(2)
+test_conv2(2)

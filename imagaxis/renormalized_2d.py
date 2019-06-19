@@ -76,9 +76,15 @@ class Migdal:
             S  = S0
             PI = PI0
 
+
+        #-----------------------
+        # for testing......
+        mu = 0
+        #------------------------
+            
         G = self.compute_G(wn, ek, mu, S)
         D = self.compute_D(vn, PI) 
-
+        
         change = [0, 0]
         for i in range(sc_iter):
             S0  = S[:]
