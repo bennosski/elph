@@ -46,11 +46,11 @@ def conv(a, b, indices_list, axes, circular_list, beta=None, kinds=(None,None,No
         if '+' in indices:
             if comma==1:
                 a = flip(a, axis=axis)
-                if kinds[0]=='fermion': a *= -1.0
+                if not circular and kinds[0]=='fermion': a *= -1.0
                 if circular: a = roll(a, 1, axis=axis)
             elif comma==3:
                 b = flip(b, axis=axis)
-                if kinds[1]=='fermion': b *= -1.0
+                if not circular and kinds[1]=='fermion': b *= -1.0
                 if circular: b = roll(b, 1, axis=axis)
             else:
                 raise ValueError            

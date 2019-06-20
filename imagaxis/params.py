@@ -100,15 +100,15 @@ lambda_ilya = lamb_phil * W * rhoEF = lamb_phil * 2.4
 # other "parameters" which derive from these are computed on setup
 
 from numpy import *
-def band(Nk):
+def band(nk):
     #return -2.0*(cos(kxs) + cos(kys))  #+ alpha**2
-    kys, kxs = meshgrid(arange(-pi, pi, 2*pi/Nk), arange(-pi, pi, 2*pi/Nk))
+    kys, kxs = meshgrid(arange(-pi, pi, 2*pi/nk), arange(-pi, pi, 2*pi/nk))
     ek = -2.0*(cos(kxs)+cos(kys)) - 4.0*(-0.3)*cos(kxs)*cos(kys)
     return ek
 
 params = {}
-params['Nw']    = 512
-params['Nk']    = 12
+params['nw']    = 512
+params['nk']    = 12
 params['beta']  = 16.0
 params['omega'] = 0.17
 params['g0']    = 0.125

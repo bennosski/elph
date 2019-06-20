@@ -10,30 +10,30 @@ def load_all(folder):
     omega = load(folder+'/omega.npy')[0]
     beta  = load(folder+'/beta.npy')[0]
     dens = load(folder+'/dens.npy')[0]
-    Nk = load(folder+'/Nk.npy')[0]
-    Nw = load(folder+'/Nw.npy')[0]
+    nk = load(folder+'/nk.npy')[0]
+    nw = load(folder+'/nw.npy')[0]
     S = load(folder+'/S.npy')
     PI = load(folder+'/PI.npy')
     G = load(folder+'/G.npy')
     D = load(folder+'/D.npy')
 
-    return g0, omega, beta, dens, Nk, Nw, S, PI, G, D
+    return g0, omega, beta, dens, nk, nw, S, PI, G, D
 
 def analyze_G():
     folder = os.listdir('data/')
     
-    g0, omega, beta, dens, Nk, Nw, S, PI, G, D = load_all('data/'+folder[0])
+    g0, omega, beta, dens, nk, nw, S, PI, G, D = load_all('data/'+folder[0])
  
     print('shape S', shape(S))
   
     figure()
     G0 = G.copy()
-    Gtau = fourier.w2t_fermion_alpha0(G0[Nk//2,Nk//2,:], beta)
+    Gtau = fourier.w2t_fermion_alpha0(G0[nk//2,nk//2,:], beta)
     taus = linspace(0, beta, len(Gtau))
     plot(taus, Gtau.real)
 
     G0 = G.copy()
-    Gtau = fourier.w2t_fermion_alpha0(G0[Nk//2,0,:], beta)
+    Gtau = fourier.w2t_fermion_alpha0(G0[nk//2,0,:], beta)
     plot(taus, Gtau.real)
 
     G0 = G.copy()
@@ -48,8 +48,8 @@ def analyze_G():
 #analyze_G()
 
 
-def analyze_single_particle():
-    base_dir = 'data_single_particle/'
+def analyze_single_particle(base_dir):
+    #base_dir = 'data_single_particle/'
     folders = os.listdir(base_dir)
 
     lims = [0.06, 0.25, 3]
@@ -57,18 +57,18 @@ def analyze_single_particle():
     for i,folder in enumerate(folders):
         print(folder)
 
-        g0, omega, beta, dens, Nk, Nw, S, PI, G, D = load_all(base_dir + folder)
+        g0, omega, beta, dens, nk, nw, S, PI, G, D = load_all(base_dir + folder)
         print('g0 = ', g0)
         lamb = 2.4*2.0*g0**2/(omega * 8.0)
         print('lamb ilya = ', lamb)
 
         print('shape S', shape(S))
 
-        wn = (2*arange(Nw)+1)*pi/beta
+        wn = (2*arange(nw)+1)*pi/beta
 
         figure()
-        plot(wn, -S[Nk//2+3, Nk//2+2, :].imag, '.-', color='orange')
-        plot(wn, -S[0, Nk//2+1, :].imag, '.-', color='green')
+        plot(wn, -S[nk//2+3, nk//2+2, :].imag, '.-', color='orange')
+        plot(wn, -S[0, nk//2+1, :].imag, '.-', color='green')
         xlim(0, 2)
         ylim(0, lims[i])
         legend(['34deg', '9deg'])
@@ -79,7 +79,7 @@ def analyze_single_particle():
     ls = []
     for folder in folders:
         print(folder)
-        g0, omega, beta, dens, Nk, Nw, S, PI, G, D = load_all(base_dir + folder)
+        g0, omega, beta, dens, nk, nw, S, PI, G, D = load_all(base_dir + folder)
         print('g0 = ', g0)
         lamb = 2.4*2.0*g0**2/(omega * 8.0)
 
@@ -87,11 +87,11 @@ def analyze_single_particle():
 
         print('shape PI', shape(PI))
 
-        wn = (2*arange(Nw)+1)*pi/beta
+        wn = (2*arange(nw)+1)*pi/beta
 
         y = sqrt(omega**2 + 2*omega*PI[:,:,0]) / omega
-        diag = [y[i,i] for i in range(1, Nk//2+1)]
-        yall = concatenate((y[Nk//2::-1,Nk//2], y[0,Nk//2-1::-1], diag))
+        diag = [y[i,i] for i in range(1, nk//2+1)]
+        yall = concatenate((y[nk//2::-1,nk//2], y[0,nk//2-1::-1], diag))
         yall = yall[1:-1]
         plot(yall, '.-')
         ylim(0, 1)
@@ -100,7 +100,7 @@ def analyze_single_particle():
     legend(ls)
     savefig('omega')
 
-analyze_single_particle()
+analyze_single_particle('data/')
 
 
 
