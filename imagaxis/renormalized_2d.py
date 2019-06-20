@@ -7,8 +7,9 @@ from scipy import optimize
 from params import params
 import fourier
 
-# why is sign of dndmu wrong?
-
+#import matplotlib
+#matplotlib.use('agg')
+#from matplotlib.pyplot import *
 
 class Migdal:
     #---------------------------------------------------------------------------
@@ -253,7 +254,7 @@ if __name__=='__main__':
     print('2D Renormalized Migdal')
 
     
-    lamb = 0.2
+    lamb = 0.6
     W    = 8.0
     params['g0'] = sqrt(0.5 * lamb / 2.4 * params['omega'] * W)
     print('g0 is ', params['g0'])
