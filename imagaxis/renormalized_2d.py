@@ -134,8 +134,9 @@ class Migdal:
         print('\nComputing Susceptibilities\n--------------------------')
 
         # convert to imaginary frequency
-        G = apply_along_axis(fourier.t2w, 2, G, self.beta, 'fermion')
-        D = apply_along_axis(fourier.t2w, 2, D, self.beta, 'boson')
+        G  = apply_along_axis(fourier.t2w, 2,  G, self.beta, 'fermion')
+        D  = apply_along_axis(fourier.t2w, 2,  D, self.beta, 'boson')
+        PI = apply_along_axis(fourier.t2w, 2, PI, self.beta, 'boson')
 
         F0 = G * conj(G)
         T  = ones([self.nk,self.nk,self.nw])
@@ -159,10 +160,14 @@ class Migdal:
             if change < 1e-10:
                 break
             
-        FT = F0*T
-        Xsc = 1.0/(self.beta * self.nk**2) * real(sum(FT[:,:,0]).real + 2.0*sum(FT[:,:,1:]).real)
-        
-        print('Xsc = %1.4f'%real(Xsc))
+        #FT = F0*T
+        #Xsc = 1.0/(self.beta * self.nk**2) * real(sum(FT[:,:,0]).real + 2.0*sum(FT[:,:,1:]).real)
+        Xsc = 1.0 / (self.beta * self.nk**2) * 2.0*sum(F0*T).real
+        print('Xsc = %1.4f'%Xsc)
+
+        Xsc2 = 1.0 / self.nk**2 * sum(F0*T, axis=(0,1))
+        Xsc2 = fourier.w2t(Xsc2, self.beta, 'fermion')[0].real
+        print('Xsc2 = %1.4f'%Xsc2)
 
         # compute the CDW susceptibility
         #X0 = -PI[:,:,nw//2]/alpha**2
@@ -249,7 +254,7 @@ if __name__=='__main__':
     
     print('2D Renormalized Migdal')
     
-    lamb = 0.2
+    lamb = 0.6
     W    = 8.0
     params['g0'] = sqrt(0.5 * lamb / 2.4 * params['omega'] * W)
     print('g0 is ', params['g0'])
