@@ -17,6 +17,11 @@ def load_all(folder):
     G = load(folder+'/G.npy')
     D = load(folder+'/D.npy')
 
+    S = apply_along_axis(fourier.t2w, 2, S, beta, 'fermion')
+    PI = apply_along_axis(fourier.t2w, 2, PI, beta, 'boson')
+    G = apply_along_axis(fourier.t2w, 2, G, beta, 'fermion')
+    D = apply_along_axis(fourier.t2w, 2, D, beta, 'fermion')
+
     return g0, omega, beta, dens, nk, nw, S, PI, G, D
 
 def analyze_G():
@@ -73,7 +78,7 @@ def analyze_single_particle(base_dir):
         ylim(0, lims[i])
         legend(['34deg', '9deg'])
         title(f'lamb = {lamb:1.1f}')
-        savefig(f'imag S {lamb:1.1f}.png')
+        savefig(f'imag S {lamb:1.1f}.png')    
     
     figure()
     ls = []

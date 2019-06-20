@@ -55,9 +55,6 @@ class Migdal:
 
         return savedir, wn, vn, ek, mu, deriv, dndmu
     #---------------------------------------------------------------------------
-    def compute_fill(self, G):
-        return 1.0 + 2.0/(self.beta * self.nk**2) * (2.0*G[:,:,1:].sum().real + G[:,:,0].sum().real)
-    #---------------------------------------------------------------------------
     def compute_G(self, wn, ek, mu, S):
         return 1.0/(1j*wn[None,None,:] - (ek[:,:,None]-mu) - S)
     #---------------------------------------------------------------------------
@@ -93,11 +90,7 @@ class Migdal:
         else:
             S  = S0
             PI = PI0
-        
-        #G = self.compute_G(wn, ek, mu, S)
-        #D = self.compute_D(vn, PI) 
-        #mu = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,S))-self.dens, mu)[0]
-        
+                
         change = [0, 0]
         for i in range(sc_iter):
             S0  = S[:]
@@ -108,7 +101,6 @@ class Migdal:
             G = self.dyson_fermion(wn, ek, mu, S, 2)
             D = self.dyson_boson(vn, PI, 2)
 
-            #n = self.compute_fill(G)
             n = -2.0*mean(G[:,:,-1]).real
             mu -= alpha*(n-self.dens)/dndmu
             #mu = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,S))-self.dens, mu)[0]
@@ -141,6 +133,10 @@ class Migdal:
     def susceptibilities(self, sc_iter, G, D, PI, frac=0.9): 
         print('\nComputing Susceptibilities\n--------------------------')
 
+        # convert to imaginary frequency
+        G = apply_along_axis(fourier.t2w, 2, G, self.beta, 'fermion')
+        D = apply_along_axis(fourier.t2w, 2, D, self.beta, 'boson')
+
         F0 = G * conj(G)
         T  = ones([self.nk,self.nk,self.nw])
 
@@ -163,9 +159,9 @@ class Migdal:
             if change < 1e-10:
                 break
             
-        Xsc = 1.0/(self.nk**2*self.beta) * real(sum(F0*T))
-        Xsc = 2.0*Xsc # factor of two because need to sum negative frequencies as well
-
+        FT = F0*T
+        Xsc = 1.0/(self.beta * self.nk**2) * real(sum(FT[:,:,0]).real + 2.0*sum(FT[:,:,1:]).real)
+        
         print('Xsc = %1.4f'%real(Xsc))
 
         # compute the CDW susceptibility
@@ -252,9 +248,8 @@ class Migdal:
 if __name__=='__main__':
     
     print('2D Renormalized Migdal')
-
     
-    lamb = 0.6
+    lamb = 0.2
     W    = 8.0
     params['g0'] = sqrt(0.5 * lamb / 2.4 * params['omega'] * W)
     print('g0 is ', params['g0'])
@@ -272,9 +267,7 @@ if __name__=='__main__':
     save(savedir + 'G.npy', G)
     save(savedir + 'D.npy', D)
 
-    exit()
-
-    sc_iter = 100
+    sc_iter = 300
     Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, PI, frac=0.7)
     save(savedir + 'Xsc.npy',  [Xsc])
     save(savedir + 'Xcdw.npy', [Xcdw])
