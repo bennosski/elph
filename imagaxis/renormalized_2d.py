@@ -5,18 +5,13 @@ import os
 import sys
 from scipy import optimize
 from params import params
-
-# why is sign of dndmu wrong?
-
+import fourier
 
 class Migdal:
     #---------------------------------------------------------------------------
     def __init__(self, params):
         for key in params:
             setattr(self, key, params[key])
-    #---------------------------------------------------------------------------
-    def myp(x):
-        print(mean(abs(x.real)), mean(abs(x.imag)))
     #---------------------------------------------------------------------------
     def setup(self):
         print('\nParameters\n----------------------------')
@@ -55,6 +50,10 @@ class Migdal:
         return savedir, wn, vn, ek, mu, deriv, dndmu
     #---------------------------------------------------------------------------
     def compute_fill(self, G):
+        #Glocal = mean(G, axis=(0,1))
+        #Gtau   = fourier.w2t(Glocal, self.beta, kind='fermion')
+        #return -2.0*Gtau[-1].real
+
         return 1.0 + 2.0/(self.beta * self.Nk**2) * (2.0*G[:,:,1:].sum().real + G[:,:,0].sum().real)
     #---------------------------------------------------------------------------
     def compute_G(self, wn, ek, mu, S):
@@ -71,24 +70,6 @@ class Migdal:
     #---------------------------------------------------------------------------
     def selfconsistency(self, sc_iter, frac=0.9, alpha=0.5, S0=None, PI0=None):
         savedir, wn, vn, ek, mu, deriv, dndmu = self.setup()
-
-        '''
-        D = None
-        S = None
-        PI = None
-        G = self.compute_G(wn, ek, mu, S)
-
-        save(savedir+'Nw',    [self.Nw])
-        save(savedir+'Nk',    [self.Nk])
-        save(savedir+'beta',  [self.beta])
-        save(savedir+'omega', [self.omega])
-        save(savedir+'g0',    [self.g0])
-        save(savedir+'dens',  [self.dens])
-        save(savedir+'renormalized', [self.renormalized])
-        save(savedir+'sc',    [self.sc])
-                
-        return savedir, G, D, S, PI        
-        '''
 
         print('\nSelfconsistency\n--------------------------')
 
