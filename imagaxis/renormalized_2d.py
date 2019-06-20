@@ -53,7 +53,9 @@ class Migdal:
         #Glocal = mean(G, axis=(0,1))
         #Gtau   = fourier.w2t(Glocal, self.beta, kind='fermion')
         #return -2.0*Gtau[-1].real
-        return 1.0 + 2.0/(self.beta * self.Nk**2) * (2.0*G[:,:,1:].sum().real + G[:,:,0].sum().real)
+        
+        #return 1.0 + 2.0/(self.beta * self.Nk**2) * (2.0*G[:,:,1:].sum().real + G[:,:,0].sum().real)
+        return 1.0 + 2.0/(self.beta * self.Nk**2) * 2.0*sum(G).real
     #---------------------------------------------------------------------------
     def compute_G(self, wn, ek, mu, S):
         return 1.0/(1j*wn[None,None,:] - (ek[:,:,None]-mu) - S)
@@ -146,9 +148,12 @@ class Migdal:
             
             if change < 1e-10:
                 break
-            
-        Xsc = 1.0/(self.Nk**2*self.beta) * real(sum(F0*T))
-        Xsc = 2.0*Xsc # factor of two because need to sum negative frequencies as well
+
+        #FT = F0*T
+        #Xsc = 1.0/(self.Nk**2*self.beta) * (2.0*sum(FT[:,:,1:]) + sum(FT[:,:,0]))
+        Xsc = 1.0/(self.Nk**2 * self.beta) * 2.0*sum(F0*T)
+        #Xsc = 1.0/(self.Nk**2*self.beta) * real(sum(F0*T))
+        #Xsc = 2.0*Xsc # factor of two because need to sum negative frequencies as well
 
         print('Xsc = %1.4f'%real(Xsc))
 
@@ -211,8 +216,10 @@ class Migdal:
             iteration += 1
             if iteration>2000: exit()
 
-        Xsc = 1.0/(self.Nk**2*self.beta) * real(sum(F0*T))
+        #Xsc = 1.0/(self.Nk**2*self.beta) * real(sum(F0*T))
         #save(savedir+'Xsc.npy', [Xsc])
+        FT = F0*T
+        Xsc = 1.0/(self.Nk**2*self.beta) * (2.0*sum(FT[:,:,1:]) + sum(FT[:,:,0]))
         print('Xsc = %1.4f'%real(Xsc))
 
         # self.compute the CDW susceptibility
@@ -236,9 +243,8 @@ class Migdal:
 if __name__=='__main__':
     
     print('2D Renormalized Migdal')
-
     
-    lamb = 0.6
+    lamb = 0.2
     W    = 8.0
     params['g0'] = sqrt(0.5 * lamb / 2.4 * params['omega'] * W)
     print('g0 is ', params['g0'])
@@ -248,7 +254,7 @@ if __name__=='__main__':
 
     migdal = Migdal(params)
 
-    sc_iter = 400
+    sc_iter = 300
     S0, PI0  = None, None
     savedir, G, D, S, PI = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, frac=0.2)
     save(savedir + 'S.npy', S)
@@ -256,9 +262,7 @@ if __name__=='__main__':
     save(savedir + 'G.npy', G)
     save(savedir + 'D.npy', D)
 
-    exit()
-
-    sc_iter = 100
+    sc_iter = 200
     Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, PI, frac=0.7)
     save(savedir + 'Xsc.npy',  [Xsc])
     save(savedir + 'Xcdw.npy', [Xcdw])
