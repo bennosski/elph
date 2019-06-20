@@ -248,7 +248,7 @@ if __name__=='__main__':
 
     migdal = Migdal(params)
 
-    sc_iter = 300
+    sc_iter = 400
     S0, PI0  = None, None
     savedir, G, D, S, PI = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, frac=0.2)
     save(savedir + 'S.npy', S)
