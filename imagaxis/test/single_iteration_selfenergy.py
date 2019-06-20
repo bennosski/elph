@@ -37,7 +37,7 @@ def err_pi(w2t_method, t2w_method, plotting=False):
         plot(Iw.real)
         xlim(0, 200/beta)
         title('real PI')
-
+        
         figure()   
         plot(exact.imag)
         plot(Iw.imag)
@@ -134,20 +134,23 @@ def test_single_iteration():
     params['Nk'] = 2
     params['Nw'] = 512
     params['beta'] = 1.0
+    params['dens'] = 1.0
+    params['omega'] = 0.5
     omega = params['omega']
     
     migdal = Migdal(params)
     S0, PI0, sc_iter  = None, None, 1
     savedir, G, D, S, PI = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, frac=1.0)
 
-    print('E = ', params['band'](params['Nk']))    
+    savedir, wn, vn, ek, mu, deriv, dndmu = migdal.setup()
 
+    print('E = ', params['band'](params['Nk']))    
     Nk = params['Nk']
     Nw = params['Nw']
     beta = params['beta']
     wn = (2.0*arange(Nw)+1.0) * pi / beta
     vn = (2.0*arange(Nw+1)) * pi / beta
-    ek = params['band'](Nk)
+    ekmu = params['band'](Nk) - mu
 
     Dv0 = -2.0*omega/(vn**2 + omega**2)
     nB  = 1.0/(exp(beta*omega)-1.0)
@@ -158,7 +161,7 @@ def test_single_iteration():
             for iq1 in range(Nk):
                 for iq2 in range(Nk):
 
-                    E = ek[iq1,iq2]
+                    E = ekmu[iq1,iq2]
                     nF = 1.0/(exp(beta*E)+1.0)
                     
                     S_[ik1,ik2,:] += (nB + nF)/(1j*wn - E + omega) + (nB + 1 - nF)/(1j*wn - E - omega) 
@@ -170,12 +173,13 @@ def test_single_iteration():
     figure()
     plot(ravel(S)-ravel(S_))
     title('diff Skw')
-    
+    savefig('figs/diff Skw.png')
+
     figure()
     plot(ravel(S))
     plot(ravel(S_))
     title('Skw')
-
+    savefig('figs/Skw.png')    
     show()
     
     PI_ = zeros((Nk,Nk,Nw+1), dtype=complex)
@@ -186,8 +190,8 @@ def test_single_iteration():
                     ip1 = ((ik1+iq1)-Nk//2)%Nk
                     ip2 = ((ik2+iq2)-Nk//2)%Nk
                     
-                    E1 = ek[ik1,ik2]
-                    E2 = ek[ip1,ip2]
+                    E1 = ekmu[ik1,ik2]
+                    E2 = ekmu[ip1,ip2]
 
                     nF1 = 1.0/(exp(beta*E1)+1.0)
                     nF2 = 1.0/(exp(beta*E2)+1.0)
@@ -205,11 +209,13 @@ def test_single_iteration():
     figure()
     plot(ravel(PI)-ravel(PI_))
     title('diff PIkw')
-    
+    savefig('figs/diff_PIkw.png')
+
     figure()
     plot(ravel(PI))
     plot(ravel(PI_))
     title('PIkw')
+    savefig('figs/PIkw.png')
     show()
         
 

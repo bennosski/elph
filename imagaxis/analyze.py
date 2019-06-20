@@ -3,6 +3,7 @@ from numpy import *
 import matplotlib
 matplotlib.use('agg')
 from matplotlib.pyplot import *
+import fourier
 
 def load_all(folder):
     g0 = load(folder+'/g0.npy')[0]
@@ -13,7 +14,39 @@ def load_all(folder):
     Nw = load(folder+'/Nw.npy')[0]
     S = load(folder+'/S.npy')
     PI = load(folder+'/PI.npy')
-    return g0, omega, beta, dens, Nk, Nw, S, PI
+    G = load(folder+'/G.npy')
+    D = load(folder+'/D.npy')
+
+    return g0, omega, beta, dens, Nk, Nw, S, PI, G, D
+
+def analyze_G():
+    folder = os.listdir('data/')
+    
+    g0, omega, beta, dens, Nk, Nw, S, PI, G, D = load_all('data/'+folder[0])
+ 
+    print('shape S', shape(S))
+  
+    figure()
+    G0 = G.copy()
+    Gtau = fourier.w2t_fermion_alpha0(G0[Nk//2,Nk//2,:], beta)
+    taus = linspace(0, beta, len(Gtau))
+    plot(taus, Gtau.real)
+
+    G0 = G.copy()
+    Gtau = fourier.w2t_fermion_alpha0(G0[Nk//2,0,:], beta)
+    plot(taus, Gtau.real)
+
+    G0 = G.copy()
+    Gtau = fourier.w2t_fermion_alpha0(G0[0,0,:], beta)
+    plot(taus, Gtau.real)
+
+    legend(['G', 'X', 'M'])
+
+    savefig('Gtau')
+    show()
+
+#analyze_G()
+
 
 def analyze_single_particle():
     base_dir = 'data_single_particle/'
@@ -24,7 +57,7 @@ def analyze_single_particle():
     for i,folder in enumerate(folders):
         print(folder)
 
-        g0, omega, beta, dens, Nk, Nw, S, PI = load_all(base_dir + folder)
+        g0, omega, beta, dens, Nk, Nw, S, PI, G, D = load_all(base_dir + folder)
         print('g0 = ', g0)
         lamb = 2.4*2.0*g0**2/(omega * 8.0)
         print('lamb ilya = ', lamb)
@@ -46,7 +79,7 @@ def analyze_single_particle():
     ls = []
     for folder in folders:
         print(folder)
-        g0, omega, beta, dens, Nk, Nw, S, PI = load_all(base_dir + folder)
+        g0, omega, beta, dens, Nk, Nw, S, PI, G, D = load_all(base_dir + folder)
         print('g0 = ', g0)
         lamb = 2.4*2.0*g0**2/(omega * 8.0)
 
@@ -66,8 +99,6 @@ def analyze_single_particle():
         
     legend(ls)
     savefig('omega')
-
-
 
 analyze_single_particle()
 

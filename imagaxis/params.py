@@ -103,7 +103,7 @@ from numpy import *
 def band(Nk):
     #return -2.0*(cos(kxs) + cos(kys))  #+ alpha**2
     kys, kxs = meshgrid(arange(-pi, pi, 2*pi/Nk), arange(-pi, pi, 2*pi/Nk))
-    ek = -2.0*(cos(kxs) + cos(kys)) + 4.0*0.3*cos(kxs)*cos(kys)
+    ek = -2.0*(cos(kxs)+cos(kys)) - 4.0*(-0.3)*cos(kxs)*cos(kys)
     return ek
 
 params = {}

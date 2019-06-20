@@ -6,6 +6,9 @@ import sys
 from scipy import optimize
 from params import params
 
+# why is sign of dndmu wrong?
+
+
 class Migdal:
     #---------------------------------------------------------------------------
     def __init__(self, params):
@@ -40,17 +43,19 @@ class Migdal:
         ek = self.band(self.Nk)
 
         # estimate filling and dndmu at the desired filling
-        mu = optimize.fsolve(lambda mu : 2.0*mean(1.0/(exp(self.beta*(ek-mu))+1.0))-self.dens, 0.0)
-        deriv = lambda mu : 2.0*mean(-self.beta*exp(self.beta*(ek-mu))/(exp(self.beta*(ek-mu))+1.0)**2)
+        mu = optimize.fsolve(lambda mu : 2.0*mean(1.0/(exp(self.beta*(ek-mu))+1.0))-self.dens, 0.0)[0]
+        deriv = lambda mu : 2.0*mean(self.beta*exp(self.beta*(ek-mu))/(exp(self.beta*(ek-mu))+1.0)**2)
         dndmu = deriv(mu)
 
         print('mu optimized = %1.3f'%mu)
         print('dndmu = %1.3f'%dndmu)
+        print('band bottom = %1.3f'%(ek[self.Nk//2, self.Nk//2]-mu))
+        print('band = %1.3f'%ek[self.Nk//2,self.Nk//2])
 
         return savedir, wn, vn, ek, mu, deriv, dndmu
     #---------------------------------------------------------------------------
     def compute_fill(self, G):
-        return 1.0 + 2.0/(self.beta * self.Nk**2) * sum(G, axis=None).real
+        return 1.0 + 2.0/(self.beta * self.Nk**2) * (2.0*G[:,:,1:].sum().real + G[:,:,0].sum().real)
     #---------------------------------------------------------------------------
     def compute_G(self, wn, ek, mu, S):
         return 1.0/(1j*wn[None,None,:] - (ek[:,:,None]-mu) - S)
@@ -67,6 +72,24 @@ class Migdal:
     def selfconsistency(self, sc_iter, frac=0.9, alpha=0.5, S0=None, PI0=None):
         savedir, wn, vn, ek, mu, deriv, dndmu = self.setup()
 
+        '''
+        D = None
+        S = None
+        PI = None
+        G = self.compute_G(wn, ek, mu, S)
+
+        save(savedir+'Nw',    [self.Nw])
+        save(savedir+'Nk',    [self.Nk])
+        save(savedir+'beta',  [self.beta])
+        save(savedir+'omega', [self.omega])
+        save(savedir+'g0',    [self.g0])
+        save(savedir+'dens',  [self.dens])
+        save(savedir+'renormalized', [self.renormalized])
+        save(savedir+'sc',    [self.sc])
+                
+        return savedir, G, D, S, PI        
+        '''
+
         print('\nSelfconsistency\n--------------------------')
 
         if S0 is None or PI0 is None:
@@ -76,14 +99,9 @@ class Migdal:
             S  = S0
             PI = PI0
 
-
-        #-----------------------
-        # for testing......
-        mu = 0
-        #------------------------
-            
         G = self.compute_G(wn, ek, mu, S)
         D = self.compute_D(vn, PI) 
+        #mu = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,S))-self.dens, mu)[0]
         
         change = [0, 0]
         for i in range(sc_iter):
@@ -98,13 +116,18 @@ class Migdal:
             change[1] = mean(abs(PI-PI0))/mean(abs(PI+PI0))
             PI = frac*PI + (1-frac)*PI0
 
+            #print('mu', mu)
+            #print('ek', ek)
+            #print('S', mean(abs(S)))
+
             G = self.compute_G(wn, ek, mu, S)
             D = self.compute_D(vn, PI) 
 
             n = self.compute_fill(G)
-            mu += alpha*(n-self.dens)/dndmu
+            mu -= alpha*(n-self.dens)/dndmu
+            #mu = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,S))-self.dens, mu)[0]
 
-            print('change = {:.3e}, {:.3e} and fill = {:.13f}'.format(change[0], change[1], self.compute_fill(G)))
+            print('change = {:.3e}, {:.3e} and fill = {:.13f} mu = {:.5f} EF = {:.5f}'.format(change[0], change[1], self.compute_fill(G), mu, ek[self.Nk//2, self.Nk//2]-mu))
 
             if i>10 and change[0]<1e-14 and change[1]<1e-14: break
 
@@ -116,7 +139,7 @@ class Migdal:
         save(savedir+'dens',  [self.dens])
         save(savedir+'renormalized', [self.renormalized])
         save(savedir+'sc',    [self.sc])
-
+        
         return savedir, G, D, S, PI
     #---------------------------------------------------------------------------
     def susceptibilities(self, sc_iter, G, D, PI, frac=0.9): 
@@ -234,20 +257,29 @@ if __name__=='__main__':
     
     print('2D Renormalized Migdal')
 
+    
     lamb = 0.6
     W    = 8.0
     params['g0'] = sqrt(0.5 * lamb / 2.4 * params['omega'] * W)
+    print('g0 is ', params['g0'])
+    
+    #params['g0'] = 0.238
+    #params['g0'] = 0.0
 
     migdal = Migdal(params)
 
-    sc_iter = 100
+    sc_iter = 300
     S0, PI0  = None, None
-    savedir, G, D, S, PI = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, frac=0.5)
+    savedir, G, D, S, PI = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, frac=0.2)
     save(savedir + 'S.npy', S)
     save(savedir + 'PI.npy', PI)
+    save(savedir + 'G.npy', G)
+    save(savedir + 'D.npy', D)
+
+    exit()
 
     sc_iter = 100
-    Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, PI, frac=0.5)
+    Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, PI, frac=0.7)
     save(savedir + 'Xsc.npy',  [Xsc])
     save(savedir + 'Xcdw.npy', [Xcdw])
 
