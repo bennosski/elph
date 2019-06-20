@@ -53,8 +53,6 @@ class Migdal:
         #Glocal = mean(G, axis=(0,1))
         #Gtau   = fourier.w2t(Glocal, self.beta, kind='fermion')
         #return -2.0*Gtau[-1].real
-        
-        #return 1.0 + 2.0/(self.beta * self.Nk**2) * (2.0*G[:,:,1:].sum().real + G[:,:,0].sum().real)
         return 1.0 + 2.0/(self.beta * self.Nk**2) * 2.0*sum(G).real
     #---------------------------------------------------------------------------
     def compute_G(self, wn, ek, mu, S):
@@ -244,7 +242,7 @@ if __name__=='__main__':
     
     print('2D Renormalized Migdal')
     
-    lamb = 0.2
+    lamb = 0.6
     W    = 8.0
     params['g0'] = sqrt(0.5 * lamb / 2.4 * params['omega'] * W)
     print('g0 is ', params['g0'])
