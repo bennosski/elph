@@ -4,12 +4,8 @@ from convolution import conv
 import os
 import sys
 from scipy import optimize
-from params import params
+from params import params, lamb2g0
 import fourier
-
-#import matplotlib
-#matplotlib.use('agg')
-#from matplotlib.pyplot import *
 
 class Migdal:
     #---------------------------------------------------------------------------
@@ -25,11 +21,12 @@ class Migdal:
         print('beta   = {:.3f}'.format(self.beta))
         print('omega  = {}'.format(self.omega))
         print('g0     = {:.3f}'.format(self.g0))
+        print('tp     = {:.3f}'.format(self.tp))
         print('dens   = {}'.format(self.dens))
         print('renorm = {}'.format(self.renormalized))
         print('SC     = {}'.format(self.sc))
-        print('dim    = {}'.format(len(shape(self.band(1)))))     
-        savedir = 'data/data_renormalized_nk{}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}/'.format(self.nk, len(shape(self.band(1))), self.g0, self.nw, self.omega, self.dens)
+        print('dim    = {}'.format(len(shape(self.band(1, params['t'], params['tp'])))))     
+        savedir = 'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), len(shape(self.band(1, params['t'], params['tp']))), self.g0, self.nw, self.omega, self.dens, self.beta)
         if not os.path.exists('data/'): os.mkdir('data/')
         if not os.path.exists(savedir): os.mkdir(savedir)
 
@@ -41,7 +38,7 @@ class Migdal:
         wn = (2*arange(self.nw)+1) * pi / self.beta
         vn = (2*arange(self.nw+1)) * pi / self.beta
         
-        ek = self.band(self.nk)
+        ek = self.band(self.nk, params['t'], params['tp'])
 
         # estimate filling and dndmu at the desired filling
         mu = optimize.fsolve(lambda mu : 2.0*mean(1.0/(exp(self.beta*(ek-mu))+1.0))-self.dens, 0.0)[0]
@@ -115,12 +112,22 @@ class Migdal:
             change[1] = mean(abs(PI-PI0))/mean(abs(PI+PI0))
             PI = frac*PI + (1-frac)*PI0
 
-            print('change = {:.3e}, {:.3e} and fill = {:.13f} mu = {:.5f} EF = {:.5f}'.format(change[0], change[1], n, mu, ek[self.nk//2, self.nk//2]-mu))
+            if i%10==0:
+                print('change = {:.3e}, {:.3e} and fill = {:.13f} mu = {:.5f} EF = {:.5f}'.format(change[0], change[1], n, mu, ek[self.nk//2, self.nk//2]-mu))
+
+            if params['g0']<1e-10: break
 
             if i>10 and change[0]<1e-14 and change[1]<1e-14: break
 
+
+        if change[0]>1e-5 or change[1]>1e-5 or abs(n-self.dens)>1e-3:
+            print('Failed to converge')
+            return None, None, None, None, None
+
         save(savedir+'nw',    [self.nw])
         save(savedir+'nk',    [self.nk])
+        save(savedir+'t',     [self.t])
+        save(savedir+'tp',    [self.tp])
         save(savedir+'beta',  [self.beta])
         save(savedir+'omega', [self.omega])
         save(savedir+'g0',    [self.g0])
@@ -153,21 +160,23 @@ class Migdal:
             T = frac*T + (1-frac)*T0
 
             change = mean(abs(T-T0))/mean(abs(T+T0))
-            print('change = {:.5e}'.format(change))
+            if iteration%10==0:
+                print('change = {:.5e}'.format(change))
 
             iteration += 1
             
             if change < 1e-10:
                 break
+
+        if change>1e-5:
+            print('Susceptibility failed to converge')
+            return None, None
             
         #FT = F0*T
         #Xsc = 1.0/(self.beta * self.nk**2) * real(sum(FT[:,:,0]).real + 2.0*sum(FT[:,:,1:]).real)
         Xsc = 1.0 / (self.beta * self.nk**2) * 2.0*sum(F0*T).real
         print('Xsc = %1.4f'%Xsc)
 
-        Xsc2 = 1.0 / self.nk**2 * sum(F0*T, axis=(0,1))
-        Xsc2 = fourier.w2t(Xsc2, self.beta, 'fermion')[0].real
-        print('Xsc2 = %1.4f'%Xsc2)
 
         # compute the CDW susceptibility
         #X0 = -PI[:,:,nw//2]/alpha**2
@@ -181,74 +190,12 @@ class Migdal:
         print('Xcdw = %1.4f'%Xcdw[a])
 
         if Xsc<0.0 or any(Xcdw<0.0): 
-            return None, None
-
-        return Xsc, Xcdw
-    #---------------------------------------------------------------------------
-    def doubled_susceptibilities(self, G, D, PI, frac=0.9): 
-
-        # compute susceptibilities
-
-        print('shapeG', shape(G))
-        print('shapeD', shape(D))
-
-        # extend to + and - freqs
-        nw = 2*self.nw
-        G_ = concatenate((conj(G[:, :, ::-1]), G), axis=-1)
-        D_ = concatenate((conj(D[:, :, :0:-1]), D), axis=-1)
-
-        print('shapeG_', shape(G_))
-        print('shapeD_', shape(D_))
-
-        F0 = G_ * G_[:,:,::-1]
-        T  = ones([self.nk,self.nk,nw])
-
-        tmp = zeros([self.nk,self.nk,2*nw], dtype=complex)
-        tmp[:,:,:nw+1] = D_
-        tmp = fft.fftn(tmp)
-
-        change = 1
-        iteration = 0
-        while change > 1e-10:
-            T0 = T.copy()
-
-            m = zeros([self.nk,self.nk,2*nw], dtype=complex)
-            m[:,:,:nw] = F0*T
-            m = fft.fftn(m)
-            T = fft.ifftn(m * tmp)
-            T = roll(T, (-self.nk//2, -self.nk//2, -nw//2), axis=(0,1,2))[:,:,:nw]
-            T *= -self.g0**2/(self.beta*self.nk**2) 
-            T += 1.0
-
-            change = mean(abs(T-T0))/mean(abs(T+T0))
-            if iteration%100==0: print('change : %1.3e'%change)
-
-            T = frac*T + (1-frac)*T0
-
-            iteration += 1
-            if iteration>2000: exit()
-
-        Xsc = 1.0/(self.nk**2*self.beta) * real(sum(F0*T))
-        #save(savedir+'Xsc.npy', [Xsc])
-        print('Xsc = %1.4f'%real(Xsc))
-
-        # self.compute the CDW susceptibility
-        #X0 = -PI[:,:,nw//2]/alpha**2
-        #Xcdw = real(X0/(1.0 - alpha**2/omega**2 * X0))
-
-        X0 = -PI[:,:,0]/self.g0**2
-        Xcdw = real(X0/(1.0 - 2.0*self.g0**2/self.omega * X0))
-        #save(savedir+'Xcdw.npy', Xcdw)
-
-        Xcdw = ravel(Xcdw)
-        a = argmax(abs(Xcdw))
-        print('Xcdw = %1.4f'%Xcdw[a])
-
-        if Xsc<0.0 or any(Xcdw<0.0): 
+            print('Xcdw blew up')
             return None, None
 
         return Xsc, Xcdw
 #---------------------------------------------------------------------------        
+
 
 if __name__=='__main__':
     
@@ -256,12 +203,9 @@ if __name__=='__main__':
     
     lamb = 0.6
     W    = 8.0
-    params['g0'] = sqrt(0.5 * lamb / 2.4 * params['omega'] * W)
+    params['g0'] = lamb2g0(lamb, params['omega'], W)
     print('g0 is ', params['g0'])
     
-    #params['g0'] = 0.238
-    #params['g0'] = 0.0
-
     migdal = Migdal(params)
 
     sc_iter = 300

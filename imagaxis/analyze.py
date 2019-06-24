@@ -4,30 +4,57 @@ import matplotlib
 matplotlib.use('agg')
 from matplotlib.pyplot import *
 import fourier
+from params import g02lamb
+from collections import defaultdict
 
 def load_all(folder):
-    g0 = load(folder+'/g0.npy')[0]
-    omega = load(folder+'/omega.npy')[0]
-    beta  = load(folder+'/beta.npy')[0]
-    dens = load(folder+'/dens.npy')[0]
-    nk = load(folder+'/nk.npy')[0]
-    nw = load(folder+'/nw.npy')[0]
-    S = load(folder+'/S.npy')
-    PI = load(folder+'/PI.npy')
-    G = load(folder+'/G.npy')
-    D = load(folder+'/D.npy')
+    res = defaultdict(lambda : None)
 
-    S = apply_along_axis(fourier.t2w, 2, S, beta, 'fermion')
-    PI = apply_along_axis(fourier.t2w, 2, PI, beta, 'boson')
-    G = apply_along_axis(fourier.t2w, 2, G, beta, 'fermion')
-    D = apply_along_axis(fourier.t2w, 2, D, beta, 'fermion')
+    quantities = ['g0', 'omega', 'beta', 'dens', 'nk', 'nw', 'tp', 'G', 'D', 'S', 'PI']
 
-    return g0, omega, beta, dens, nk, nw, S, PI, G, D
+    for x in quantities:
+        try:
+            y = load(folder+'/%s.npy'%x)
+            if len(y)==1:
+                res[x] = y[0]
+            else:
+                res[x] = y
+        except:
+            print('missing %s'%x)
+
+    '''
+    res['g0'] = load(folder+'/g0.npy')[0]
+    res['omega'] = load(folder+'/omega.npy')[0]
+    res['beta']  = load(folder+'/beta.npy')[0]
+    res['dens'] = load(folder+'/dens.npy')[0]
+    res['nk'] = load(folder+'/nk.npy')[0]
+    res['nw'] = load(folder+'/nw.npy')[0]
+
+        G = load(folder+'/G.npy')
+        D = load(folder+'/D.npy')
+        res['G'] = apply_along_axis(fourier.t2w, 2, G, beta, 'fermion')
+        res['D'] = apply_along_axis(fourier.t2w, 2, D, beta, 'fermion')
+        res['tp'] = load(folder+'/tp.npy')[0]
+
+        res['S'] = load(folder+'/S.npy')
+        res['PI'] = load(folder+'/PI.npy')
+        res['S'] = apply_along_axis(fourier.t2w, 2, S, beta, 'fermion')
+        res['PI'] = apply_along_axis(fourier.t2w, 2, PI, beta, 'boson')
+
+    except:
+        res['G'] = None
+        res['D'] = None
+        res['tp'] = None
+    '''
+
+    return res
+    #return g0, omega, beta, dens, nk, nw, S, PI, G, D
 
 def analyze_G():
     folder = os.listdir('data/')
     
-    g0, omega, beta, dens, nk, nw, S, PI, G, D = load_all('data/'+folder[0])
+    res = load_all('data/'+folder[0])
+    g0, omega, beta, dens, nk, nw, tp, S, PI, G, D = res['g0'], res['omega'], res['beta'], res['dens'], res['nk'], res['nw'], res['tp'], res['S'], res['PI'], res['G'], res['D']
  
     print('shape S', shape(S))
   
@@ -62,7 +89,9 @@ def analyze_single_particle(base_dir):
     for i,folder in enumerate(folders):
         print(folder)
 
-        g0, omega, beta, dens, nk, nw, S, PI, G, D = load_all(base_dir + folder)
+        res = load_all(base_dir + folder)
+        g0, omega, beta, dens, nk, nw, tp, S, PI, G, D = res['g0'], res['omega'], res['beta'], res['dens'], res['nk'], res['nw'], res['tp'], res['S'], res['PI'], res['G'], res['D']
+
         print('g0 = ', g0)
         lamb = 2.4*2.0*g0**2/(omega * 8.0)
         print('lamb ilya = ', lamb)
@@ -84,7 +113,9 @@ def analyze_single_particle(base_dir):
     ls = []
     for folder in folders:
         print(folder)
-        g0, omega, beta, dens, nk, nw, S, PI, G, D = load_all(base_dir + folder)
+        res = load_all(base_dir + folder)
+        g0, omega, beta, dens, nk, nw, tp, S, PI, G, D = res['g0'], res['omega'], res['beta'], res['dens'], res['nk'], res['nw'], res['tp'], res['S'], res['PI'], res['G'], res['D']
+
         print('g0 = ', g0)
         lamb = 2.4*2.0*g0**2/(omega * 8.0)
 
@@ -105,30 +136,86 @@ def analyze_single_particle(base_dir):
     legend(ls)
     savefig('omega')
 
-analyze_single_particle('data/')
+#analyze_single_particle('test/data/')
 
 
-
-def analyze_x_vs_T():
-    folders = os.listdir('data_x_vs_T/')
+def analyze_x_vs_T(basedir):
+    folders = os.listdir(basedir)
 
     lambs = []
     xs = []
     xcdws = []
     for folder in folders:
         print(folder)
-        xs.append(load('data/'+folder+'/Xsc.npy')[0])
-        lambs.append(load('data/'+folder+'/lamb.npy')[0])
-        xcdws.append(np.argmax(load('data/'+folder+'/Xcdw.npy')))
+        xs.append(load(basedir+folder+'/Xsc.npy')[0])
+        
+        omega = load(basedir+folder+'/omega.npy')[0]
+        W = 8.0
+
+        g0 =load(basedir+folder+'/g0.npy')[0]
+        lambs.append(g0**2 * 2.4 / (0.5 * omega * W))
+
+        xcdws.append(np.amax(load(basedir+folder+'/Xcdw.npy')))
 
     lambs, xs, xcdws = zip(*sorted(zip(lambs, xs, xcdws)))
 
-    print(xs)
+    print(xcdws)
     print('')
-    print(2.4*array(lambs))
+    print(array(lambs))
 
     figure()
-    plot(2.4*array(lambs), xs)
-    plot(2.4*array(lambs), array(xcdws)/300.0)
+    plot(array(lambs), xs)
+    plot(array(lambs), array(xcdws)/300.0)
     ylim(0, 1.0)
+    xlim(0, 0.65)
     savefig('xsc')
+
+#analyze_x_vs_T('test/data_ilya_susceptibilities/')
+
+def get_Tc(basedir):
+    
+    folders = os.listdir(basedir)
+
+    data = {}
+
+    for folder in folders:
+
+        res = load_all(basedir+folder)
+        g0, omega, beta, dens, nk, nw, tp, S, PI, G, D = res['g0'], res['omega'], res['beta'], res['dens'], res['nk'], res['nw'], res['tp'], res['S'], res['PI'], res['G'], res['D']
+
+        Xs = load(basedir+folder+'/Xs.npy').item()
+        Xscs = []
+        for beta in Xs:
+            Xscs.append([beta, Xs[beta]['Xsc']])
+        Xscs = array(sorted(Xscs))
+        
+        
+        print('nones')
+        notnones = [False if x is None else True for x in Xscs[:,1]]
+
+        Xscs = Xscs[notnones]
+
+        data['%1.2f'%omega] = {}
+        data['%1.2f'%omega]['%1.10f'%g0] = Xscs
+        
+        print('')
+        print(omega, g0)
+        print(Xscs)
+
+        W = 8
+        lamb = g02lamb(g0, omega, W)
+
+        figure()
+        plot(1./Xscs[:,0], 1./Xscs[:,1], '.-')
+        xlim(0, gca().get_xlim()[1])
+        name = '$\Omega$='+'%1.1f'%omega+' lamb=%1.2f'%lamb+' nk=%d'%nk+' tp=%1.1f'%tp
+        title(name)
+        
+        name = name.replace('.', 'p')
+        savefig('figs/inv xsc %s'%name)
+
+get_Tc('data/')
+
+
+
+
