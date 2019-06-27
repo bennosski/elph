@@ -63,23 +63,14 @@ class Migdal:
         return -self.g0**2/self.nk**2 * conv(G, D, ['k-q,q','k-q,q'], [0,1], [True,True], self.beta)
     #---------------------------------------------------------------------------
     def compute_PI(self, G):
-        #return 2.0*self.g0**2/self.nk**2 * conv(G, G, ['k,k+q','k,k+q','m,m+n'], [0,1,2], [True,True,False], self.beta, kinds=('fermion','fermion','boson'))
         return 2.0*self.g0**2/self.nk**2 * conv(G, -G[:,:,::-1], ['k,k+q','k,k+q'], [0,1], [True,True], self.beta)
     #---------------------------------------------------------------------------
     def dyson_fermion(self, wn, ek, mu, S, axis):
         Sw = fourier.t2w_fermion_alpha0(S, self.beta, axis)
         Gw = self.compute_G(wn, ek, mu, Sw)
         return fourier.w2t_fermion_alpha0(Gw, self.beta, axis)
-        #Sw = apply_along_axis(fourier.t2w_fermion_alpha0, axis, S, self.beta)
-        #Gw = self.compute_G(wn, ek, mu, Sw)
-        #return apply_along_axis(fourier.w2t_fermion_alpha0, axis, Gw, self.beta)
 
     def dyson_boson(self, vn, PI, axis):
-        '''
-        PIw = apply_along_axis(fourier.t2w_boson, axis, PI, self.beta)
-        Dw  = self.compute_D(vn, PIw)
-        return apply_along_axis(fourier.w2t_boson, axis, Dw, self.beta)
-        '''
         PIw = fourier.t2w_boson(PI, self.beta, axis)
         Dw  = self.compute_D(vn, PIw)
         return fourier.w2t_boson(Dw, self.beta, axis)
@@ -150,10 +141,6 @@ class Migdal:
         print('\nComputing Susceptibilities\n--------------------------')
 
         # convert to imaginary frequency
-        #G  = apply_along_axis(fourier.t2w, 2,  G, self.beta, 'fermion')
-        #D  = apply_along_axis(fourier.t2w, 2, D, self.beta, 2, 'boson')
-        #PI = apply_along_axis(fourier.t2w, 2, PI, self.beta, 2, 'boson')
-
         G  = fourier.t2w(G, self.beta, 2, 'fermion')
         D  = fourier.t2w(D, self.beta, 2, 'boson')
         PI = fourier.t2w(PI, self.beta, 2, 'boson')
@@ -185,16 +172,10 @@ class Migdal:
             print('Susceptibility failed to converge')
             return None, None
             
-        #FT = F0*T
-        #Xsc = 1.0/(self.beta * self.nk**2) * real(sum(FT[:,:,0]).real + 2.0*sum(FT[:,:,1:]).real)
         Xsc = 1.0 / (self.beta * self.nk**2) * 2.0*sum(F0*T).real
         print('Xsc = %1.4f'%Xsc)
 
-
         # compute the CDW susceptibility
-        #X0 = -PI[:,:,nw//2]/alpha**2
-        #Xcdw = real(X0/(1.0 - alpha**2/omega**2 * X0))
-
         X0 = -PI[:,:,0]/self.g0**2
         Xcdw = real(X0/(1.0 - 2.0*self.g0**2/self.omega * X0))
 
@@ -211,7 +192,9 @@ class Migdal:
 
 
 if __name__=='__main__':
-    
+
+    # example usage as follows :
+
     print('2D Renormalized Migdal')
     
     lamb = 0.6
@@ -233,30 +216,3 @@ if __name__=='__main__':
     Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, PI, frac=0.7)
     save(savedir + 'Xsc.npy',  [Xsc])
     save(savedir + 'Xcdw.npy', [Xcdw])
-
-
-    """    
-    dbeta = 2.0
-
-    Xscs = []
-II
-    while dbeta >= 0.25:
-
-        print(f'\nbeta = {beta:.4f}')
-
-        G, D, S, PI = selfconsistency(S0, PI0)
-
-        #Xsc, Xcdw = susceptibilities(G, PI)
-        
-        if Xsc is None or Xcdw is None:
-            dbeta /= 2.0
-        else:
-            Xscs.append([beta, Xsc])
-            S0, PI0 = S, PI
-
-        params.beta += dbeta
-    
-        #save(savedir + 'Xscs.npy', array(Xscs))
-        
-    """
-
