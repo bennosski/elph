@@ -7,8 +7,14 @@ from scipy import optimize
 from params import params, lamb2g0
 import fourier
 
+import matplotlib
+matplotlib.use('agg')
+from matplotlib.pyplot import *
+
+
 class Migdal:
     tau0 = array([[1.0, 0.0], [0.0, 1.0]])
+    tau1 = array([[0.0, 1.0], [1.0, 0.0]])
     tau3 = array([[1.0, 0.0], [0.0,-1.0]])
 
     #---------------------------------------------------------------------------
@@ -57,27 +63,41 @@ class Migdal:
         return savedir, wn, vn, ek, mu, deriv, dndmu
     #---------------------------------------------------------------------------
     def compute_n(self, G):
-        return -2.0*mean(G[:,:,-1,0,0]).real
+        # check the -1 here......
+        #return -2.0*mean(G[:,:,-1,0,0]).real
+        #return 2.0 + mean(G[:,:,0,0,0].real - G[:,:,0,1,1].real)
+        nup = -mean(G[:,:,-1,0,0].real)
+        ndw = -mean(G[:,:,0,1,1].real)        
+        return nup + ndw
     #---------------------------------------------------------------------------
     def compute_G(self, wn, ek, mu, S):
-        return 1.0/(1j*wn[None,None,:,None,None]*Migdal.tau0 - (ek[:,:,None,None,None]-mu)*Migdal.tau3 - S)
+        #return linalg.inv(1j*wn[None,None,:,None,None]*Migdal.tau0[None,None,None,:,:] - (ek[:,:,None,None,None]-mu)*Migdal.tau3[None,None,None,:,:] - S)
+
+        #print('S', mean(abs(S)))
+        
+        #G = linalg.inv(1j*wn[None,None,:,None,None]*Migdal.tau0[None,None,None,:,:] - (ek[:,:,None,None,None]-mu)*Migdal.tau3[None,None,None,:,:] - S)
+        #print('G off diag')
+        #print(1.0/(self.beta*self.nk**2)*sum(G[:,:,:,0,1]).real)
+
+        return linalg.inv(1j*wn[None,None,:,None,None]*Migdal.tau0[None,None,None,:,:] - (ek[:,:,None,None,None]-mu)*Migdal.tau3[None,None,None,:,:] - S)
     #---------------------------------------------------------------------------
     def compute_D(self, vn, PI):
         return 1.0/(-((vn**2)[None,None,:] + self.omega**2)/(2.0*self.omega) - PI)
     #---------------------------------------------------------------------------
     def compute_S(self, G, D):
         tau3Gtau3 = einsum('ab,xywbc,cd->xywad', Migdal.tau3, G, Migdal.tau3)
-        return -self.g0**2/self.nk**2 * conv(G, D, ['k-q,q','k-q,q'], [0,1], [True,True], self.beta)
+        return -self.g0**2/self.nk**2 * conv(tau3Gtau3, D[:,:,:,None,None], ['k-q,q','k-q,q'], [0,1], [True,True], self.beta)
     #---------------------------------------------------------------------------
     def compute_PI(self, G):
         tau3G = einsum('ab,...bc->...ac', Migdal.tau3, G)
         #                             CHECK THE 0.5 HERE!
-        return 2.0*self.g0**2/self.nk**2 * 0.5*einum('...aa->...', conv(tau3G, -tau3G[:,:,::-1,:,:], ['k,k+q','k,k+q'], [0,1], [True,True], self.beta, op='...ab,...bc->...ac'))
+        return 2.0*self.g0**2/self.nk**2 * 0.5*einsum('...aa->...', conv(tau3G, -tau3G[:,:,::-1,:,:], ['k,k+q','k,k+q'], [0,1], [True,True], self.beta, op='...ab,...bc->...ac'))
     #---------------------------------------------------------------------------
     def dyson_fermion(self, wn, ek, mu, S, axis):
-        Sw = fourier.t2w_fermion_alpha0(S, self.beta, axis)
+        Sw, jumpS = fourier.t2w_fermion_alpha0(S, self.beta, axis)
         Gw = self.compute_G(wn, ek, mu, Sw)
-        return fourier.w2t_fermion_alpha0(Gw, self.beta, axis)
+        jumpG = -Migdal.tau0[None,None,None,:,:]
+        return fourier.w2t_fermion_alpha0(Gw, self.beta, axis, jumpG)
 
     def dyson_boson(self, vn, PI, axis):
         PIw = fourier.t2w_boson(PI, self.beta, axis)
@@ -87,15 +107,37 @@ class Migdal:
     #---------------------------------------------------------------------------
     def selfconsistency(self, sc_iter, frac=0.9, alpha=0.5, S0=None, PI0=None):
         savedir, wn, vn, ek, mu, deriv, dndmu = self.setup()
+
+        #print('wn')
+        #print(wn)
+        #exit()
         
         print('\nSelfconsistency\n--------------------------')
 
         if S0 is None or PI0 is None:
+            #S  = self.sc*0.01*ones([self.nk,self.nk,self.ntau,2,2], dtype=complex)*Migdal.tau1[None,None,None,:,:]
             S  = zeros([self.nk,self.nk,self.ntau,2,2], dtype=complex)
+            S[:,:,0,0,1] = 0.01 * self.sc
+            S[:,:,0,1,0] = 0.01 * self.sc
+
+            #S  = self.sc*0.01*ones([self.nk,self.nk,self.ntau,2,2], dtype=complex)*Migdal.tau1[None,None,None,:,:]
             PI = zeros([self.nk,self.nk,self.ntau], dtype=complex)
         else:
             S  = S0
             PI = PI0
+
+
+        '''
+        G = self.dyson_fermion(wn, ek, mu, S, 2)
+        print('offdiagonal ', mean(G[:,:,-1,0,1]).real)
+        figure()
+        plot(G[self.nk//2, 0, :, 0, 0].real)
+        plot(G[self.nk//2, 0, :, 0, 1].real)
+        plot(G[self.nk//2, 0, :, 0, 1].imag)
+        savefig('Gtau')
+        exit()
+        '''
+
 
         change = [0, 0]
         for i in range(sc_iter):
@@ -106,6 +148,9 @@ class Migdal:
 
             G = self.dyson_fermion(wn, ek, mu, S, 2)
             D = self.dyson_boson(vn, PI, 2)
+
+            #plot(1.0/self.nk**2 * sum(G[:,:,:,0,1], axis=(0,1)).real)
+            #plot(1.0/self.nk**2 * sum(G[:,:,:,0,0], axis=(0,1)).real)
 
             n = self.compute_n(G)
             mu -= alpha*(n-self.dens)/dndmu
@@ -121,12 +166,16 @@ class Migdal:
             change[1] = mean(abs(PI-PI0))/mean(abs(PI+PI0))
             PI = frac*PI + (1-frac)*PI0
 
-            if i%10==0:
-                print('change = {:.3e}, {:.3e} and fill = {:.13f} mu = {:.5f} EF = {:.5f} ODLRO = {;:3e}'.format(change[0], change[1], n, mu, ek[self.nk//2, self.nk//2]-mu, 1.0/(self.beta*self.nk**2)*sum(G[:,:,:,1,0])))
+            if i%1==0:
+                print('change={:.3e}, {:.3e} fill={:.5f} mu={:.5f} ODLRO={:3e}'.format(change[0], change[1], n, mu, mean(G[:,:,-1,0,1]).real))
 
             if params['g0']<1e-10: break
 
             if i>10 and change[0]<1e-14 and change[1]<1e-14: break
+
+        figure()
+        plot(1.0/self.nk**2 * sum(G[:,:,:,0,1], axis=(0,1)).real)
+        savefig('Gtau')
 
 
         if change[0]>1e-5 or change[1]>1e-5 or abs(n-self.dens)>1e-3:
@@ -151,15 +200,17 @@ if __name__=='__main__':
     # example usage as follows :
 
     print('2D Renormalized Migdal')
-    
-    lamb = 0.6
+
+    params['beta'] = 100.0
+    params['omega'] = 2.0
+    lamb = 0.4
     W    = 8.0
     params['g0'] = lamb2g0(lamb, params['omega'], W)
     print('g0 is ', params['g0'])
     
     migdal = Migdal(params)
 
-    sc_iter = 300
+    sc_iter = 100
     S0, PI0  = None, None
     savedir, G, D, S, PI = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, frac=0.2)
     #save(savedir + 'S.npy', S)

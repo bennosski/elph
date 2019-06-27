@@ -113,13 +113,13 @@ def band(nk, t, tp):
 
 params = {}
 params['nw']    = 512
-params['nk']    = 64
+params['nk']    = 8
 params['t']     = 1.0
 params['tp']    = -0.3 # -0.3
 params['omega'] = 0.17 # 0.17
 params['dens']  = 0.8
 params['renormalized'] = True
-params['sc']    = 0
+params['sc']    = 1
 params['band']  = band
-#params['beta']  = 16.0
-#params['g0']    = 0.125
+params['beta']  = 16.0
+params['g0']    = 0.125

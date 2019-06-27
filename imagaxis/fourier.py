@@ -45,9 +45,10 @@ def t2w_fermion_alpha0(h, beta, axis):
     jump = np.take_along_axis(h, expand(np.arange(1), axis, dim), axis) + np.take_along_axis(h, expand(np.arange(N,N+1), axis, dim), axis)
     I = expand(W_fermion(theta), axis, dim) * 0.5 * np.take_along_axis(np.fft.ifft(h_, axis=axis), expand(np.arange(1,2*N,2), axis, dim), axis)*2*N + expand(alpha0(theta), axis, dim)*jump
     I *= delta
-    return np.take_along_axis(I, expand(np.arange(N//2), axis, dim), axis=axis)
 
-def w2t_fermion_alpha0(I, beta, axis):
+    return np.take_along_axis(I, expand(np.arange(N//2), axis, dim), axis=axis), jump
+
+def w2t_fermion_alpha0(I, beta, axis, jump):
     # assume jump is -1
 
     Ishape = np.shape(I)
@@ -61,7 +62,8 @@ def w2t_fermion_alpha0(I, beta, axis):
     # extend to negative frequencies
     I = np.concatenate((I, np.take_along_axis(np.conj(I), expand(np.arange(N//2-1,-1,-1), axis, dim), axis)), axis)
     
-    I = 2.0*(I - expand(alpha0(theta), axis, dim)*(-1)*delta)/(delta * expand(W_fermion(theta), axis, dim))
+    I = 2.0*(I - expand(alpha0(theta), axis, dim)*(jump)*delta)/(delta * expand(W_fermion(theta), axis, dim))
+    #I = 2.0*(I - expand(alpha0(theta), axis, dim)*(-1)*delta)/(delta * expand(W_fermion(theta), axis, dim))
     
     shape = np.array(np.shape(I))
     shape[axis] = 2*N
@@ -74,7 +76,7 @@ def w2t_fermion_alpha0(I, beta, axis):
     out = np.zeros(shape, dtype=complex)
     np.put_along_axis(out, expand(np.arange(N), axis, dim), np.take_along_axis(np.fft.fft(I_, axis=axis), expand(np.arange(N), axis, dim), axis)/(2*N), axis)
 
-    np.put_along_axis(out, expand(np.arange(N, N+1), axis, dim), -np.take_along_axis(out, expand(np.arange(1), axis, dim), axis) - 1.0, axis)
+    np.put_along_axis(out, expand(np.arange(N, N+1), axis, dim), -np.take_along_axis(out, expand(np.arange(1), axis, dim), axis) + jump, axis)
     return out
 
 def t2w_fermion_jump(h, beta):
