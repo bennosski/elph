@@ -105,11 +105,9 @@ def lamb2g0(lamb, omega, W):
 def g02lamb(g0, omega, W):
     return g0**2 * 2.4 / (omega * W * 0.5)
 
-
 def band(nk, t, tp):
     #return -2.0*(cos(kxs) + cos(kys))  #+ alpha**2
     kys, kxs = meshgrid(arange(-pi, pi, 2*pi/nk), arange(-pi, pi, 2*pi/nk))
-
     ek = -2.0*t*(cos(kxs)+cos(kys)) - 4.0*(tp)*cos(kxs)*cos(kys)
     return ek
 
