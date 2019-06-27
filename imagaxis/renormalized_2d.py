@@ -26,8 +26,9 @@ class Migdal:
         print('renorm = {}'.format(self.renormalized))
         print('SC     = {}'.format(self.sc))
         print('dim    = {}'.format(len(shape(self.band(1, params['t'], params['tp'])))))     
-        savedir = 'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), len(shape(self.band(1, params['t'], params['tp']))), self.g0, self.nw, self.omega, self.dens, self.beta)
-        if not os.path.exists('data/'): os.mkdir('data/')
+        basedir = '/scratch/users/bln/elph/imagaxis/'
+        savedir = basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), len(shape(self.band(1, params['t'], params['tp']))), self.g0, self.nw, self.omega, self.dens, self.beta)
+        if not os.path.exists(basedir+'data/'): os.mkdir(basedir+'data/')
         if not os.path.exists(savedir): os.mkdir(savedir)
 
         assert self.nk%2==0
@@ -66,14 +67,22 @@ class Migdal:
         return 2.0*self.g0**2/self.nk**2 * conv(G, -G[:,:,::-1], ['k,k+q','k,k+q'], [0,1], [True,True], self.beta)
     #---------------------------------------------------------------------------
     def dyson_fermion(self, wn, ek, mu, S, axis):
-        Sw = apply_along_axis(fourier.t2w_fermion_alpha0, axis, S, self.beta)
+        Sw = fourier.t2w_fermion_alpha0(S, self.beta, axis)
         Gw = self.compute_G(wn, ek, mu, Sw)
-        return apply_along_axis(fourier.w2t_fermion_alpha0, axis, Gw, self.beta)
+        return fourier.w2t_fermion_alpha0(Gw, self.beta, axis)
+        #Sw = apply_along_axis(fourier.t2w_fermion_alpha0, axis, S, self.beta)
+        #Gw = self.compute_G(wn, ek, mu, Sw)
+        #return apply_along_axis(fourier.w2t_fermion_alpha0, axis, Gw, self.beta)
 
     def dyson_boson(self, vn, PI, axis):
+        '''
         PIw = apply_along_axis(fourier.t2w_boson, axis, PI, self.beta)
         Dw  = self.compute_D(vn, PIw)
         return apply_along_axis(fourier.w2t_boson, axis, Dw, self.beta)
+        '''
+        PIw = fourier.t2w_boson(PI, self.beta, axis)
+        Dw  = self.compute_D(vn, PIw)
+        return fourier.w2t_boson(Dw, self.beta, axis)
 
     #---------------------------------------------------------------------------
     def selfconsistency(self, sc_iter, frac=0.9, alpha=0.5, S0=None, PI0=None):
@@ -87,7 +96,7 @@ class Migdal:
         else:
             S  = S0
             PI = PI0
-                
+
         change = [0, 0]
         for i in range(sc_iter):
             S0  = S[:]
@@ -141,9 +150,13 @@ class Migdal:
         print('\nComputing Susceptibilities\n--------------------------')
 
         # convert to imaginary frequency
-        G  = apply_along_axis(fourier.t2w, 2,  G, self.beta, 'fermion')
-        D  = apply_along_axis(fourier.t2w, 2,  D, self.beta, 'boson')
-        PI = apply_along_axis(fourier.t2w, 2, PI, self.beta, 'boson')
+        #G  = apply_along_axis(fourier.t2w, 2,  G, self.beta, 'fermion')
+        #D  = apply_along_axis(fourier.t2w, 2, D, self.beta, 2, 'boson')
+        #PI = apply_along_axis(fourier.t2w, 2, PI, self.beta, 2, 'boson')
+
+        G  = fourier.t2w(G, self.beta, 2, 'fermion')
+        D  = fourier.t2w(D, self.beta, 2, 'boson')
+        PI = fourier.t2w(PI, self.beta, 2, 'boson')
 
         F0 = G * conj(G)
         T  = ones([self.nk,self.nk,self.nw])
@@ -226,7 +239,7 @@ if __name__=='__main__':
     dbeta = 2.0
 
     Xscs = []
-
+II
     while dbeta >= 0.25:
 
         print(f'\nbeta = {beta:.4f}')

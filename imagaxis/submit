@@ -1,18 +1,20 @@
 #!/bin/bash
 #SBATCH --job-name=migdal
-#SBATCH --time=00:30:00
+#SBATCH --time=04:00:00
 #SBATCH --partition=iric
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 
 #ml py-scipystack
 
-ml python/3.6.1
-ml py-scipystack/1.0_py36
+#ml python/3.6.1
+#ml py-scipystack/1.0_py36
+
+source module
 
 echo "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
 echo "^^^^^^^start: `date`"
 
-srun python3 2d_renormalized.py $1
+python3 Tc.py
 
 echo "^^^^^^^end: `date`"

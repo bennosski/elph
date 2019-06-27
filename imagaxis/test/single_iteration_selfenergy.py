@@ -144,13 +144,13 @@ def test_single_iteration():
 
     savedir, wn, vn, ek, mu, deriv, dndmu = migdal.setup()
 
-    print('E = ', params['band'](params['Nk']))    
+    print('E = ', params['band'](params['Nk'], 1.0, params['tp']))    
     Nk = params['Nk']
     Nw = params['Nw']
     beta = params['beta']
     wn = (2.0*arange(Nw)+1.0) * pi / beta
     vn = (2.0*arange(Nw+1)) * pi / beta
-    ekmu = params['band'](Nk) - mu
+    ekmu = params['band'](Nk, 1.0, params['tp']) - mu
 
     Dv0 = -2.0*omega/(vn**2 + omega**2)
     nB  = 1.0/(exp(beta*omega)-1.0)

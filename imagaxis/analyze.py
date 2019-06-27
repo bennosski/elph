@@ -6,6 +6,7 @@ from matplotlib.pyplot import *
 import fourier
 from params import g02lamb
 from collections import defaultdict
+from scipy.stats import linregress
 
 def load_all(folder):
     res = defaultdict(lambda : None)
@@ -183,7 +184,10 @@ def get_Tc(basedir):
         res = load_all(basedir+folder)
         g0, omega, beta, dens, nk, nw, tp, S, PI, G, D = res['g0'], res['omega'], res['beta'], res['dens'], res['nk'], res['nw'], res['tp'], res['S'], res['PI'], res['G'], res['D']
 
-        Xs = load(basedir+folder+'/Xs.npy').item()
+        #Xs = load(basedir+folder+'/Xs.npy', allow_pickle=True)
+        #print(Xs)
+       
+        Xs = load(basedir+folder+'/Xs.npy', allow_pickle=True).item()
         Xscs = []
         for beta in Xs:
             Xscs.append([beta, Xs[beta]['Xsc']])
@@ -210,7 +214,16 @@ def get_Tc(basedir):
         xlim(0, gca().get_xlim()[1])
         name = '$\Omega$='+'%1.1f'%omega+' lamb=%1.2f'%lamb+' nk=%d'%nk+' tp=%1.1f'%tp
         title(name)
-        
+
+        print(name)
+        slope, intercept = linregress(1./Xscs[-2:,0], 1./Xscs[-2:,1])[:2]
+        print(slope, intercept)
+        Tc = -intercept / slope
+        print('Tc', Tc)
+        print('Tc/omega', Tc/omega)
+        x = linspace(0, amax(1./Xscs[-1,0]), 10)
+        plot(x, slope*x + intercept)
+
         name = name.replace('.', 'p')
         savefig('figs/inv xsc %s'%name)
 

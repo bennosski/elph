@@ -114,11 +114,11 @@ def band(nk, t, tp):
     return ek
 
 params = {}
-params['nw']    = 1024
+params['nw']    = 512
 params['nk']    = 64
 params['t']     = 1.0
 params['tp']    = -0.3 # -0.3
-params['omega'] = 1.0 # 0.17
+params['omega'] = 0.17 # 0.17
 params['dens']  = 0.8
 params['renormalized'] = True
 params['sc']    = 0
