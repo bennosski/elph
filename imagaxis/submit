@@ -15,6 +15,6 @@ source module
 echo "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
 echo "^^^^^^^start: `date`"
 
-python3 Tc.py
+python3 Tc_nambu.py
 
 echo "^^^^^^^end: `date`"

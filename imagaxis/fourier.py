@@ -13,9 +13,10 @@ def W_boson(t):
 def alpha0(t):
     return -(1.0-np.cos(t))/t**2 + 1j*(t-np.sin(t))/t**2
 
-def w2t(x, beta, axis, kind=None):
+
+def w2t(x, beta, axis, kind=None, jump=None):
     if kind=='fermion':
-        return w2t_fermion_alpha0(x, beta, axis)
+        return w2t_fermion_alpha0(x, beta, axis, jump=jump)
     elif kind=='boson':
         return w2t_boson(x, beta, axis)
 

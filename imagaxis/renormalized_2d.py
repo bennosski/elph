@@ -6,10 +6,14 @@ import sys
 from scipy import optimize
 from params import params, lamb2g0
 import fourier
+import matplotlib 
+matplotlib.use('agg')
+from matplotlib.pyplot import *
 
 class Migdal:
     #---------------------------------------------------------------------------
-    def __init__(self, params):
+    def __init__(self, params, basedir):
+        self.basedir = basedir
         for key in params:
             setattr(self, key, params[key])
     #---------------------------------------------------------------------------
@@ -26,9 +30,9 @@ class Migdal:
         print('renorm = {}'.format(self.renormalized))
         print('SC     = {}'.format(self.sc))
         print('dim    = {}'.format(len(shape(self.band(1, params['t'], params['tp'])))))     
-        basedir = '/scratch/users/bln/elph/imagaxis/'
-        savedir = basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), len(shape(self.band(1, params['t'], params['tp']))), self.g0, self.nw, self.omega, self.dens, self.beta)
-        if not os.path.exists(basedir+'data/'): os.mkdir(basedir+'data/')
+
+        savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), len(shape(self.band(1, params['t'], params['tp']))), self.g0, self.nw, self.omega, self.dens, self.beta)
+        if not os.path.exists(self.basedir+'data/'): os.mkdir(self.basedir+'data/')
         if not os.path.exists(savedir): os.mkdir(savedir)
 
         assert self.nk%2==0
@@ -57,6 +61,7 @@ class Migdal:
         return -2.0*mean(G[:,:,-1]).real
     #---------------------------------------------------------------------------
     def compute_G(self, wn, ek, mu, S):
+        #print('shape S', np.shape(S))
         return 1.0/(1j*wn[None,None,:] - (ek[:,:,None]-mu) - S)
     #---------------------------------------------------------------------------
     def compute_D(self, vn, PI):
@@ -69,10 +74,11 @@ class Migdal:
         return 2.0*self.g0**2/self.nk**2 * conv(G, -G[:,:,::-1], ['k,k+q','k,k+q'], [0,1], [True,True], self.beta)
     #---------------------------------------------------------------------------
     def dyson_fermion(self, wn, ek, mu, S, axis):
-        Sw = fourier.t2w_fermion_alpha0(S, self.beta, axis)
+        Sw, jumpS = fourier.t2w_fermion_alpha0(S, self.beta, axis)
         Gw = self.compute_G(wn, ek, mu, Sw)
-        return fourier.w2t_fermion_alpha0(Gw, self.beta, axis)
-
+        jumpG = -np.ones((self.nk, self.nk, 1))
+        return fourier.w2t_fermion_alpha0(Gw, self.beta, axis, jumpG)
+    #---------------------------------------------------------------------------
     def dyson_boson(self, vn, PI, axis):
         PIw = fourier.t2w_boson(PI, self.beta, axis)
         Dw  = self.compute_D(vn, PIw)
@@ -101,6 +107,12 @@ class Migdal:
             G = self.dyson_fermion(wn, ek, mu, S, 2)
             D = self.dyson_boson(vn, PI, 2)
 
+
+            #figure()
+            #plot(mean(G, axis=(0,1)).real)
+            #savefig('Gtau')
+            #exit()
+
             n = self.compute_n(G)
             mu -= alpha*(n-self.dens)/dndmu
             #mu = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,S))-self.dens, mu)[0]
@@ -108,6 +120,13 @@ class Migdal:
             # compute new selfenergy
 
             S  = self.compute_S(G, D)
+
+            #figure()
+            #plot(mean(S, axis=(0,1)).real)
+            #plot(mean(S, axis=(0,1)).imag)
+            #savefig('S')
+            #exit()
+
             change[0] = mean(abs(S-S0))/mean(abs(S+S0))
             S  = frac*S + (1-frac)*S0
 
@@ -115,8 +134,8 @@ class Migdal:
             change[1] = mean(abs(PI-PI0))/mean(abs(PI+PI0))
             PI = frac*PI + (1-frac)*PI0
 
-            if i%10==0:
-                print('change = {:.3e}, {:.3e} and fill = {:.13f} mu = {:.5f} EF = {:.5f}'.format(change[0], change[1], n, mu, ek[self.nk//2, self.nk//2]-mu))
+            #if i%10==0:
+            print('change = {:.3e}, {:.3e} and fill = {:.13f} mu = {:.5f} EF = {:.5f}'.format(change[0], change[1], n, mu, ek[self.nk//2, self.nk//2]-mu))
 
             if params['g0']<1e-10: break
 
@@ -144,21 +163,120 @@ class Migdal:
         print('\nComputing Susceptibilities\n--------------------------')
 
         # convert to imaginary frequency
-        G  = fourier.t2w(G, self.beta, 2, 'fermion')
+        G  = fourier.t2w(G, self.beta, 2, 'fermion')[0]
         D  = fourier.t2w(D, self.beta, 2, 'boson')
         PI = fourier.t2w(PI, self.beta, 2, 'boson')
 
         F0 = G * conj(G)
-        T  = ones([self.nk,self.nk,self.nw])
 
+        # confirm that F0 has no jump
+        '''
+        jumpF0 = np.zeros((self.nk, self.nk, 1))
+        F0tau = fourier.w2t_fermion_alpha0(F0, self.beta, 2, jumpF0)
+
+        figure()
+        plot(F0tau[0,0].real)
+        plot(F0tau[self.nk//2, self.nk//2].real)
+        savefig(self.basedir+'F0tau')
+        exit()
+        '''
+
+        #T  = ones([self.nk,self.nk,self.nw])
+
+        jumpx = np.zeros((self.nk, self.nk, 1))
+        # momentum and frequency convolution 
+        # the jump for F0 is zero
+        jumpF0 = np.zeros((self.nk, self.nk, 1))
+        jumpD  = None
+        x0 = -self.g0**2/self.nk**2 * conv(F0, D, ['k-q,q','k-q,q', 'm,n-m'], [0,1,2], [True,True,False], self.beta, kinds=('fermion','boson','fermion'), op='...,...', jumps=(jumpF0, jumpD))
+
+        jumpF0x = np.zeros((self.nk, self.nk, 1), dtype=complex)
+
+        iteration = 0
+        x = np.zeros((self.nk,self.nk,self.nw), dtype=complex)
+        while iteration < sc_iter:
+            x_initial = x.copy()
+
+            # compute jumpF0x
+            F0x_tau = fourier.w2t(F0*x, self.beta, 2, 'fermion', jumpF0x)
+            jumpF0x = F0x_tau[:,:,0] + F0x_tau[:,:,-1]
+            jumpF0x = jumpF0x[:,:,None]
+
+            x = x0 - self.g0**2/self.nk**2 * conv(F0*x, D, ['k-q,q','k-q,q','m,n-m'], [0,1,2], [True,True,False], self.beta, kinds=('fermion','boson','fermion'), op='...,...', jumps=(jumpF0x, None))
+
+            change = mean(abs(x - x_initial))/mean(abs(x + x_initial))
+            
+            print(f'change {change:.4e}')
+
+            iteration += 1
+
+            if change < 1e-10:
+                break
+
+        if change>1e-5:
+            print('Susceptibility failed to converge')
+            return None, None
+    
+        print('finished sc iters suscep')
+
+        Xsc = 1.0 / (self.beta * self.nk**2) * 2.0*sum(F0*(1+x)).real
+        print(f'Xsc {Xsc:.4f}')
+
+        # compute the CDW susceptibility
+        X0 = -PI[:,:,0]/self.g0**2
+        Xcdw = real(X0/(1.0 - 2.0*self.g0**2/self.omega * X0))
+
+        Xcdw = ravel(Xcdw)
+        a = argmax(abs(Xcdw))
+        print('Xcdw = %1.4f'%Xcdw[a])
+
+        if Xsc<0.0 or any(Xcdw<0.0): 
+            print('Xcdw blew up')
+            return None, None
+
+        return Xsc, Xcdw
+
+    #---------------------------------------------------------------------------
+    def old_susceptibilities(self, sc_iter, G, D, PI, frac=0.9): 
+        print('\nComputing Susceptibilities\n--------------------------')
+
+        # convert to imaginary frequency
+        G  = fourier.t2w(G, self.beta, 2, 'fermion')[0]
+        D  = fourier.t2w(D, self.beta, 2, 'boson')
+        PI = fourier.t2w(PI, self.beta, 2, 'boson')
+
+        F0 = G * conj(G)
+
+        jumpF0 = np.zeros((self.nk, self.nk, 1))
+        F0tau = fourier.w2t_fermion_alpha0(F0tau, self.beta, 2, jumpF0)
+
+        figure()
+        plot(F0tau[0,0].real)
+        plot(F0tau[self.nk//2, self.nk//2].real)
+        savefig(self.basedir+'F0tau')
+        exit()
+        
+        #T  = ones([self.nk,self.nk,self.nw])
+
+        jumpx = np.zeros((self.nk, self.nk, 1))
+        # kspace convolution
+        x0 = 1.0/self.nk**2 * conv(F0, D, ['k-q,q','k-q,q'], [0,1], [True,True], self.beta)
+        # frequency convolution 
+        # need the jump for F0
+        
+    
         change = 1
         iteration = 0
         while iteration < sc_iter:
             T0 = T.copy()
 
-            T = conv(F0*T, D, ['k-q,q','k-q,q','m,n-m'], [0,1,2], [True,True,False], self.beta, kinds=('fermion','boson','fermion')) 
+            T = conv(F0*T, D, ['k-q,q','k-q,q','m,n-m'], [0,1,2], [True,True,False], self.beta, kinds=('fermion','boson','fermion'), jumpa=jumpa) 
             T *= -self.g0**2/(self.nk**2) 
             T += 1.0
+
+            #figure()
+            #plot(mean(T, axis=(0,1)).real)
+            #savefig('T')
 
             T = frac*T + (1-frac)*T0
 
@@ -199,15 +317,20 @@ if __name__=='__main__':
     # example usage as follows :
 
     print('2D Renormalized Migdal')
+
+    basedir = '/scratch/users/bln/elph/imagaxis/example/'
+    if not os.path.exists(basedir): os.mkdir(basedir)
+
+    params['beta'] = 2.0
     
     lamb = 0.6
     W    = 8.0
     params['g0'] = lamb2g0(lamb, params['omega'], W)
     print('g0 is ', params['g0'])
     
-    migdal = Migdal(params)
+    migdal = Migdal(params, basedir)
 
-    sc_iter = 300
+    sc_iter = 60
     S0, PI0  = None, None
     savedir, G, D, S, PI = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, frac=0.2)
     save(savedir + 'S.npy', S)
@@ -215,7 +338,7 @@ if __name__=='__main__':
     save(savedir + 'G.npy', G)
     save(savedir + 'D.npy', D)
 
-    sc_iter = 300
+    sc_iter = 60
     Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, PI, frac=0.7)
     save(savedir + 'Xsc.npy',  [Xsc])
     save(savedir + 'Xcdw.npy', [Xcdw])

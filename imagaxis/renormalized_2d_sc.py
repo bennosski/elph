@@ -18,7 +18,8 @@ class Migdal:
     tau3 = array([[1.0, 0.0], [0.0,-1.0]])
 
     #---------------------------------------------------------------------------
-    def __init__(self, params):
+    def __init__(self, params, basedir):
+        self.basedir = basedir
         for key in params:
             setattr(self, key, params[key])
     #---------------------------------------------------------------------------
@@ -35,9 +36,9 @@ class Migdal:
         print('renorm = {}'.format(self.renormalized))
         print('SC     = {}'.format(self.sc))
         print('dim    = {}'.format(len(shape(self.band(1, params['t'], params['tp'])))))     
-        basedir = '/scratch/users/bln/elph/imagaxis/'
-        savedir = basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_sc{}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), len(shape(self.band(1, params['t'], params['tp']))), self.g0, self.nw, self.omega, self.dens, self.beta, self.sc)
-        if not os.path.exists(basedir+'data/'): os.mkdir(basedir+'data/')
+
+        savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_sc{}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), len(shape(self.band(1, params['t'], params['tp']))), self.g0, self.nw, self.omega, self.dens, self.beta, self.sc)
+        if not os.path.exists(self.basedir+'data/'): os.mkdir(self.basedir+'data/')
         if not os.path.exists(savedir): os.mkdir(savedir)
 
         assert self.nk%2==0
@@ -210,7 +211,7 @@ if __name__=='__main__':
     
     migdal = Migdal(params)
 
-    sc_iter = 100
+    sc_iter = 300
     S0, PI0  = None, None
     savedir, G, D, S, PI = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, frac=0.2)
     #save(savedir + 'S.npy', S)

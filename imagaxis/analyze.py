@@ -81,16 +81,19 @@ def analyze_G():
 #analyze_G()
 
 
-def analyze_single_particle(base_dir):
+def analyze_single_particle(basedir):
     #base_dir = 'data_single_particle/'
-    folders = os.listdir(base_dir)
+
+    datadir = basedir + 'data/'
+
+    folders = sorted(os.listdir(datadir))
 
     lims = [0.06, 0.25, 3]
 
     for i,folder in enumerate(folders):
         print(folder)
 
-        res = load_all(base_dir + folder)
+        res = load_all(datadir + folder)
         g0, omega, beta, dens, nk, nw, tp, S, PI, G, D = res['g0'], res['omega'], res['beta'], res['dens'], res['nk'], res['nw'], res['tp'], res['S'], res['PI'], res['G'], res['D']
 
         print('g0 = ', g0)
@@ -101,6 +104,8 @@ def analyze_single_particle(base_dir):
 
         wn = (2*arange(nw)+1)*pi/beta
 
+        S = fourier.t2w_fermion_alpha0(S, beta, 2)[0]
+
         figure()
         plot(wn, -S[nk//2+3, nk//2+2, :].imag, '.-', color='orange')
         plot(wn, -S[0, nk//2+1, :].imag, '.-', color='green')
@@ -108,13 +113,13 @@ def analyze_single_particle(base_dir):
         ylim(0, lims[i])
         legend(['34deg', '9deg'])
         title(f'lamb = {lamb:1.1f}')
-        savefig(f'imag S {lamb:1.1f}.png')    
+        savefig(f'{basedir}imag S {lamb:1.1f}.png')    
     
     figure()
     ls = []
     for folder in folders:
         print(folder)
-        res = load_all(base_dir + folder)
+        res = load_all(datadir + folder)
         g0, omega, beta, dens, nk, nw, tp, S, PI, G, D = res['g0'], res['omega'], res['beta'], res['dens'], res['nk'], res['nw'], res['tp'], res['S'], res['PI'], res['G'], res['D']
 
         print('g0 = ', g0)
@@ -126,6 +131,8 @@ def analyze_single_particle(base_dir):
 
         wn = (2*arange(nw)+1)*pi/beta
 
+        PI = fourier.t2w_boson(PI, beta, 2)
+
         y = sqrt(omega**2 + 2*omega*PI[:,:,0]) / omega
         diag = [y[i,i] for i in range(1, nk//2+1)]
         yall = concatenate((y[nk//2::-1,nk//2], y[0,nk//2-1::-1], diag))
@@ -135,7 +142,7 @@ def analyze_single_particle(base_dir):
         ls.append('lamb=%.1f'%lamb)
         
     legend(ls)
-    savefig('omega')
+    savefig(f'{basedir}omega')
 
 #analyze_single_particle('test/data/')
 
@@ -227,7 +234,7 @@ def get_Tc(basedir):
         name = name.replace('.', 'p')
         savefig('figs/inv xsc %s'%name)
 
-get_Tc('data/')
+#get_Tc('data/')
 
 
 
