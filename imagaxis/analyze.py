@@ -7,11 +7,12 @@ import fourier
 from params import g02lamb
 from collections import defaultdict
 from scipy.stats import linregress
+import shutil
 
 def load_all(folder):
     res = defaultdict(lambda : None)
 
-    quantities = ['g0', 'omega', 'beta', 'dens', 'nk', 'nw', 'tp', 'G', 'D', 'S', 'PI']
+    quantities = ['g0', 'omega', 'beta', 'dens', 'nk', 'nw', 'tp', 'G', 'D', 'S', 'PI', 'Xsc', 'Xcdw']
 
     for x in quantities:
         try:
@@ -22,34 +23,7 @@ def load_all(folder):
                 res[x] = y
         except:
             print('missing %s'%x)
-
-    '''
-    res['g0'] = load(folder+'/g0.npy')[0]
-    res['omega'] = load(folder+'/omega.npy')[0]
-    res['beta']  = load(folder+'/beta.npy')[0]
-    res['dens'] = load(folder+'/dens.npy')[0]
-    res['nk'] = load(folder+'/nk.npy')[0]
-    res['nw'] = load(folder+'/nw.npy')[0]
-
-        G = load(folder+'/G.npy')
-        D = load(folder+'/D.npy')
-        res['G'] = apply_along_axis(fourier.t2w, 2, G, beta, 'fermion')
-        res['D'] = apply_along_axis(fourier.t2w, 2, D, beta, 'fermion')
-        res['tp'] = load(folder+'/tp.npy')[0]
-
-        res['S'] = load(folder+'/S.npy')
-        res['PI'] = load(folder+'/PI.npy')
-        res['S'] = apply_along_axis(fourier.t2w, 2, S, beta, 'fermion')
-        res['PI'] = apply_along_axis(fourier.t2w, 2, PI, beta, 'boson')
-
-    except:
-        res['G'] = None
-        res['D'] = None
-        res['tp'] = None
-    '''
-
     return res
-    #return g0, omega, beta, dens, nk, nw, S, PI, G, D
 
 def analyze_G():
     folder = os.listdir('data/')
@@ -147,23 +121,27 @@ def analyze_single_particle(basedir):
 #analyze_single_particle('test/data/')
 
 
-def analyze_x_vs_T(basedir):
-    folders = os.listdir(basedir)
+def analyze_x_vs_lamb(basedir):
+    datadir = basedir + 'data/'
 
-    lambs = []
+    folders = os.listdir(datadir)
+
     xs = []
+    lambs = []
     xcdws = []
+
     for folder in folders:
+        res = load_all(datadir + folder)
+        g0, omega, beta, dens, nk, nw, tp, S, PI, G, D, Xsc, Xcdw = res['g0'], res['omega'], res['beta'], res['dens'], res['nk'], res['nw'], res['tp'], res['S'], res['PI'], res['G'], res['D'], res['Xsc'], res['Xcdw']
+
+        print('g0',g0)
+        print('omega',omega)
+
         print(folder)
-        xs.append(load(basedir+folder+'/Xsc.npy')[0])
-        
-        omega = load(basedir+folder+'/omega.npy')[0]
+        xs.append(Xsc)
         W = 8.0
-
-        g0 =load(basedir+folder+'/g0.npy')[0]
-        lambs.append(g0**2 * 2.4 / (0.5 * omega * W))
-
-        xcdws.append(np.amax(load(basedir+folder+'/Xcdw.npy')))
+        lambs.append(g02lamb(g0, omega, W))
+        xcdws.append(amax(Xcdw))
 
     lambs, xs, xcdws = zip(*sorted(zip(lambs, xs, xcdws)))
 
@@ -171,14 +149,15 @@ def analyze_x_vs_T(basedir):
     print('')
     print(array(lambs))
 
-    figure()
-    plot(array(lambs), xs)
-    plot(array(lambs), array(xcdws)/300.0)
+    f = figure()
+    f.set_size_inches(8, 5)
+    plot(array(lambs), xs, 'g')
+    plot(array(lambs), array(xcdws)/300.0, 'orange')
     ylim(0, 1.0)
     xlim(0, 0.65)
-    savefig('xsc')
+    savefig(basedir + 'xsc')
 
-#analyze_x_vs_T('test/data_ilya_susceptibilities/')
+#analyze_x_vs_lamb('test/data_ilya_susceptibilities/')
 
 def get_Tc(basedir):
     
@@ -237,5 +216,39 @@ def get_Tc(basedir):
 #get_Tc('data/')
 
 
+def analyze_Tc(basedir_nambu, basedir_normal):
+    
+    basedir = basedir_nambu
+    folders = os.listdir(basedir+'data/')
+    omega = load(basedir+'data/'+folders[0]+'/omega.npy')[0]
 
+    Xs = load(basedir+'Xs.npy', allow_pickle=True).item()
+    print(Xs.keys())
+    betas = array(sorted(Xs.keys()))
+    orders = []
+    for beta in betas:
+        orders.append(Xs[beta]['Gloc'][0,1])
+    orders = array(orders)
 
+    figure()
+    plot(1.0/betas, orders*10, '.-')
+
+    #basedir = '/scratch/users/bln/elph/imagaxis/match_Tc/'
+    basedir = basedir_normal
+    Xs = load(basedir+'Xs.npy', allow_pickle=True).item()
+    print(Xs.keys())
+    betas = array(sorted(Xs.keys()))
+    xscs = []
+    for beta in betas:
+        xscs.append(Xs[beta]['Xsc'])
+    xscs = array(xscs)
+    plot(1.0/betas, 1.0/xscs, '.-')
+
+    ylim(-0.02, gca().get_ylim()[1])
+    xlim(0, 0.3)
+    legend(['10$\Delta$', '1/$X_{sc}$'])
+    title('omega = %1.1f'%omega, fontsize=18)
+    xlabel('T', fontsize=18)
+
+    savefig(basedir_nambu + 'Tc')
+    savefig(basedir_normal + 'Tc')

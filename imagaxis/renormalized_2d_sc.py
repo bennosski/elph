@@ -37,7 +37,7 @@ class Migdal:
         print('SC     = {}'.format(self.sc))
         print('dim    = {}'.format(len(shape(self.band(1, params['t'], params['tp'])))))     
 
-        savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_sc{}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), len(shape(self.band(1, params['t'], params['tp']))), self.g0, self.nw, self.omega, self.dens, self.beta, self.sc)
+        savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_beta{:.4f}_sc{}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), len(shape(self.band(1, params['t'], params['tp']))), self.g0, self.nw, self.omega, self.dens, self.beta, self.sc)
         if not os.path.exists(self.basedir+'data/'): os.mkdir(self.basedir+'data/')
         if not os.path.exists(savedir): os.mkdir(savedir)
 
@@ -167,12 +167,14 @@ class Migdal:
             change[1] = mean(abs(PI-PI0))/mean(abs(PI+PI0))
             PI = frac*PI + (1-frac)*PI0
 
-            if i%1==0:
-                print('change={:.3e}, {:.3e} fill={:.5f} mu={:.5f} ODLRO={:3e}'.format(change[0], change[1], n, mu, mean(G[:,:,-1,0,1]).real))
-
             if params['g0']<1e-10: break
 
             if i>10 and change[0]<1e-14 and change[1]<1e-14: break
+
+            if i%max(1,sc_iter//20)==0:
+                print('change={:.3e}, {:.3e} fill={:.5f} mu={:.5f} ODLRO={:3e}'.format(change[0], change[1], n, mu, mean(G[:,:,-1,0,1]).real))
+
+        print('change={:.3e}, {:.3e} fill={:.5f} mu={:.5f} ODLRO={:3e}'.format(change[0], change[1], n, mu, mean(G[:,:,-1,0,1]).real))        
 
         figure()
         plot(1.0/self.nk**2 * sum(G[:,:,:,0,1], axis=(0,1)).real)

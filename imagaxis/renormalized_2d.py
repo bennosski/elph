@@ -31,7 +31,7 @@ class Migdal:
         print('SC     = {}'.format(self.sc))
         print('dim    = {}'.format(len(shape(self.band(1, params['t'], params['tp'])))))     
 
-        savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), len(shape(self.band(1, params['t'], params['tp']))), self.g0, self.nw, self.omega, self.dens, self.beta)
+        savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_beta{:.4f}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), len(shape(self.band(1, params['t'], params['tp']))), self.g0, self.nw, self.omega, self.dens, self.beta)
         if not os.path.exists(self.basedir+'data/'): os.mkdir(self.basedir+'data/')
         if not os.path.exists(savedir): os.mkdir(savedir)
 
@@ -127,19 +127,19 @@ class Migdal:
             #savefig('S')
             #exit()
 
-            change[0] = mean(abs(S-S0))/mean(abs(S+S0))
+            change[0] = mean(abs(S-S0))/(mean(abs(S+S0))+1e-10)
             S  = frac*S + (1-frac)*S0
 
             PI = self.compute_PI(G)
-            change[1] = mean(abs(PI-PI0))/mean(abs(PI+PI0))
+            change[1] = mean(abs(PI-PI0))/(mean(abs(PI+PI0))+1e-10)
             PI = frac*PI + (1-frac)*PI0
 
             #if i%10==0:
             print('change = {:.3e}, {:.3e} and fill = {:.13f} mu = {:.5f} EF = {:.5f}'.format(change[0], change[1], n, mu, ek[self.nk//2, self.nk//2]-mu))
 
-            if params['g0']<1e-10: break
+            #if params['g0']<1e-10: break
 
-            if i>10 and change[0]<1e-14 and change[1]<1e-14: break
+            if i>10 and change[0]<1e-14 and change[1]<1e-14 and abs(self.dens-n)<1e-5: break
 
 
         if change[0]>1e-5 or change[1]>1e-5 or abs(n-self.dens)>1e-3:
@@ -159,7 +159,7 @@ class Migdal:
         
         return savedir, G, D, S, PI
     #---------------------------------------------------------------------------
-    def susceptibilities(self, sc_iter, G, D, PI, frac=0.9): 
+    def susceptibilities(self, sc_iter, G, D, PI, frac=0.8): 
         print('\nComputing Susceptibilities\n--------------------------')
 
         # convert to imaginary frequency
@@ -204,21 +204,24 @@ class Migdal:
 
             x = x0 - self.g0**2/self.nk**2 * conv(F0*x, D, ['k-q,q','k-q,q','m,n-m'], [0,1,2], [True,True,False], self.beta, kinds=('fermion','boson','fermion'), op='...,...', jumps=(jumpF0x, None))
 
-            change = mean(abs(x - x_initial))/mean(abs(x + x_initial))
-            
-            print(f'change {change:.4e}')
+            change = mean(abs(x - x_initial))/(mean(abs(x + x_initial))+1e-10)
 
+            x = frac*x + (1-frac)*x_initial
+            
             iteration += 1
 
             if change < 1e-10:
                 break
 
+            if iteration%max(sc_iter//20,1)==0:
+                print(f'change {change:.4e}')
+
+        print(f'change {change:.4e}')
+
         if change>1e-5:
             print('Susceptibility failed to converge')
             return None, None
     
-        print('finished sc iters suscep')
-
         Xsc = 1.0 / (self.beta * self.nk**2) * 2.0*sum(F0*(1+x)).real
         print(f'Xsc {Xsc:.4f}')
 
@@ -289,6 +292,11 @@ class Migdal:
             if change < 1e-10:
                 break
 
+            if iteration%max(sc_iter//20,1)==0:
+                print(f'change {change:.4e}')
+
+        print(f'change {change:.4e}')
+
         if change>1e-5:
             print('Susceptibility failed to converge')
             return None, None
@@ -321,9 +329,9 @@ if __name__=='__main__':
     basedir = '/scratch/users/bln/elph/imagaxis/example/'
     if not os.path.exists(basedir): os.mkdir(basedir)
 
-    params['beta'] = 2.0
+    params['beta'] = 16.0
     
-    lamb = 0.6
+    lamb = 0.00
     W    = 8.0
     params['g0'] = lamb2g0(lamb, params['omega'], W)
     print('g0 is ', params['g0'])
@@ -339,6 +347,6 @@ if __name__=='__main__':
     save(savedir + 'D.npy', D)
 
     sc_iter = 60
-    Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, PI, frac=0.7)
+    Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, PI, frac=0.4)
     save(savedir + 'Xsc.npy',  [Xsc])
     save(savedir + 'Xcdw.npy', [Xcdw])

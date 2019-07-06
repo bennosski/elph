@@ -100,10 +100,19 @@ lambda_ilya = lamb_phil * W * rhoEF = lamb_phil * 2.4
 # other "parameters" which derive from these are computed on setup
 
 def lamb2g0(lamb, omega, W):
+    # ilya's definition of lamb
     return sqrt(0.5 * lamb / 2.4 * omega * W)
 
 def g02lamb(g0, omega, W):
+    # ilya's definition of lamb
     return g0**2 * 2.4 / (omega * W * 0.5)
+
+def mylamb2g0(lamb, omega, W):
+    return sqrt(lamb * omega * W / 2.0)
+
+def myg02lamb(g0, omega, W):
+    return 2.0 * g0**2 / (omega * W)
+
 
 def band(nk, t, tp):
     #return -2.0*(cos(kxs) + cos(kys))  #+ alpha**2
@@ -111,9 +120,16 @@ def band(nk, t, tp):
     ek = -2.0*t*(cos(kxs)+cos(kys)) - 4.0*(tp)*cos(kxs)*cos(kys)
     return ek
 
+def band_square_lattice(nk, t, tp):
+    #return -2.0*(cos(kxs) + cos(kys))  #+ alpha**2
+    kys, kxs = meshgrid(arange(-pi, pi, 2*pi/nk), arange(-pi, pi, 2*pi/nk))
+    ek = -2.0*t*(cos(kxs)+cos(kys)) - 4.0*(tp)*cos(kxs)*cos(kys)
+    return ek
+
+
 params = {}
 params['nw']    = 512
-params['nk']    = 8
+params['nk']    = 12
 params['t']     = 1.0
 params['tp']    = -0.3 # -0.3
 params['omega'] = 0.17 # 0.17
