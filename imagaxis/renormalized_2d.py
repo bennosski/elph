@@ -70,8 +70,8 @@ class Migdal:
     def compute_S(self, G, D):
         return -self.g0**2/self.nk**2 * conv(G, D, ['k-q,q','k-q,q'], [0,1], [True,True], self.beta)
     #---------------------------------------------------------------------------
-    def compute_PI(self, G):
-        return 2.0*self.g0**2/self.nk**2 * conv(G, -G[:,:,::-1], ['k,k+q','k,k+q'], [0,1], [True,True], self.beta)
+    def compute_GG(self, G):
+        return 2.0/self.nk**2 * conv(G, -G[:,:,::-1], ['k,k+q','k,k+q'], [0,1], [True,True], self.beta)
     #---------------------------------------------------------------------------
     def dyson_fermion(self, wn, ek, mu, S, axis):
         Sw, jumpS = fourier.t2w_fermion_alpha0(S, self.beta, axis)
@@ -130,7 +130,8 @@ class Migdal:
             change[0] = mean(abs(S-S0))/(mean(abs(S+S0))+1e-10)
             S  = frac*S + (1-frac)*S0
 
-            PI = self.compute_PI(G)
+            GG = self.compute_GG(G)
+            PI = self.g0**2 * GG
             change[1] = mean(abs(PI-PI0))/(mean(abs(PI+PI0))+1e-10)
             PI = frac*PI + (1-frac)*PI0
 
@@ -157,15 +158,15 @@ class Migdal:
         save(savedir+'renormalized', [self.renormalized])
         save(savedir+'sc',    [self.sc])
         
-        return savedir, G, D, S, PI
+        return savedir, G, D, S, GG
     #---------------------------------------------------------------------------
-    def susceptibilities(self, sc_iter, G, D, PI, frac=0.8): 
+    def susceptibilities(self, sc_iter, G, D, GG, frac=0.8): 
         print('\nComputing Susceptibilities\n--------------------------')
 
         # convert to imaginary frequency
         G  = fourier.t2w(G, self.beta, 2, 'fermion')[0]
         D  = fourier.t2w(D, self.beta, 2, 'boson')
-        PI = fourier.t2w(PI, self.beta, 2, 'boson')
+        GG = fourier.t2w(GG, self.beta, 2, 'boson')
 
         F0 = G * conj(G)
 
@@ -226,7 +227,7 @@ class Migdal:
         print(f'Xsc {Xsc:.4f}')
 
         # compute the CDW susceptibility
-        X0 = -PI[:,:,0]/self.g0**2
+        X0 = -GG[:,:,0]
         Xcdw = real(X0/(1.0 - 2.0*self.g0**2/self.omega * X0))
 
         Xcdw = ravel(Xcdw)
@@ -238,86 +239,6 @@ class Migdal:
             return None, None
 
         return Xsc, Xcdw
-
-    #---------------------------------------------------------------------------
-    def old_susceptibilities(self, sc_iter, G, D, PI, frac=0.9): 
-        print('\nComputing Susceptibilities\n--------------------------')
-
-        # convert to imaginary frequency
-        G  = fourier.t2w(G, self.beta, 2, 'fermion')[0]
-        D  = fourier.t2w(D, self.beta, 2, 'boson')
-        PI = fourier.t2w(PI, self.beta, 2, 'boson')
-
-        F0 = G * conj(G)
-
-        jumpF0 = np.zeros((self.nk, self.nk, 1))
-        F0tau = fourier.w2t_fermion_alpha0(F0tau, self.beta, 2, jumpF0)
-
-        figure()
-        plot(F0tau[0,0].real)
-        plot(F0tau[self.nk//2, self.nk//2].real)
-        savefig(self.basedir+'F0tau')
-        exit()
-        
-        #T  = ones([self.nk,self.nk,self.nw])
-
-        jumpx = np.zeros((self.nk, self.nk, 1))
-        # kspace convolution
-        x0 = 1.0/self.nk**2 * conv(F0, D, ['k-q,q','k-q,q'], [0,1], [True,True], self.beta)
-        # frequency convolution 
-        # need the jump for F0
-        
-    
-        change = 1
-        iteration = 0
-        while iteration < sc_iter:
-            T0 = T.copy()
-
-            T = conv(F0*T, D, ['k-q,q','k-q,q','m,n-m'], [0,1,2], [True,True,False], self.beta, kinds=('fermion','boson','fermion'), jumpa=jumpa) 
-            T *= -self.g0**2/(self.nk**2) 
-            T += 1.0
-
-            #figure()
-            #plot(mean(T, axis=(0,1)).real)
-            #savefig('T')
-
-            T = frac*T + (1-frac)*T0
-
-            change = mean(abs(T-T0))/mean(abs(T+T0))
-            if iteration%10==0:
-                print('change = {:.5e}'.format(change))
-
-            iteration += 1
-            
-            if change < 1e-10:
-                break
-
-            if iteration%max(sc_iter//20,1)==0:
-                print(f'change {change:.4e}')
-
-        print(f'change {change:.4e}')
-
-        if change>1e-5:
-            print('Susceptibility failed to converge')
-            return None, None
-            
-        Xsc = 1.0 / (self.beta * self.nk**2) * 2.0*sum(F0*T).real
-        print('Xsc = %1.4f'%Xsc)
-
-        # compute the CDW susceptibility
-        X0 = -PI[:,:,0]/self.g0**2
-        Xcdw = real(X0/(1.0 - 2.0*self.g0**2/self.omega * X0))
-
-        Xcdw = ravel(Xcdw)
-        a = argmax(abs(Xcdw))
-        print('Xcdw = %1.4f'%Xcdw[a])
-
-        if Xsc<0.0 or any(Xcdw<0.0): 
-            print('Xcdw blew up')
-            return None, None
-
-        return Xsc, Xcdw
-#---------------------------------------------------------------------------        
 
 
 if __name__=='__main__':
@@ -340,13 +261,14 @@ if __name__=='__main__':
 
     sc_iter = 60
     S0, PI0  = None, None
-    savedir, G, D, S, PI = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, frac=0.2)
+    savedir, G, D, S, GG = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, frac=0.2)
+    PI = params['g0']**2 * GG
     save(savedir + 'S.npy', S)
     save(savedir + 'PI.npy', PI)
     save(savedir + 'G.npy', G)
     save(savedir + 'D.npy', D)
 
     sc_iter = 60
-    Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, PI, frac=0.4)
+    Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, GG, frac=0.4)
     save(savedir + 'Xsc.npy',  [Xsc])
     save(savedir + 'Xcdw.npy', [Xcdw])

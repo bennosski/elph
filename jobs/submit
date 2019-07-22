@@ -1,0 +1,16 @@
+#!/bin/bash
+#SBATCH --job-name=migdal
+#SBATCH --time=04:00:00
+#SBATCH --partition=iric
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+
+source module
+
+echo "start: `date`"
+
+# $1 is the job index
+
+python3 xs.py $1
+
+echo "end: `date`"

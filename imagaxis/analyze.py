@@ -231,7 +231,7 @@ def analyze_Tc(basedir_nambu, basedir_normal):
     orders = array(orders)
 
     figure()
-    plot(1.0/betas, orders*10, '.-')
+    plot(1.0/betas, abs(orders*10), '.-')
 
     #basedir = '/scratch/users/bln/elph/imagaxis/match_Tc/'
     basedir = basedir_normal
@@ -244,8 +244,11 @@ def analyze_Tc(basedir_nambu, basedir_normal):
     xscs = array(xscs)
     plot(1.0/betas, 1.0/xscs, '.-')
 
-    ylim(-0.02, gca().get_ylim()[1])
-    xlim(0, 0.3)
+    #ylim(-0.02, gca().get_ylim()[1])
+    #xlim(0, 0.3)
+    xlim(0, 0.05)
+    ylim(-1.0, 1.0)
+    
     legend(['10$\Delta$', '1/$X_{sc}$'])
     title('omega = %1.1f'%omega, fontsize=18)
     xlabel('T', fontsize=18)
