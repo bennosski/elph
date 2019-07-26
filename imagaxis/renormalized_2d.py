@@ -63,7 +63,6 @@ class Migdal:
         return -2.0*mean(G[:,:,-1]).real
     #---------------------------------------------------------------------------
     def compute_G(self, wn, ek, mu, S):
-        #print('shape S', np.shape(S))
         return 1.0/(1j*wn[None,None,:] - (ek[:,:,None]-mu) - S)
     #---------------------------------------------------------------------------
     def compute_D(self, vn, PI):
@@ -78,7 +77,7 @@ class Migdal:
     def dyson_fermion(self, wn, ek, mu, S, axis):
         Sw, jumpS = fourier.t2w(S, self.beta, axis, 'fermion')
         Gw = self.compute_G(wn, ek, mu, Sw)
-        jumpG = -np.ones((self.nk, self.nk, 1))
+        jumpG = -1 #np.ones((self.nk, self.nk, 1))
         return fourier.w2t(Gw, self.beta, axis, 'fermion', jumpG)
     #---------------------------------------------------------------------------
     def dyson_boson(self, vn, PI, axis):
@@ -109,11 +108,6 @@ class Migdal:
             G = self.dyson_fermion(wn, ek, mu, S, 2)
             D = self.dyson_boson(vn, PI, 2)
 
-            #figure()
-            #plot(mean(G, axis=(0,1)).real)
-            #savefig('Gtau')
-            #exit()
-
             n = self.compute_n(G)
             mu -= alpha*(n-self.dens)/dndmu
             #mu = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,S))-self.dens, mu)[0]
@@ -121,12 +115,6 @@ class Migdal:
             # compute new selfenergy
 
             S  = self.compute_S(G, D)
-
-            #figure()
-            #plot(mean(S, axis=(0,1)).real)
-            #plot(mean(S, axis=(0,1)).imag)
-            #savefig('S')
-            #exit()
 
             change[0] = mean(abs(S-S0))/(mean(abs(S+S0))+1e-10)
             S  = frac*S + (1-frac)*S0
@@ -139,15 +127,11 @@ class Migdal:
             if i%max(sc_iter//30,1)==0:
                 print('change = {:.3e}, {:.3e} and fill = {:.13f} mu = {:.5f} EF = {:.5f}'.format(change[0], change[1], n, mu, ek[self.nk//2, self.nk//2]-mu))
 
-            #if params['g0']<1e-10: break
-
             if i>10 and change[0]<1e-14 and change[1]<1e-14 and abs(self.dens-n)<1e-5: break
 
-        '''
-        if change[0]>1e-5 or change[1]>1e-5 or abs(n-self.dens)>1e-3:
+        if sc_iter>1 and (change[0]>1e-5 or change[1]>1e-5 or abs(n-self.dens)>1e-3):
             print('Failed to converge')
             return None, None, None, None, None
-        '''
 
         save(savedir+'nw',    [self.nw])
         save(savedir+'nk',    [self.nk])
@@ -211,13 +195,13 @@ class Migdal:
 
             x = frac*x + (1-frac)*x_initial
             
-            iteration += 1
-
             if change < 1e-10:
                 break
 
             if iteration%max(sc_iter//20,1)==0:
                 print(f'change {change:.4e}')
+
+            iteration += 1
 
         print(f'change {change:.4e}')
 

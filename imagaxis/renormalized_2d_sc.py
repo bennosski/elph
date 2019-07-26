@@ -94,15 +94,15 @@ class Migdal:
         return 2.0*self.g0**2/self.nk**2 * 0.5*einsum('...aa->...', conv(tau3G, -tau3G[:,:,::-1,:,:], ['k,k+q','k,k+q'], [0,1], [True,True], self.beta, op='...ab,...bc->...ac'))
     #---------------------------------------------------------------------------
     def dyson_fermion(self, wn, ek, mu, S, axis):
-        Sw, jumpS = fourier.t2w_fermion_alpha0(S, self.beta, axis)
+        Sw, jumpS = fourier.t2w(S, self.beta, axis, 'fermion')
         Gw = self.compute_G(wn, ek, mu, Sw)
-        jumpG = -Migdal.tau0[None,None,None,:,:]
-        return fourier.w2t_fermion_alpha0(Gw, self.beta, axis, jumpG)
+        jumpG = -np.identity(2)[None,None,None,:,:]
+        return fourier.w2t(Gw, self.beta, axis, 'fermion', jumpG)
 
     def dyson_boson(self, vn, PI, axis):
-        PIw = fourier.t2w_boson(PI, self.beta, axis)
+        PIw = fourier.t2w(PI, self.beta, axis, 'boson')
         Dw  = self.compute_D(vn, PIw)
-        return fourier.w2t_boson(Dw, self.beta, axis)
+        return fourier.w2t(Dw, self.beta, axis, 'boson')
 
     #---------------------------------------------------------------------------
     def selfconsistency(self, sc_iter, frac=0.9, alpha=0.5, S0=None, PI0=None):
