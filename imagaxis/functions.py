@@ -99,11 +99,11 @@ lambda_ilya = lamb_phil * W * rhoEF = lamb_phil * 2.4
 # These parameters plus band-structure completely specifies the simulation
 # other "parameters" which derive from these are computed on setup
 
-def lamb2g0(lamb, omega, W):
+def lamb2g0_ilya(lamb, omega, W):
     # ilya's definition of lamb
     return sqrt(0.5 * lamb / 2.4 * omega * W)
 
-def g02lamb(g0, omega, W):
+def g02lamb_ilya(g0, omega, W):
     # ilya's definition of lamb
     return g0**2 * 2.4 / (omega * W * 0.5)
 
@@ -112,7 +112,6 @@ def mylamb2g0(lamb, omega, W):
 
 def myg02lamb(g0, omega, W):
     return 2.0 * g0**2 / (omega * W)
-
 
 def band(nk, t, tp):
     #return -2.0*(cos(kxs) + cos(kys))  #+ alpha**2
@@ -126,7 +125,7 @@ def band_square_lattice(nk, t, tp):
     ek = -2.0*t*(cos(kxs)+cos(kys)) - 4.0*(tp)*cos(kxs)*cos(kys)
     return ek
 
-
+'''
 params = {}
 params['nw']    = 512
 params['nk']    = 12
@@ -139,3 +138,4 @@ params['sc']    = 1
 params['band']  = band
 params['beta']  = 16.0
 params['g0']    = 0.125
+'''

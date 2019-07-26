@@ -19,6 +19,9 @@ params['beta']  = 16.0
 params['g0']    = 0.125
 params['band']  = band
 
+#-----------------------------------------------------
+# to get Ilya's susceptibilities
+
 basedir = '/scratch/users/bln/elph/imagaxis/ilya_x_vs_lamb/'
 if not os.path.exists(basedir): os.mkdir(basedir)
 
@@ -69,6 +72,9 @@ analyze_x_vs_lamb(basedir)
 
 
 exit()
+
+#-----------------------------------------------------
+# to get Ilya's single particle quantities (Sigma and PI)
 
 basedir = '/scratch/users/bln/elph/imagaxis/ilya/'
 if not os.path.exists(basedir): os.mkdir(basedir)

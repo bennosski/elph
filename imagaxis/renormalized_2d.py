@@ -4,15 +4,17 @@ from convolution import conv
 import os
 import sys
 from scipy import optimize
-from params import params, lamb2g0
+from functions import lamb2g0_ilya
 import fourier
 import matplotlib 
-matplotlib.use('agg')
+matplotlib.use('TkAgg')
 from matplotlib.pyplot import *
 
 class Migdal:
     #---------------------------------------------------------------------------
     def __init__(self, params, basedir):
+        # basedir is the folder where results will be saved
+        if not os.path.exists(basedir): os.makedirs(basedir)
         self.basedir = basedir
         for key in params:
             setattr(self, key, params[key])
@@ -29,9 +31,9 @@ class Migdal:
         print('dens   = {}'.format(self.dens))
         print('renorm = {}'.format(self.renormalized))
         print('SC     = {}'.format(self.sc))
-        print('dim    = {}'.format(len(shape(self.band(1, params['t'], params['tp'])))))     
+        print('dim    = {}'.format(len(shape(self.band(1, 1.0, self.tp)))))
 
-        savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_beta{:.4f}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), len(shape(self.band(1, params['t'], params['tp']))), self.g0, self.nw, self.omega, self.dens, self.beta)
+        savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_beta{:.4f}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), len(shape(self.band(1, 1.0, self.tp))), self.g0, self.nw, self.omega, self.dens, self.beta)
         if not os.path.exists(self.basedir+'data/'): os.mkdir(self.basedir+'data/')
         if not os.path.exists(savedir): os.mkdir(savedir)
 
@@ -43,7 +45,7 @@ class Migdal:
         wn = (2*arange(self.nw)+1) * pi / self.beta
         vn = (2*arange(self.nw+1)) * pi / self.beta
         
-        ek = self.band(self.nk, params['t'], params['tp'])
+        ek = self.band(self.nk, 1.0, self.tp)
 
         # estimate filling and dndmu at the desired filling
         mu = optimize.fsolve(lambda mu : 2.0*mean(1.0/(exp(self.beta*(ek-mu))+1.0))-self.dens, 0.0)[0]
@@ -74,15 +76,15 @@ class Migdal:
         return 2.0/self.nk**2 * conv(G, -G[:,:,::-1], ['k,k+q','k,k+q'], [0,1], [True,True], self.beta)
     #---------------------------------------------------------------------------
     def dyson_fermion(self, wn, ek, mu, S, axis):
-        Sw, jumpS = fourier.t2w_fermion_alpha0(S, self.beta, axis)
+        Sw, jumpS = fourier.t2w(S, self.beta, axis, 'fermion')
         Gw = self.compute_G(wn, ek, mu, Sw)
         jumpG = -np.ones((self.nk, self.nk, 1))
-        return fourier.w2t_fermion_alpha0(Gw, self.beta, axis, jumpG)
+        return fourier.w2t(Gw, self.beta, axis, 'fermion', jumpG)
     #---------------------------------------------------------------------------
     def dyson_boson(self, vn, PI, axis):
-        PIw = fourier.t2w_boson(PI, self.beta, axis)
+        PIw = fourier.t2w(PI, self.beta, axis, 'boson')
         Dw  = self.compute_D(vn, PIw)
-        return fourier.w2t_boson(Dw, self.beta, axis)
+        return fourier.w2t(Dw, self.beta, axis, 'boson')
 
     #---------------------------------------------------------------------------
     def selfconsistency(self, sc_iter, frac=0.9, alpha=0.5, S0=None, PI0=None):
@@ -106,7 +108,6 @@ class Migdal:
 
             G = self.dyson_fermion(wn, ek, mu, S, 2)
             D = self.dyson_boson(vn, PI, 2)
-
 
             #figure()
             #plot(mean(G, axis=(0,1)).real)
@@ -135,17 +136,18 @@ class Migdal:
             change[1] = mean(abs(PI-PI0))/(mean(abs(PI+PI0))+1e-10)
             PI = frac*PI + (1-frac)*PI0
 
-            #if i%10==0:
-            print('change = {:.3e}, {:.3e} and fill = {:.13f} mu = {:.5f} EF = {:.5f}'.format(change[0], change[1], n, mu, ek[self.nk//2, self.nk//2]-mu))
+            if i%max(sc_iter//30,1)==0:
+                print('change = {:.3e}, {:.3e} and fill = {:.13f} mu = {:.5f} EF = {:.5f}'.format(change[0], change[1], n, mu, ek[self.nk//2, self.nk//2]-mu))
 
             #if params['g0']<1e-10: break
 
             if i>10 and change[0]<1e-14 and change[1]<1e-14 and abs(self.dens-n)<1e-5: break
 
-
+        '''
         if change[0]>1e-5 or change[1]>1e-5 or abs(n-self.dens)>1e-3:
             print('Failed to converge')
             return None, None, None, None, None
+        '''
 
         save(savedir+'nw',    [self.nw])
         save(savedir+'nk',    [self.nk])
@@ -240,21 +242,30 @@ class Migdal:
 
         return Xsc, Xcdw
 
-
 if __name__=='__main__':
 
     # example usage as follows :
-
     print('2D Renormalized Migdal')
+
+    params = {}
+    params['nw']    = 512
+    params['nk']    = 12
+    params['t']     = 1.0
+    params['tp']    = -0.3
+    params['omega'] = 0.17
+    params['dens']  = 0.8
+    params['renormalized'] = True
+    params['sc']    = 1
+    params['band']  = band
+    params['beta']  = 16.0
+    params['g0']    = 0.125
 
     basedir = '/scratch/users/bln/elph/imagaxis/example/'
     if not os.path.exists(basedir): os.mkdir(basedir)
 
-    params['beta'] = 16.0
-    
-    lamb = 0.00
+    lamb = 0.2
     W    = 8.0
-    params['g0'] = lamb2g0(lamb, params['omega'], W)
+    params['g0'] = lamb2g0_ilya(lamb, params['omega'], W)
     print('g0 is ', params['g0'])
     
     migdal = Migdal(params, basedir)

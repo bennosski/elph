@@ -3,5 +3,3 @@
 module purge
 ml python/3.6.1
 source migdal/bin/activate
-#ml python/3.6.1
-#ml py-scipystack/1.0_py36

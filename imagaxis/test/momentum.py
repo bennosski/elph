@@ -15,7 +15,6 @@ def test_conv1(N):
 
     print(amax(abs(w-z)))
 
-
 def test_conv2(N):
     x = random.randn(N)
     y = random.randn(N)
@@ -28,7 +27,6 @@ def test_conv2(N):
     w = conv(x, y, ['q,k+q'], [0], [True], None, kinds=(None,None,None))
 
     print(amax(abs(w-z)))
-
 
 test_conv1(2)
 test_conv2(2)

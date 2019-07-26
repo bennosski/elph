@@ -4,13 +4,11 @@ from convolution import conv
 import os
 import sys
 from scipy import optimize
-from params import params, lamb2g0
+from functions import lamb2g0_ilya
 import fourier
-
 import matplotlib
-matplotlib.use('agg')
+matplotlib.use('TkAgg')
 from matplotlib.pyplot import *
-
 
 class Migdal:
     tau0 = array([[1.0, 0.0], [0.0, 1.0]])
@@ -19,6 +17,7 @@ class Migdal:
 
     #---------------------------------------------------------------------------
     def __init__(self, params, basedir):
+        if not os.path.exists(basedir): os.makedirs(basedir)
         self.basedir = basedir
         for key in params:
             setattr(self, key, params[key])
@@ -35,9 +34,9 @@ class Migdal:
         print('dens   = {}'.format(self.dens))
         print('renorm = {}'.format(self.renormalized))
         print('SC     = {}'.format(self.sc))
-        print('dim    = {}'.format(len(shape(self.band(1, params['t'], params['tp'])))))     
+        print('dim    = {}'.format(len(shape(self.band(1, 1.0, self.tp)))))
 
-        savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_beta{:.4f}_sc{}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), len(shape(self.band(1, params['t'], params['tp']))), self.g0, self.nw, self.omega, self.dens, self.beta, self.sc)
+        savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_beta{:.4f}_sc{}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), len(shape(self.band(1, 1.0, self.tp))), self.g0, self.nw, self.omega, self.dens, self.beta, self.sc)
         if not os.path.exists(self.basedir+'data/'): os.mkdir(self.basedir+'data/')
         if not os.path.exists(savedir): os.mkdir(savedir)
 
@@ -49,7 +48,7 @@ class Migdal:
         wn = (2*arange(self.nw)+1) * pi / self.beta
         vn = (2*arange(self.nw+1)) * pi / self.beta
         
-        ek = self.band(self.nk, params['t'], params['tp'])
+        ek = self.band(self.nk, 1.0, self.tp)
 
         # estimate filling and dndmu at the desired filling
         mu = optimize.fsolve(lambda mu : 2.0*mean(1.0/(exp(self.beta*(ek-mu))+1.0))-self.dens, 0.0)[0]
@@ -167,7 +166,7 @@ class Migdal:
             change[1] = mean(abs(PI-PI0))/mean(abs(PI+PI0))
             PI = frac*PI + (1-frac)*PI0
 
-            if params['g0']<1e-10: break
+            if self.g0<1e-10: break
 
             if i>10 and change[0]<1e-14 and change[1]<1e-14: break
 
@@ -204,11 +203,21 @@ if __name__=='__main__':
 
     print('2D Renormalized Migdal')
 
-    params['beta'] = 100.0
-    params['omega'] = 2.0
+    params = {}
+    params['nw']    = 512
+    params['nk']    = 12
+    params['t']     = 1.0
+    params['tp']    = -0.3
+    params['omega'] = 0.17
+    params['dens']  = 0.8
+    params['renormalized'] = True
+    params['sc']    = 1
+    params['band']  = band
+    params['beta']  = 16.0
+
     lamb = 0.4
     W    = 8.0
-    params['g0'] = lamb2g0(lamb, params['omega'], W)
+    params['g0'] = lamb2g0_ilya(lamb, params['omega'], W)
     print('g0 is ', params['g0'])
     
     migdal = Migdal(params)
