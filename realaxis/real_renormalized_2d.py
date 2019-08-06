@@ -1,15 +1,39 @@
 import imagaxis
 from renormalized_2d import Migdal
-
+from convolution import conv
 
 class RealAxisMigdal(Migdal):
 
-    def __init__(self, params):
-        super().__init__(params)
+    def __init__(self, params, basedir):
+        super().__init__(params, basedir)
 
-    def compute_imagaxis(self):
+    # todo
+  
+    # functions for real axis Green's function
+ 
+    def compute_GR(self):
         pass
-        #super.selfconsistency(
+
+    def compute_DR(self):
+        pass
+
+    def compute_S_real_axsi(self):
+        pass
+
+    def compute_PI_real_axis(self):
+        pass
+
+
+    
+    def selfconsistency_realaxis(self, sc_iter, frac=0.9, alpha=0.5, S0=None, PI0=None):
+        savedir, G, D, S, GG =  super.selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0)
+
+        # now next steps
+
+        # compute Gsum
+
+        # selfconsistency loop...
+
 
 def compute_PI_real_axis(GR, Gsum):
     GA = conj(GR)

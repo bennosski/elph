@@ -1,11 +1,12 @@
 import src
 from renormalized_2d import Migdal
-from params import mylamb2g0, band_square_lattice
+from functions import mylamb2g0, band_square_lattice
 from numpy import *
 import os
-from analyze import analyze_single_particle, analyze_x_vs_lamb
+#from analyze import analyze_single_particle, analyze_x_vs_lamb
 import shutil
 import sys
+import time
 
 # label jobs by indices?
 # submit script has a job index
@@ -41,6 +42,7 @@ def setup(index):
     params['beta']  = 4.8
     params['band']  = band_square_lattice
     params['g0'] = 0.0
+    params['dim'] = 2
 
     #----------------------------
     params['dens'] = fills[index]
@@ -52,31 +54,33 @@ params = setup(job_index)
 #-------------------------------------------------
 # run the simulation
 
-basedir = '/scratch/users/bln/elph/imagaxis/dqmc/xs/'
+#basedir = '/scratch/users/bln/elph/imagaxis/dqmc/xs_no_initial_guess/'
+basedir = '/home/users/bln/elph/data/dqmc/xs_no_initial_guess/'
 
 S0, PI0 = None, None
-fracs = linspace(0.8, 0.2, len(lambs))
+#fracs = linspace(0.8, 0.2, len(lambs))
 Xscs  = []
 Xcdws = []
 
 # loop over lambdas for this filling
 for i,lamb in enumerate(lambs):
-
+    
     print('2D Renormalized Migdal')
     
     W    = 8.0
     params['g0'] = mylamb2g0(lamb, params['omega'], W)
     print('g0 is ', params['g0'])
 
+    time0 = time.time()
     migdal = Migdal(params, basedir)
 
-    sc_iter = 1200
-    savedir, G, D, S, PI = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, frac=fracs[i])
+    sc_iter = 2000
+    savedir, G, D, S, PI = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, frac=0.2)
 
     if G is None: break
 
-    sc_iter = 400
-    Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, PI, frac=0.5)
+    sc_iter = 2000
+    Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, PI, frac=0.4)
 
     save(savedir + 'Xsc.npy', [Xsc])
     save(savedir + 'Xcdw.npy', [Xcdw])
@@ -91,7 +95,10 @@ for i,lamb in enumerate(lambs):
     save(basedir + 'lambs.npy', lambs)
     save(basedir + 'fills.npy', fills)
 
-    S0, PI0 = S, PI
+    print('------------------------------------------')
+    print('simulation took', time.time()-time0, 's')
+
+    #S0, PI0 = S, PI
 
 
 

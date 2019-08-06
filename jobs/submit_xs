@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=migdal
-#SBATCH --time=10:00:00
+#SBATCH --time=01:40:00
 #SBATCH --partition=iric
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1

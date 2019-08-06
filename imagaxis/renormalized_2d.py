@@ -1,14 +1,85 @@
 from numpy import *
-import time
 from convolution import conv
+from base import MigdalBase
+from functions import lamb2g0_ilya, band_square_lattice
 import os
-import sys
-from scipy import optimize
-from functions import lamb2g0_ilya
-import fourier
-import matplotlib 
-matplotlib.use('TkAgg')
-from matplotlib.pyplot import *
+import time
+
+class Migdal(MigdalBase):
+    #------------------------------------------------------------
+    def compute_n(self, G):
+        return -2.0*mean(G[:,:,-1]).real
+    #------------------------------------------------------------
+    def compute_G(self, wn, ek, mu, S):
+        return 1.0/(1j*wn[None,None,:] - (ek[:,:,None]-mu) - S)
+    #------------------------------------------------------------
+    def compute_D(self, vn, PI):
+        return 1.0/(-((vn**2)[None,None,:] + self.omega**2)/(2.0*self.omega) - PI)
+    #------------------------------------------------------------
+    def compute_S(self, G, D):
+        return -self.g0**2/self.nk**2 * conv(G, D, ['k-q,q','k-q,q'], [0,1], [True,True], self.beta)
+    #------------------------------------------------------------
+    def compute_GG(self, G):
+        return 2.0/self.nk**2 * conv(G, -G[:,:,::-1], ['k,k+q','k,k+q'], [0,1], [True,True], self.beta)
+    #------------------------------------------------------------
+    def init_selfenergies(self):
+        S  = zeros([self.nk,self.nk,self.ntau], dtype=complex)
+        PI = zeros([self.nk,self.nk,self.ntau], dtype=complex)
+        return S, PI
+    #------------------------------------------------------------
+    def compute_x0(self, F0x, D, jumpF0, jumpD):
+        return -self.g0**2/self.nk**2 * conv(F0x, D, ['k-q,q','k-q,q', 'm,n-m'], [0,1,2], [True,True,False], self.beta, kinds=('fermion','boson','fermion'), op='...,...', jumps=(jumpF0, jumpD))
+
+
+if __name__=='__main__':
+    time0 = time.time()
+
+    # example usage as follows :
+    print('2D Renormalized Migdal')
+
+    params = {}
+    params['nw']    = 512
+    params['nk']    = 12
+    params['t']     = 1.0
+    params['tp']    = -0.3
+    params['omega'] = 0.17
+    params['dens']  = 0.8
+    params['renormalized'] = True
+    params['sc']    = 0
+    params['band']  = band_square_lattice
+    params['beta']  = 16.0
+    params['g0']    = 0.125
+    params['dim']   = 2
+
+    basedir = '/scratch/users/bln/elph/imagaxis/example/'
+    if not os.path.exists(basedir): os.mkdir(basedir)
+
+    lamb = 0.6
+    W    = 8.0
+    params['g0'] = lamb2g0_ilya(lamb, params['omega'], W)
+    print('g0 is ', params['g0'])
+    
+    migdal = Migdal(params, basedir)
+
+    sc_iter = 2000
+    S0, PI0  = None, None
+    savedir, G, D, S, GG = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, frac=0.2)
+    PI = params['g0']**2 * GG
+    save(savedir + 'S.npy', S)
+    save(savedir + 'PI.npy', PI)
+    save(savedir + 'G.npy', G)
+    save(savedir + 'D.npy', D)
+
+    sc_iter = 2000
+    Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, GG, frac=0.4)
+    save(savedir + 'Xsc.npy',  [Xsc])
+    save(savedir + 'Xcdw.npy', [Xcdw])
+
+    print('------------------------------------------')
+    print('simulation took', time.time()-time0, 's')
+
+
+'''
 
 class Migdal:
     #---------------------------------------------------------------------------
@@ -157,16 +228,17 @@ class Migdal:
         F0 = G * conj(G)
 
         # confirm that F0 has no jump
-        '''
-        jumpF0 = np.zeros((self.nk, self.nk, 1))
-        F0tau = fourier.w2t_fermion_alpha0(F0, self.beta, 2, jumpF0)
 
-        figure()
-        plot(F0tau[0,0].real)
-        plot(F0tau[self.nk//2, self.nk//2].real)
-        savefig(self.basedir+'F0tau')
-        exit()
-        '''
+
+        #jumpF0 = np.zeros((self.nk, self.nk, 1))
+        #F0tau = fourier.w2t_fermion_alpha0(F0, self.beta, 2, jumpF0)
+
+        #figure()
+        #plot(F0tau[0,0].real)
+        #plot(F0tau[self.nk//2, self.nk//2].real)
+        #savefig(self.basedir+'F0tau')
+        #exit()
+
 
         #T  = ones([self.nk,self.nk,self.nw])
 
@@ -226,44 +298,4 @@ class Migdal:
 
         return Xsc, Xcdw
 
-if __name__=='__main__':
-
-    # example usage as follows :
-    print('2D Renormalized Migdal')
-
-    params = {}
-    params['nw']    = 512
-    params['nk']    = 12
-    params['t']     = 1.0
-    params['tp']    = -0.3
-    params['omega'] = 0.17
-    params['dens']  = 0.8
-    params['renormalized'] = True
-    params['sc']    = 1
-    params['band']  = band
-    params['beta']  = 16.0
-    params['g0']    = 0.125
-
-    basedir = '/scratch/users/bln/elph/imagaxis/example/'
-    if not os.path.exists(basedir): os.mkdir(basedir)
-
-    lamb = 0.2
-    W    = 8.0
-    params['g0'] = lamb2g0_ilya(lamb, params['omega'], W)
-    print('g0 is ', params['g0'])
-    
-    migdal = Migdal(params, basedir)
-
-    sc_iter = 60
-    S0, PI0  = None, None
-    savedir, G, D, S, GG = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, frac=0.2)
-    PI = params['g0']**2 * GG
-    save(savedir + 'S.npy', S)
-    save(savedir + 'PI.npy', PI)
-    save(savedir + 'G.npy', G)
-    save(savedir + 'D.npy', D)
-
-    sc_iter = 60
-    Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, GG, frac=0.4)
-    save(savedir + 'Xsc.npy',  [Xsc])
-    save(savedir + 'Xcdw.npy', [Xcdw])
+'''
