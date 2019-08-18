@@ -4,13 +4,52 @@ from convolution import conv
 import os
 import sys
 from scipy import optimize
-from functions import lamb2g0_ilya
+from functions import lamb2g0_ilya, band_square_lattice
 import fourier
 import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.pyplot import *
+from base import MigdalBase
 
-class Migdal:
+class Migdal(MigdalBase):
+    tau0 = array([[1.0, 0.0], [0.0, 1.0]])
+    tau1 = array([[0.0, 1.0], [1.0, 0.0]])
+    tau3 = array([[1.0, 0.0], [0.0,-1.0]])
+
+    #--------------------------------------------------------
+    def compute_n(self, G):
+        # check the -1 here......
+        #return -2.0*mean(G[:,:,-1,0,0]).real
+        #return 2.0 + mean(G[:,:,0,0,0].real - G[:,:,0,1,1].real)
+        nup = -mean(G[:,:,-1,0,0].real)
+        ndw = -mean(G[:,:,0,1,1].real)        
+        return nup + ndw
+    #--------------------------------------------------------
+    def compute_G(self, wn, ek, mu, S):
+        return linalg.inv(1j*wn[None,None,:,None,None]*Migdal.tau0[None,None,None,:,:] - (ek[:,:,None,None,None]-mu)*Migdal.tau3[None,None,None,:,:] - S)
+    #--------------------------------------------------------
+    def compute_D(self, vn, PI):
+        return 1.0/(-((vn**2)[None,None,:] + self.omega**2)/(2.0*self.omega) - PI)
+    #--------------------------------------------------------
+    def compute_S(self, G, D):
+        tau3Gtau3 = einsum('ab,xywbc,cd->xywad', Migdal.tau3, G, Migdal.tau3)
+        return -self.g0**2/self.nk**2 * conv(tau3Gtau3, D[:,:,:,None,None], ['k-q,q','k-q,q'], [0,1], [True,True], self.beta)
+    #--------------------------------------------------------
+    def compute_GG(self, G):
+        tau3G = einsum('ab,...bc->...ac', Migdal.tau3, G)
+        #                             CHECK THE 0.5 HERE!
+        return 2.0/self.nk**2 * 0.5*einsum('...aa->...', conv(tau3G, -tau3G[:,:,::-1,:,:], ['k,k+q','k,k+q'], [0,1], [True,True], self.beta, op='...ab,...bc->...ac'))
+    #------------------------------------------------------------
+    def init_selfenergies(self):
+        S  = zeros([self.nk,self.nk,self.ntau,2,2], dtype=complex)
+        PI = zeros([self.nk,self.nk,self.ntau], dtype=complex)
+        return S, PI
+    #------------------------------------------------------------
+    def compute_x0(self, F0x, D, jumpF0, jumpD):
+        raise NotImplementedError # Not sure how to compute SC susceptibilities in the superconducting state...
+
+
+class OldMigdal:
     tau0 = array([[1.0, 0.0], [0.0, 1.0]])
     tau1 = array([[0.0, 1.0], [1.0, 0.0]])
     tau3 = array([[1.0, 0.0], [0.0,-1.0]])
@@ -212,15 +251,18 @@ if __name__=='__main__':
     params['dens']  = 0.8
     params['renormalized'] = True
     params['sc']    = 1
-    params['band']  = band
+    params['band']  = band_square_lattice
     params['beta']  = 16.0
 
-    lamb = 0.4
+    lamb = 0.2
     W    = 8.0
     params['g0'] = lamb2g0_ilya(lamb, params['omega'], W)
     print('g0 is ', params['g0'])
+
+    basedir = '/home/groups/simes/bln/data/elph/imagaxis/example/'
+    if not os.path.exists(basedir): os.makedirs(basedir)
     
-    migdal = Migdal(params)
+    migdal = Migdal(params, basedir)
 
     sc_iter = 300
     S0, PI0  = None, None

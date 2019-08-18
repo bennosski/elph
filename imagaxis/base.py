@@ -17,12 +17,13 @@ class MigdalBase:
         # basedir is the folder where results will be saved
         if not os.path.exists(basedir): os.makedirs(basedir)
         self.basedir = basedir
+        self.keys = params.keys() 
         for key in params:
             setattr(self, key, params[key])
     #-----------------------------------------------------------
     def setup(self):
         print('\nParameters\n----------------------------')
-
+        
         print('nw     = {}'.format(self.nw))
         print('nk     = {}'.format(self.nk))
         print('beta   = {:.3f}'.format(self.beta))
@@ -32,9 +33,10 @@ class MigdalBase:
         print('dens   = {}'.format(self.dens))
         print('renorm = {}'.format(self.renormalized))
         print('SC     = {}'.format(self.sc))
-        print('dim    = {}'.format(len(shape(self.band(1, 1.0, self.tp)))))
-
-        savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_beta{:.4f}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), len(shape(self.band(1, 1.0, self.tp))), self.g0, self.nw, self.omega, self.dens, self.beta)
+        self.dim = len(shape(self.band(1, 1.0, self.tp)))        
+        print('dim    = {}'.format(self.dim))
+        
+        savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_beta{:.4f}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), self.dim, self.g0, self.nw, self.omega, self.dens, self.beta)
         if not os.path.exists(self.basedir+'data/'): os.mkdir(self.basedir+'data/')
         if not os.path.exists(savedir): os.mkdir(savedir)
 
@@ -81,9 +83,12 @@ class MigdalBase:
         Dw  = self.compute_D(vn, PIw)
         return fourier.w2t(Dw, self.beta, axis, 'boson')
     #-----------------------------------------------------------
-    def selfconsistency(self, sc_iter, nmix=3, frac=0.9, alpha=0.5, S0=None, PI0=None):
+    def selfconsistency(self, sc_iter, nmix=3, frac=0.9, alpha=0.5, S0=None, PI0=None, mu0=None):
         savedir, wn, vn, ek, mu, deriv, dndmu = self.setup()
         
+        if mu0 is not None:
+            mu = mu0
+
         #AMS  = AndersonMixing(nmix)
         #AMPI = AndersonMixing(nmix)
 
@@ -129,19 +134,10 @@ class MigdalBase:
             print('Failed to converge')
             return None, None, None, None, None
 
-        save(savedir+'nw',    [self.nw])
-        save(savedir+'nk',    [self.nk])
-        save(savedir+'t',     [self.t])
-        save(savedir+'tp',    [self.tp])
-        save(savedir+'beta',  [self.beta])
-        save(savedir+'omega', [self.omega])
-        save(savedir+'g0',    [self.g0])
-        save(savedir+'dens',  [self.dens])
-        save(savedir+'renormalized', [self.renormalized])
-        save(savedir+'sc',    [self.sc])
-        save(savedir+'dim',   [self.dim])
-        
-        return savedir, G, D, S, GG
+        for key in self.keys:
+            save(savedir+key, [getattr(self, key)])
+
+        return savedir, mu, G, D, S, GG
     #---------------------------------------------------------------------------
     def susceptibilities(self, sc_iter, G, D, GG, frac=0.8): 
         print('\nComputing Susceptibilities\n--------------------------')
