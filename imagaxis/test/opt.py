@@ -16,18 +16,17 @@ print(np.sqrt(np.sum(x**2)))
 
 #------------------------------------
 
-AM = AndersonMixing(5)
+AM = AndersonMixing(0.01)
 
 #g = lambda x : np.cos(x)-0.5
 #g = lambda x : np.cos(x)+0.5
-g = lambda x : 0.5*x - 3.0
+#g = lambda x : 0.5*x + 3.0
 
 # example of overshoot in naive
 #g = lambda x : -2.0*x**2 + 2.0
-#g = lambda x : -2.0*x + 2.0
+g = lambda x : -2.0*x + 2.0
 
-
-x = 0.0
+x = 0.1
 errs = []
 
 errs_naive = []
@@ -62,7 +61,7 @@ figure()
 semilogy(errs_naive, '.-')
 semilogy(errs_linear, '.-')
 semilogy(errs, '.-')
-ylim(gca().get_ylim()[0], np.log(np.amax(errs_linear))+2.0)
+ylim(gca().get_ylim()[0], np.log(np.amax(errs_linear))+100.0)
 legend(['naive', 'linear', 'anderson'])
 ylabel('err')
 xlabel('iteration')
