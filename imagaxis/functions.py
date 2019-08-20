@@ -119,6 +119,13 @@ def band(nk, t, tp):
     ek = -2.0*t*(cos(kxs)+cos(kys)) - 4.0*(tp)*cos(kxs)*cos(kys)
     return ek
 
+def band_1dsquare_lattice(nk, t, tp):
+    assert tp==0.0
+    #return -2.0*(cos(kxs) + cos(kys))  #+ alpha**2
+    kxs = arange(-pi, pi, 2*pi/nk)
+    ek = -2.0*t*cos(kxs)
+    return ek
+
 def band_square_lattice(nk, t, tp):
     #return -2.0*(cos(kxs) + cos(kys))  #+ alpha**2
     kys, kxs = meshgrid(arange(-pi, pi, 2*pi/nk), arange(-pi, pi, 2*pi/nk))

@@ -60,6 +60,8 @@ class MigdalBase:
         
         return savedir, wn, vn, ek, mu, deriv, dndmu
     #-----------------------------------------------------------
+    def compute_fill(self, Gw): pass
+    #-----------------------------------------------------------
     def compute_n(self, G): pass
     #-----------------------------------------------------------
     def compute_G(self, wn, ek, mu, S): pass
@@ -74,9 +76,12 @@ class MigdalBase:
     #-----------------------------------------------------------
     def dyson_fermion(self, wn, ek, mu, S, axis):
         Sw, jumpS = fourier.t2w(S, self.beta, axis, 'fermion')
-        Gw = self.compute_G(wn, ek, mu, Sw)
+        
+        mu = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,Sw))-self.dens, mu)[0]
+
+        Gw = self.compute_G(wn, ek, mu, Sw)        
         jumpG = -1 #np.ones((self.nk, self.nk, 1))
-        return fourier.w2t(Gw, self.beta, axis, 'fermion', jumpG)
+        return mu, fourier.w2t(Gw, self.beta, axis, 'fermion', jumpG)
     #-----------------------------------------------------------
     def dyson_boson(self, vn, PI, axis):
         PIw = fourier.t2w(PI, self.beta, axis, 'boson')
@@ -89,8 +94,9 @@ class MigdalBase:
         if mu0 is not None:
             mu = mu0
 
-        #AMS  = AndersonMixing(nmix)
-        #AMPI = AndersonMixing(nmix)
+        AMS  = AndersonMixing(alpha=0.8)
+        AMPI = AndersonMixing(alpha=0.8)
+        #AMmu = AndersonMixing(alpha=0.1)
 
         print('\nSelfconsistency\n--------------------------')
 
@@ -103,21 +109,19 @@ class MigdalBase:
         for i in range(sc_iter):
             S0, PI0  = S[:], PI[:]
 
-            # compute Gtau, Dtau
-
-            G = self.dyson_fermion(wn, ek, mu, S, self.dim)
+            # compute G(tau), D(tau)
+            mu, G = self.dyson_fermion(wn, ek, mu, S, self.dim)
             D = self.dyson_boson(vn, PI, self.dim)
 
             n = self.compute_n(G)
-            mu -= alpha*(n-self.dens)/dndmu
-            #mu = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,S))-self.dens, mu)[0]
+            #mu -= alpha*(n-self.dens)/dndmu
+            #mu = optimize.fsolve(lambda mu : self.compute_n(self.compute_G(wn,ek,mu,S))-self.dens, mu)[0]
 
-            # compute new selfenergy
-
+            # compute new selfenergies S(tau) and PI(tau)
             S  = self.compute_S(G, D)
             change[0] = mean(abs(S-S0))/(mean(abs(S+S0))+1e-10)
             S  = frac*S + (1-frac)*S0
-            #S = AMS.step2(S0, S)
+            #S = AMS.step(S0, S)
 
             GG = self.compute_GG(G)
             PI = self.g0**2 * GG
@@ -125,12 +129,16 @@ class MigdalBase:
             PI = frac*PI + (1-frac)*PI0
             #PI = AMPI.step(PI0, PI)
 
-            if i%max(sc_iter//30,1)==0:
+            #if i%max(sc_iter//30,1)==0:
+            if True:
                 print('iter={} change={:.3e}, {:.3e} fill={:.13f} mu={:.5f}'.format(i, change[0], change[1], n, mu))
 
-            if i>10 and change[0]<1e-14 and change[1]<1e-14 and abs(self.dens-n)<1e-5: break
+            if i>10 and change[0]<1e-14 and change[1]<1e-14:
+                # and abs(self.dens-n)<1e-5:
+                break
 
-        if sc_iter>1 and (change[0]>1e-5 or change[1]>1e-5 or abs(n-self.dens)>1e-3):
+        if sc_iter>1 and (change[0]>1e-5 or change[1]>1e-5):
+            # or abs(n-self.dens)>1e-3):
             print('Failed to converge')
             return None, None, None, None, None
 

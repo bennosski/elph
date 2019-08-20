@@ -7,8 +7,11 @@ import time
 
 class Migdal(MigdalBase):
     #------------------------------------------------------------
-    def compute_n(self, G):
-        return -2.0*mean(G[:,:,-1]).real
+    def compute_fill(self, Gw):
+        return real(1.0 + 2./(self.nk**2 * self.beta) * 2.0*sum(Gw))
+    #------------------------------------------------------------
+    def compute_n(self, Gtau):
+        return -2.0*mean(Gtau[:,:,-1]).real
     #------------------------------------------------------------
     def compute_G(self, wn, ek, mu, S):
         return 1.0/(1j*wn[None,None,:] - (ek[:,:,None]-mu) - S)
@@ -39,15 +42,16 @@ if __name__=='__main__':
 
  
     fill  = 0.8
-    omega = 0.357342
+    #omega = 0.357342
+    omega = 0.17
 
     params = {}
     params['nw']    = 512
     params['nk']    = 12
     params['t']     = 1.0
     params['tp']    = -0.3
-    params['omega'] = 0.17
-    params['dens']  = 0.8
+    params['omega'] = omega
+    params['dens']  = fill
     params['renormalized'] = True
     params['sc']    = 0
     params['band']  = band_square_lattice
@@ -56,7 +60,7 @@ if __name__=='__main__':
     params['dim']   = 2
 
 
-    basedir = '/home/groups/simes/bln/data/elph/imagaxis/single_fill_fill0.8_omega0.35'
+    basedir = '/home/groups/simes/bln/data/elph/imagaxis/example/'
     if not os.path.exists(basedir): os.makedirs(basedir)
 
     lamb = 0.1
@@ -68,7 +72,7 @@ if __name__=='__main__':
 
     sc_iter = 2000
     S0, PI0, mu0  = None, None, None
-    savedir, mu, G, D, S, GG = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, mu0=None, frac=0.2)
+    savedir, mu, G, D, S, GG = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, mu0=None, frac=0.8)
     PI = params['g0']**2 * GG
     save(savedir + 'S.npy', S)
     save(savedir + 'PI.npy', PI)
@@ -82,5 +86,4 @@ if __name__=='__main__':
 
     print('------------------------------------------')
     print('simulation took', time.time()-time0, 's')
-
 

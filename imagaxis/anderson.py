@@ -13,6 +13,10 @@ class AndersonMixing:
         self.itr = 0
         
     def step(self, p, F):
+        '''
+        p is input  -- x
+        F is output -- f(x)
+        '''
         # convergence check
         if np.sum(np.abs(p-F))<1e-15:
             return F
@@ -36,5 +40,5 @@ class AndersonMixing:
         theta = - np.sum(dH * self.Hp) / np.sum(dH * dH)
         
         return self.pp + self.alpha*self.Hp + theta * (self.p - self.pp + self.alpha*dH)
-        #return self.p + self.alpha*self.H + theta * (self.p - self.pp + self.alpha*dH
+        #return self.p + self.alpha*self.H + theta * (self.p - self.pp + self.alpha*dH) # wrong
         
