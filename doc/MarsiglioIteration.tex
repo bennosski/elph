@@ -1,0 +1,217 @@
+\documentclass[]{article}
+
+\usepackage{amsmath}
+\usepackage[margin=0.5in]{geometry}
+\newcommand{\kk}{\mathbf{k}}
+\newcommand{\qq}{\mathbf{q}}
+\newcommand{\iwn}{i\omega_n}
+\newcommand{\iwm}{i\omega_m}
+\newcommand{\cd}[1]{c_{#1}^\dagger}
+\newcommand{\cc}[1]{c_{#1}^{\phantom{\dagger}}}
+\newcommand{\gs}{\left| g(\mathbf{k}, \mathbf{q}) \right|^2}
+\newcommand{\imG}{\mathrm{Im} G^R(z,\qq)}
+\newcommand{\ivn}{i\nu_n}
+%opening
+\title{Marsiglio Derivation}
+\author{Ben}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+\end{abstract}
+
+The Hamiltonian for a generic el-ph interaction is given by
+\begin{equation}
+H = \sum_\kk \epsilon_\kk \cd{\kk} \cc{\kk}
+ + \sum_\qq \left( \Omega b^\dagger_\qq b^{\phantom{\dagger}}_\qq + \frac{1}{2}\right) + \frac{1}{\sqrt{N}} \sum_{\kk,\qq} g(\kk, \qq) \cd{\kk-\qq} \cc{\kk} \left( b^\dagger_\qq + b^{\phantom{\dagger}}_{-\qq} \right) 
+\end{equation}
+
+The lowest order contribution to the electron self-energy in Matsubara frequency is
+\begin{equation}
+\Sigma(\iwn, \kk) = -\frac{1}{N \beta} \sum_{m,\qq} \gs G(\iwm, \kk-\qq) D(\iwn-\iwm,\qq)
+\end{equation}
+
+question: is $\left|g(\kk,\qq)\right|^2=\left|g(\kk,\kk-\qq)\right|^2$? If so, then after the relabeling $\qq \rightarrow \kk-\qq$, $\Sigma(\iwn,\kk)$ becomes
+\\
+\\
+\begin{equation}
+\Sigma(\iwn, \kk) = -\frac{1}{N \beta} \sum_{m,\qq} \gs G(\iwm, \qq) D(\iwn-\iwm,\kk-\qq)
+\end{equation}
+\\
+\\
+which is the starting point in Marsiglio's paper.
+
+Applying the spectral representation for $G$ and $D$:
+\begin{equation}
+\label{1}
+\Sigma(\iwn, \kk) = -\frac{1}{N \beta} \sum_{m,\qq} \int dz dz' \gs \frac{S(z,q) B(z',\kk-\qq)}{(\iwm-z)(\iwn-\iwm-z')} 
+\end{equation}
+\\
+Now we consider the following contour integral in order to evaluate the Matsubara frequency sum in equation \ref{1}:
+
+\begin{equation}
+\begin{split}
+0=\oint dz'' \int & dz dz'  \frac{S(z,\qq)B(z',\kk-\qq)}{(z''-z)(\iwn-z''-z')} n_F(z'') \\ &= \frac{-2\pi i}{\beta} \sum_m \int dz dz'\frac{S(z,q) B(z',\kk-\qq)}{(\iwm-z)(\iwn-\iwm-z')} \\
+&+ 2\pi i \int dz dz' S(z,\qq) B(z',\kk-\qq) \left[\frac{n_F(z)}{\iwn-z-z'} - \frac{n_F(\iwn-z')}{\iwn-z-z'}\right]
+\end{split}
+\end{equation}
+Where the the first term on the right hand side is multiplied by a factor of $\frac{-1}{\beta}$ because of the residue of $n_F$ and the last fraction in the brackets has a minus sign because the denominator $\iwn-z''-z$ has a minus sign in front of $z''$.
+\\
+\\
+The contour integral is zero, so we obtain:
+\begin{equation}
+\frac{-1}{\beta} \sum_m \int dz dz'\frac{S(z,q) B(z',\kk-\qq)}{(\iwm-z)(\iwn-\iwm-z')} 
+= -\int dz dz' \frac{S(z,\qq) B(z',\kk-\qq)}{\iwn-z-z'} \left[n_F(z) - n_F(\iwn-z')\right]
+\end{equation}
+
+We evaluate 
+\begin{equation}
+n_F(\iwn-z') = \left(e^{\beta\iwn}e^{-\beta z'} + 1\right)^{-1} = e^{\beta z'}\left(e^{\beta z'} - 1\right)^{-1} = \left(1 + \frac{1}{n_B(z')}\right)n_B(z') = 1 + n_B(z')
+\end{equation}
+
+So we have:
+\begin{equation}
+\frac{-1}{\beta} \sum_m \int dz dz'\frac{S(z,q) B(z',\kk-\qq)}{(\iwm-z)(\iwn-\iwm-z')} 
+= \int dz dz' \frac{S(z,\qq) B(z',\kk-\qq)}{\iwn-z-z'} \left[1 + n_B(z') - n_F(z)\right]
+\end{equation}
+
+Plugging back into equation \ref{1} and analytically continuing $\iwn \rightarrow \omega+i\delta$, we obtain
+\begin{equation}
+\Sigma(\omega+i\delta, \kk) = \frac{1}{N} \sum_\qq \int dz dz' \gs \frac{S(z,q) B(z',\kk-\qq)}{\omega-z-z'+i\delta} \left[1 + n_B(z') - n_F(z)\right]
+\end{equation}
+
+Now use $S(z,\qq) = -\frac{1}{\pi} \mathrm{Im} G^R(z,\qq)$ so that
+\begin{equation}
+\label{2}
+\Sigma(\omega+i\delta, \kk) = -\frac{1}{N\pi} \sum_\qq \int dz dz' \gs \frac{\imG B(z',\kk-\qq)}{\omega-z-z'+i\delta} \left[1 + n_B(z') - n_F(z)\right]
+\end{equation}
+\\
+The next goal is to evaluate the integral over $z$. We break up the integrand into real and imaginary parts using the fact that
+\begin{equation}
+\begin{split}
+\frac{1}{\omega-z-z'+i\delta} & = \frac{1}{2}\left(\frac{1}{\omega_+} + \frac{1}{\omega_-} \right) + i \frac{1}{2i} \left( \frac{1}{\omega_+} - \frac{1}{\omega_-} \right) 
+\\ &= \frac{1}{2}\left(\frac{1}{\omega_+} + \frac{1}{\omega_-} \right) - i \frac{i}{2} \left( \frac{1}{\omega_+} - \frac{1}{\omega_-} \right)
+\end{split}
+\end{equation}
+where $w_+ = \omega-z-z'+i\delta$ and $\omega_- = \omega-z-z'-i\delta$.
+\\
+\\
+Note that 
+\begin{equation}
+\begin{split}
+\frac{\imG}{\omega-z-z'+i\delta} &= \frac{\imG}{2}\left(\frac{1}{\omega_+} + \frac{1}{\omega_-}\right) - i  \frac{\imG i}{2} \left(\frac{1}{\omega_+} - \frac{1}{\omega_-}\right) \\
+&= \mathrm{Im}\left[  \frac{G^R(z,\qq)}{2}\left(\frac{1}{\omega_+} + \frac{1}{\omega_-} \right) \right] - i \mathrm{Im}\left[\frac{G^R(z,\qq)i}{2} \left( \frac{1}{\omega_+} - \frac{1}{\omega_-} \right) \right] \\
+& = \mathrm{Im}\left[  \frac{G^R(z,\qq)}{2}\left(\frac{1}{\omega_+} + \frac{1}{\omega_-} \right) \right] - i \mathrm{Re}\left[\frac{G^R(z,\qq)}{2} \left( \frac{1}{\omega_+} - \frac{1}{\omega_-} \right) \right]
+\end{split}
+\end{equation}
+\\
+Let us consider only the parts of the integral over $z$ in equation \ref{2} break it up into real an imaginary parts as
+\begin{equation}
+\begin{split}
+\mathrm{I} & \equiv \int dz \frac{\imG}{\omega-z-z'+i\delta} \left[1 + n_B(z') - n_F(z)\right] \\
+& = \mathrm{Im} \left\lbrace \int dz \left[1 + n_B(z') - n_F(z)\right] \frac{G^R(z,\qq)}{2}\left(\frac{1}{\omega_+} + \frac{1}{\omega_-} \right) \right\rbrace - \\
+& i \mathrm{Re} \left\lbrace \int dz \left[1 + n_B(z') - n_F(z)\right] \frac{G^R(z,\qq)}{2} \left( \frac{1}{\omega_+} - \frac{1}{\omega_-} \right) \right\rbrace
+\end{split}
+\end{equation}
+\\
+
+Now consider the contour integral in the upper-half plane for the imaginary part
+\begin{equation}
+\begin{split}
+\int dz \left[1 + n_B(z') - n_F(z)\right] \frac{G^R(z,\qq)}{2}\left(\frac{1}{\omega_+} + \frac{1}{\omega_-} \right) = &-2\pi i\left[1 + n_B(z') - n_F(\omega-z'+i\delta)\right] \\ &+ \frac{2\pi i}{\beta}\sum_{m=0}^{\infty}  \frac{G(\iwm,\qq)}{2}\left(\frac{1}{\omega-\iwm-z'+i\delta} + \frac{1}{\omega-\iwm-z'-i\delta} \right) 
+\end{split}
+\end{equation}
+Note about signs: the first term on the right hand side gets minus sign due to $-z$ in denominator of $1/\omega_+$. Also note that $1/\omega_-$ does not contribute to integral over the upper half plane. And the second term gets two factors of $-1$ which cancel (one from the residue of $n_F$ and another from the sign in front of $n_F$).
+\\
+\\
+Therefore,
+\begin{equation}
+\begin{split}
+\int dz \left[1 + n_B(z') - n_F(z)\right] & \frac{G^R(z,\qq)}{2}\left(\frac{1}{\omega_+} \pm \frac{1}{\omega_-} \right) =
+ -2\pi i\left[1 + n_B(z') - n_F(\omega-z'+i\delta)\right] \frac{G^R(\omega-z'+i\delta,\qq)}{2} \\ & + \frac{2\pi i}{\beta}\sum_{m=0}^{\infty}  \frac{G(\iwm,\qq)}{2}\left(\frac{1}{\omega-\iwm-z'+i\delta} \pm \frac{1}{\omega-\iwm-z'-i\delta} \right) 
+\end{split}
+\end{equation}
+\\
+\\
+Next combine the real and imaginary parts given that $\mathrm{Im}(F)-i\mathrm{Re}(F)=-i F$ and $\mathrm{Im}(F)+i\mathrm{Re}(F)= i F^*$.
+\\
+
+\begin{equation}
+\begin{split}
+I &= -i \left\lbrace  -\pi i \left[ 1 + n_B(z') - n_F(\omega-z') \right]G^R(\omega-z'+i\delta,\qq) + \frac{2\pi i}{\beta}\sum_{m=0}^{\infty} \frac{G(\iwm,\qq)}{2(\omega-\iwm-z')} \right\rbrace \\ 
+& + i \left\lbrace + \frac{2\pi i}{\beta}\sum_{m=0}^{\infty} \frac{G(\iwm,\qq)}{2(\omega-\iwm-z')} \right\rbrace^* \\
+& = -\pi \left[ 1 + n_B(z') - n_F(\omega-z') \right]G^R(\omega-z'+i\delta,\qq) + \frac{2\pi}{\beta}\sum_{m=0}^{\infty}\frac{G(\iwm,\qq)}{2(\omega-\iwm-z')} + \frac{2\pi}{\beta}\sum_{m=0}^{\infty} \frac{G^*(\iwm,\qq)}{2(\omega+\iwm-z')} \\ 
+& = -\pi \left[ 1 + n_B(z') - n_F(\omega-z') \right]G^R(\omega-z'+i\delta,\qq) + \frac{\pi}{\beta}\sum_{m=0}^{\infty}\frac{G(\iwm,\qq)}{\omega-\iwm-z'} + \frac{\pi}{\beta}\sum_{m=0}^{\infty}\frac{G(-\iwm,\qq)}{\omega+\iwm-z'} \\
+& = -\pi \left[ 1 + n_B(z') - n_F(\omega-z') \right]G^R(\omega-z'+i\delta,\qq) + \frac{\pi}{\beta}\sum_{m=0}^{\infty}\frac{G(\iwm,\qq)}{\omega-\iwm-z'} + \frac{\pi}{\beta}\sum_{m=-1}^{-\infty}\frac{G(\iwm,\qq)}{\omega-\iwm-z'} \\
+& = -\pi \left[ 1 + n_B(z') - n_F(\omega-z') \right]G^R(\omega-z'+i\delta,\qq) + \frac{\pi}{\beta}\sum_m\frac{G(\iwm,\qq)}{\omega-\iwm-z'}
+\end{split}
+\end{equation}
+where we neglected the $i\delta$ of the argument to $n_F$ and also used the fact that $G^*(\iwm,\qq)=G(-\iwm,\qq)$.
+\\
+\\
+Finally, plugging this result into equation \ref{2} gives
+\begin{equation}
+\Sigma(\omega+i\delta, \kk) = -\frac{1}{N\pi} \sum_\qq \int dz' \gs B(z',\kk-\qq) \left\lbrace -\pi \left[ 1 + n_B(z') - n_F(\omega-z'+i\delta) \right]G^R(\omega-z'+i\delta,\qq) + \frac{\pi}{\beta}\sum_m\frac{G(\iwm,\qq)}{\omega-\iwm-z'+i\delta} \right\rbrace
+\end{equation}
+
+\begin{equation}
+\begin{split}
+\Sigma(\omega+i\delta, \kk) = &-\frac{1}{N\beta} \sum_{m,\qq} \int dz' \gs B(z',\kk-\qq)\frac{G(\iwm,\qq)}{\omega-\iwm-z'} \\
+& + \frac{1}{N} \sum_\qq \int dz' \gs B(z',\kk-\qq)\left[ 1 + n_B(z') - n_F(\omega-z') \right]G^R(\omega-z'+i\delta,\qq)
+\end{split}
+\end{equation}
+
+\begin{equation}
+\boxed{
+\Sigma(\omega, \kk) = -\frac{1}{N} \sum_{\qq} \int dz \gs B(z,\kk-\qq) \left[ \frac{1}{\beta} \sum_m \frac{G(\iwm,\qq)}{\omega-\iwm-z} - G^R(\omega-z,\qq) \left[ 1 + n_B(z) - n_F(\omega-z) \right] \right] }
+\end{equation}
+
+which can also be rewritten as
+
+\begin{equation}
+\label{3}
+\boxed{
+\begin{split}
+\Sigma(\omega+i\delta, \kk) = &-\frac{1}{N\beta} \sum_{m,\qq} \gs D(\omega-\iwm,\kk-\qq)G(\iwm,\qq) \\
+& - \frac{1}{\pi N} \sum_\qq \int dz' \gs \mathrm{Im} D(z',\kk-\qq)\left[ 1 + n_B(z') - n_F(\omega-z')\right]G^R(\omega-z'+i\delta,\qq)
+\end{split}}
+\end{equation}
+
+
+In the case of a bare phonon propagator,
+\begin{equation}
+\begin{split}
+D(\ivn,\qq) &= \frac{1}{\ivn-\Omega_\qq} - \frac{1}{\ivn+\Omega_\qq} \\
+D(\omega+i\delta,\qq) &= \frac{1}{\omega-\Omega_\qq+i\delta} - \frac{1}{\omega+\Omega_\qq+i\delta} = \frac{2\Omega_\qq}{(\omega+i\delta)^2-\Omega_\qq^2} \\
+-\frac{1}{\pi} \mathrm{Im} D(\omega+i\delta,\qq) &= \frac{-1}{\pi}\left\lbrace \frac{-\delta}{(\omega-\Omega_\qq)^2+\delta^2} + \frac{\delta}{(\omega+\Omega_\qq)^2+\delta^2}  \right\rbrace \\
+-\frac{1}{\pi} \mathrm{Im} D(\omega+i\delta,\qq) &= \delta(\omega-\Omega_\qq) - \delta(\omega+\Omega_\qq)
+\end{split}
+\end{equation}
+where the $\delta$ in the last line is the Dirac delta function.
+
+In the case of a bare phonon propagator, equation \ref{3} becomes
+\begin{equation}
+\begin{split}
+\Sigma(\omega+i\delta, \kk) = &-\frac{1}{N\beta} \sum_{m,\qq} \gs \frac{2\Omega_{\kk-\qq}}{(\omega-\iwm)^2-\Omega_{\kk-\qq}^2} G^R(\iwm,\qq) \\
+& + \frac{1}{N} \sum_\qq \gs \left[ 1 + n_B(\Omega_{\kk-\qq}) - n_F(\omega-\Omega_{\kk-\qq})\right]G^R(\omega-\Omega_{\kk-\qq}+i\delta,\qq) \\
+& - \frac{1}{N} \sum_\qq \gs \left[ 1 + n_B(-\Omega_{\kk-\qq}) - n_F(\omega+\Omega_{\kk-\qq})\right]G^R(\omega+\Omega_{\kk-\qq}+i\delta,\qq)
+\end{split}
+\end{equation}
+\begin{equation}
+\boxed{
+\begin{split}
+\Sigma(\omega+i\delta, \kk) = &-\frac{1}{N\beta} \sum_{m,\qq} \gs \frac{2\Omega_{\kk-\qq}}{(\omega-\iwm)^2-\Omega_{\kk-\qq}^2} G^R(\iwm,\qq) \\
+& + \frac{1}{N} \sum_\qq \gs \left[ 1 + n_B(\Omega_{\kk-\qq}) - n_F(\omega-\Omega_{\kk-\qq})\right]G^R(\omega-\Omega_{\kk-\qq}+i\delta,\qq) \\
+& + \frac{1}{N} \sum_\qq \gs \left[ n_B(\Omega_{\kk-\qq}) + n_F(\omega+\Omega_{\kk-\qq})\right]G^R(\omega+\Omega_{\kk-\qq}+i\delta,\qq)
+\end{split}}
+\end{equation}
+
+
+
+\end{document}
+
+
+

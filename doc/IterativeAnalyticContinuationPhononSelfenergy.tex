@@ -1,0 +1,201 @@
+\documentclass[]{article}
+\usepackage{amsmath}
+\usepackage[margin=0.5in]{geometry}
+\newcommand{\kk}{\mathbf{k}}
+\newcommand{\qq}{\mathbf{q}}
+\newcommand{\iwn}{i\omega_n}
+\newcommand{\iwm}{i\omega_m}
+\newcommand{\cd}[1]{c_{#1}^\dagger}
+\newcommand{\cc}[1]{c_{#1}^{\phantom{\dagger}}}
+\newcommand{\gs}{\left| g(\mathbf{k}, \mathbf{q}) \right|^2}
+\newcommand{\imG}{\mathrm{Im} G^R(z, \kk)}
+\newcommand{\ivn}{i\nu_n}
+
+%opening
+\title{Iterative analytic continuation of the phonon self-energy to the real axis}
+\author{Ben}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+\end{abstract}
+
+- probably never been done before\\
+- lowest order perturbation theory can be important \\
+- provides an computationally efficient way to calculate renormalized ME theory on the real axis\\
+- self-consistent el selfenergy useful in many calculations (such as estimating strength of replica bands in FeSe on STO paper)\\
+
+
+The Hamiltonian for a generic el-ph interaction is given by
+\begin{equation}
+H = \sum_\kk \epsilon_\kk \cd{\kk} \cc{\kk}
+ + \sum_\qq \left( \Omega b^\dagger_\qq b^{\phantom{\dagger}}_\qq + \frac{1}{2}\right) + \frac{1}{\sqrt{N}} \sum_{\kk,\qq} g(\kk, \qq) \cd{\kk+\qq} \cc{\kk} \left( b^{\phantom{\dagger}}_\qq + b^\dagger_{-\qq} \right) 
+\end{equation}
+
+The lowest order contribution to the phonon self-energy in Matsubara frequency is
+\begin{equation}
+\Pi(\ivn, \qq) = \frac{2}{N \beta} \sum_{m,\kk} \gs G(\iwm, \kk) G(\iwm+\ivn,\kk+\qq)
+\end{equation}
+
+Applying the spectral representation for $G(\iwm,\kk)$ gives
+\begin{equation}
+\Pi(\ivn, \qq) = \frac{2}{N \beta} \sum_{m,\kk} \int dz dz' \gs \frac{S(z, \kk)}{(\iwm-z)} \frac{S(z', \kk+\qq)}{(\iwm+\ivn-z')}
+\end{equation}
+
+To evaluate the Matsubara frequency sum, consider the contour integral
+\begin{equation}
+\begin{split}
+0 &= \oint dz'' \int dz dz' \frac{S(z, \kk)}{(z''-z)} \frac{S(z', \kk+\qq)}{(z''+\ivn-z')} n_F(z'')\\
+& = -\frac{2\pi i}{\beta} \sum_m \frac{S(z,\kk)S(z',\kk+\qq)}{(\iwm-z)(\iwm+\ivn-z')} \\
+& + 2\pi i \int dz dz' S(z,\kk)S(z',\kk+\qq)\left[ \frac{n_F(z)}{z+\ivn-z'} + \frac{n_F(-\ivn+z')}{-\ivn+z'-z} \right] \\
+& = -\frac{2\pi i}{\beta} \sum_m \frac{S(z,\kk)S(z',\kk+\qq)}{(\iwm-z)(\iwm+\ivn-z')} \\
+& + 2\pi i \int dz dz' S(z,\kk)S(z',\kk+\qq)\frac{n_F(z)-n_F(z'-\ivn)}{\ivn+z-z'}
+\end{split}
+\end{equation}
+Where the the first term on the right hand side is multiplied by a factor of $\frac{-1}{\beta}$ because of the residue of $n_F$.
+\\
+
+Note that $n_F(z'-\ivn) = [e^{\beta z'}e^{-\beta\ivn} + 1]^{-1} = n_F(z')$ so
+
+\begin{equation}
+\frac{1}{\beta} \sum_m \frac{S(z,\kk)S(z',\kk+\qq)}{(\iwm-z)(\iwm+\ivn-z')} = \int dz dz' \frac{S(z,\kk)S(z',\kk+\qq)\left[n_F(z)-n_F(z')\right]}{\ivn+z-z'}
+\end{equation}
+
+Therefore
+\begin{equation}
+\Pi(\ivn, \qq) = \frac{2}{N} \sum_{m,\kk} \int dz dz' \gs \frac{S(z, \kk) S(z', \kk+\qq)\left[n_F(z)-n_F(z')\right]}{\ivn+z-z'}
+\end{equation}
+
+Then analytically continuing $\omega \rightarrow \omega+i\delta$ and using $S(z,\kk) = -\frac{1}{\pi}\imG$ gives
+\begin{equation}
+\label{1}
+\Pi(\omega+i\delta, \qq) = -\frac{2}{N \pi} \sum_{m,\kk} \int dz dz' \gs \frac{ S(z', \kk+\qq)\imG \left[n_F(z)-n_F(z')\right]}{\omega+z-z'+i\delta}
+\end{equation}
+
+The next goal is to evaluate the integral over $z$. We break up the integrand into real and imaginary parts using the fact that
+\begin{equation}
+\begin{split}
+\frac{1}{\omega+z-z'+i\delta} & = \frac{1}{2}\left(\frac{1}{\omega_+} + \frac{1}{\omega_-} \right) + i \frac{1}{2i} \left( \frac{1}{\omega_+} - \frac{1}{\omega_-} \right) 
+\\ &= \frac{1}{2}\left(\frac{1}{\omega_+} + \frac{1}{\omega_-} \right) - i \frac{i}{2} \left( \frac{1}{\omega_+} - \frac{1}{\omega_-} \right)
+\end{split}
+\end{equation}
+where $w_+ = \omega+z-z'+i\delta$ and $\omega_- = \omega+z-z'-i\delta$.
+\\
+\\
+Note that 
+\begin{equation}
+\begin{split}
+\frac{\imG}{\omega+z-z'+i\delta} &= \frac{\imG}{2}\left(\frac{1}{\omega_+} + \frac{1}{\omega_-}\right) - i  \frac{\imG i}{2} \left(\frac{1}{\omega_+} - \frac{1}{\omega_-}\right) \\
+&= \mathrm{Im}\left[  \frac{G^R(z,\qq)}{2}\left(\frac{1}{\omega_+} + \frac{1}{\omega_-} \right) \right] - i \mathrm{Im}\left[\frac{G^R(z,\qq)i}{2} \left( \frac{1}{\omega_+} - \frac{1}{\omega_-} \right) \right] \\
+& = \mathrm{Im}\left[  \frac{G^R(z,\qq)}{2}\left(\frac{1}{\omega_+} + \frac{1}{\omega_-} \right) \right] - i \mathrm{Re}\left[\frac{G^R(z,\qq)}{2} \left( \frac{1}{\omega_+} - \frac{1}{\omega_-} \right) \right]
+\end{split}
+\end{equation}
+
+Let us consider only the parts of the integral over $z$ in equation \ref{1} and break it up into real and imaginary parts as
+\begin{equation}
+\begin{split}
+\mathrm{I} & \equiv \int dz dz' \frac{ S(z', \kk+\qq)\imG \left[n_F(z)-n_F(z')\right]}{\omega+z-z'+i\delta} \\
+& = \mathrm{Im} \left\lbrace \int dz \left[n_F(z)-n_F(z')\right] \frac{G^R(z,\kk)}{2}\left(\frac{1}{\omega_+} + \frac{1}{\omega_-} \right) \right\rbrace - \\
+& i \mathrm{Re} \left\lbrace \int dz \left[n_F(z)-n_F(z')\right] \frac{G^R(z,\kk)}{2} \left( \frac{1}{\omega_+} - \frac{1}{\omega_-} \right) \right\rbrace
+\end{split}
+\end{equation}
+
+
+Now consider the following contour integral in the upper-half plane
+\begin{equation}
+\begin{split}
+\int dz \left[n_F(z) - n_F(z')\right] \frac{G^R(z,\kk)}{2}\left(\frac{1}{\omega_+} \pm \frac{1}{\omega_-} \right) = & \pm 2\pi i \left[n_F(z'-\omega+i\delta) - n_F(z')\right]\frac{G^R(z'-\omega+i\delta,\kk)}{2} \\ &- \frac{2\pi i}{\beta}\sum_{m=0}^{\infty}  \frac{G(\iwm,\kk)}{2}\left(\frac{1}{\omega+\iwm-z'+i\delta} \pm \frac{1}{\omega+\iwm-z'-i\delta} \right) 
+\end{split}
+\end{equation}
+Note about signs: the first term on the right hand side gets the sign of $1/\omega_-$. Also note that $1/\omega_+$ does not contribute to integral over the upper half plane. And the second term gets a factor of $-1$ from the residue of $n_F$.
+\\
+\\
+Next combine the real and imaginary parts given that $\mathrm{Im}(F)-i\mathrm{Re}(F)=-i F$ and $\mathrm{Im}(F)+i\mathrm{Re}(F)= i F^*$.
+
+\begin{equation}
+\begin{split}
+I &= -i \left\lbrace -\frac{\pi i}{\beta}\sum_{m=0}^{\infty} \frac{G(\iwm,\kk)}{\omega+\iwm-z'} \right\rbrace \\ 
+& + i \left\lbrace  \pi i \left[n_F(z'-\omega) - n_F(z')\right] G^R(z'-\omega,\kk)  - \frac{\pi i}{\beta}\sum_{m=0}^{\infty} \frac{G(\iwm,\kk)}{\omega+\iwm-z'} \right\rbrace^* \\
+& = -\frac{\pi}{\beta}\sum_{m=0}^{\infty} \frac{G(\iwm,\kk)}{\omega+\iwm-z'} + i \left\lbrace - \pi i \left[n_F(z'-\omega) - n_F(z')\right]G^{R*}(z'-\omega,\kk)  + \frac{\pi i}{\beta}\sum_{m=0}^{\infty} \frac{G^{*}(\iwm,\kk)}{\omega-\iwm-z'}  \right\rbrace \\
+& = + \pi \left[n_F(z'-\omega) - n_F(z')\right]G^{R*}(z'-\omega,\kk) -\frac{\pi}{\beta}\sum_{m=0}^{\infty} \frac{G(\iwm,\kk)}{\omega+\iwm-z'} - \frac{\pi}{\beta}\sum_{m=0}^{\infty} \frac{G(-\iwm,\kk)}{\omega-\iwm-z'} \\
+& = + \pi \left[n_F(z'-\omega) - n_F(z')\right]G^{R*}(z'-\omega,\kk) -\frac{\pi}{\beta}\sum_{m=0}^{\infty} \frac{G(\iwm,\kk)}{\omega+\iwm-z'} - \frac{\pi}{\beta}\sum_{m=-\infty}^{-1} \frac{G(\iwm,\kk)}{\omega+\iwm-z'} \\
+& = + \pi \left[n_F(z'-\omega) - n_F(z')\right]G^{A}(z'-\omega,\kk) -\frac{\pi}{\beta}\sum_m \frac{G(\iwm,\kk)}{\omega+\iwm-z'}
+\end{split}
+\end{equation}
+where we neglected the $i\delta$ of the argument to $n_F$ and also used the fact that $G^*(\iwm,\qq)=G(-\iwm,\qq)$ and $G^{R*}(z,\kk)=G^A(z,\kk)$.
+
+Finally plugging this result into equation \ref{1} gives
+\begin{equation}
+\Pi(\omega+i\delta, \qq) = -\frac{2}{N \pi} \sum_\kk \int dz' \gs S(z', \kk+\qq) \left\lbrace \pi \left[n_F(z'-\omega) - n_F(z')\right]G^{A}(z'-\omega,\kk) -\frac{\pi}{\beta}\sum_m \frac{G(\iwm,\kk)}{\omega+\iwm-z'} \right\rbrace
+\end{equation}
+
+\begin{equation}
+\begin{split}
+\Pi(\omega+i\delta, \qq) &= \frac{2}{N \beta} \int dz \sum_{m,\kk} \gs S(z, \kk+\qq) \frac{G(\iwm,\kk)}{\omega+\iwm-z} \\
+& - \frac{2}{N} \sum_\kk \int dz \gs S(z, \kk+\qq) G^{A}(z-\omega,\kk)\left[n_F(z-\omega) - n_F(z)\right]
+\end{split}
+\end{equation}
+
+\begin{equation}
+\boxed{
+\Pi(\omega+i\delta, \qq) = \frac{2}{N} \sum_\kk \int dz \gs S(z, \kk+\qq)\left[ \frac{1}{\beta} \sum_{m,\kk}  \frac{G(\iwm,\kk)}{\omega+\iwm-z} - G^{A}(z-\omega,\kk)\left[n_F(z-\omega) - n_F(z)\right] \right]}
+\end{equation}
+
+
+
+which can be rewritten as
+\begin{equation}
+\begin{split}
+\Pi(\omega+i\delta, \qq) &= \frac{2}{N \beta} \sum_{m,\kk} \gs G^R(\omega+\iwm, \kk+\qq) G(\iwm,\kk) \\
+& + \frac{2}{N\pi} \sum_\kk \int dz \gs \mathrm{Im}G^R(z, \kk+\qq) G^{A}(z-\omega,\kk)\left[n_F(z-\omega) - n_F(z)\right]
+\end{split}
+\end{equation}
+ 
+Consistency check: let's check this expression by using the non-interacting Green's function $G(\iwm,\kk) = (\iwm - \epsilon_\kk)^{-1}$ and $G^R(\omega+i\delta, \kk) = (\omega-\epsilon_\kk + i\delta)^{-1}$.
+\\
+\\
+Using $-\frac{1}{\pi}G^R(z,\kk) = -\frac{1}{\pi}\mathrm{Im} \left( \frac{1}{z-\epsilon_\kk+i\delta} \right) = -\frac{1}{\pi}\left( \frac{-\delta}{(z-\epsilon_\kk)^2+\delta^2} \right) = \delta(z-\epsilon_\kk)$ 
+
+\begin{equation}
+\begin{split}
+\Pi^0(\omega+i\delta, \qq) &= \frac{2}{N \beta} \sum_{m,\kk} \gs \frac{1}{(\omega+i\delta+\iwm - \epsilon_{\kk+\qq})(\iwm-\epsilon_\kk)} \\
+& - \frac{2}{N} \sum_\kk \int dz \gs \delta(z-\epsilon_{\kk+\qq})\frac{1}{z-\omega-\epsilon_\kk-i\delta} \left[n_F(z-\omega) - n_F(z)\right] \\
+& = \frac{2}{N \beta} \sum_{m,\kk} \gs \frac{1}{(\omega+i\delta+\iwm - \epsilon_{\kk+\qq})(\iwm-\epsilon_\kk)} \\
+& - \frac{2}{N} \sum_\kk \gs \frac{1}{\epsilon_{\kk+\qq}-\omega-\epsilon_\kk-i\delta} \left[n_F(\epsilon_{\kk+\qq}-\omega) - n_F(\epsilon_{\kk+\qq})\right] \\
+& = \frac{2}{N \beta} \sum_\kk \gs \frac{1}{(\omega+i\delta+\iwm - \epsilon_{\kk+\qq})(\iwm-\epsilon_\kk)} \\
+& - \frac{2}{N} \sum_\kk \gs \frac{1}{\epsilon_{\kk+\qq}-\omega-\epsilon_\kk-i\delta} \left[n_F(\epsilon_{\kk+\qq}-\omega) - n_F(\epsilon_{\kk+\qq})\right]
+\end{split}
+\end{equation}
+
+To perform the frequency sum, consider
+\begin{equation}
+\begin{split}
+0 &= \oint dz \frac{n_F(z)}{(z + \omega + i\delta - \epsilon_{\kk+\qq})(z-\epsilon_\kk)} \\
+& =  \frac{-2\pi i}{\beta}\sum_m \frac{1}{(\iwm + \omega + i\delta - \epsilon_{\kk+\qq})(\iwm-\epsilon_\kk)} + 2\pi i \frac{n_F(\epsilon_{\kk+\qq}-w)}{\epsilon_{\kk-\qq}-\omega-i\delta-\epsilon_\kk} + 2\pi i \frac{n_F(\epsilon_\kk)}{\epsilon_\kk+\omega+i\delta-\epsilon_{\kk+\qq}}
+\end{split}
+\end{equation}
+Which shows that
+\begin{equation}
+\frac{1}{\beta}\sum_m \frac{1}{(\iwm + \omega + i\delta - \epsilon_{\kk+\qq})(\iwm-\epsilon_\kk)} =  \frac{n_F(\epsilon_\kk) - n_F(\epsilon_{\kk+\qq}-w) }{\epsilon_\kk+\omega+i\delta-\epsilon_{\kk+\qq}}
+\end{equation}
+
+Which then gives:
+\begin{equation}
+\begin{split}
+\Pi^0(\omega+i\delta, \qq) & = \frac{2}{N} \sum_\kk \gs \frac{n_F(\epsilon_\kk) - n_F(\epsilon_{\kk+\qq}-w) }{\epsilon_\kk-\epsilon_{\kk+\qq}+\omega+i\delta} \\
+& - \frac{2}{N} \sum_\kk \gs \frac{n_F(\epsilon_{\kk+\qq}-\omega) - n_F(\epsilon_{\kk+\qq})}{\epsilon_{\kk+\qq}-\epsilon_\kk-\omega-i\delta}
+\end{split}
+\end{equation}
+
+\begin{equation}
+\Pi^0(\omega+i\delta, \qq) = \frac{2}{N} \sum_\kk \gs \left[ \frac{n_F(\epsilon_\kk)}{\epsilon_\kk-\epsilon_{\kk+\qq}+\omega+i\delta} + \frac{n_F(\epsilon_{\kk+\qq})}{\epsilon_{\kk+\qq}-\epsilon_\kk-\omega-i\delta} \right]
+\end{equation}
+\begin{equation}
+\Pi^0(\omega+i\delta, \qq) = \frac{2}{N} \sum_\kk \gs \frac{n_F(\epsilon_\kk) - n_F(\epsilon_{\kk+\qq}) }{\omega+i\delta+\epsilon_\kk-\epsilon_{\kk+\qq}}
+\end{equation}
+which is the correct expression!
+
+\end{document}
