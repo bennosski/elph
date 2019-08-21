@@ -88,15 +88,14 @@ class MigdalBase:
         Dw  = self.compute_D(vn, PIw)
         return fourier.w2t(Dw, self.beta, axis, 'boson')
     #-----------------------------------------------------------
-    def selfconsistency(self, sc_iter, nmix=3, frac=0.9, alpha=0.5, S0=None, PI0=None, mu0=None):
+    def selfconsistency(self, sc_iter, frac=0.9, alpha=0.5, S0=None, PI0=None, mu0=None):
         savedir, wn, vn, ek, mu, deriv, dndmu = self.setup()
         
         if mu0 is not None:
             mu = mu0
 
-        AMS  = AndersonMixing(alpha=0.8)
-        AMPI = AndersonMixing(alpha=0.8)
-        #AMmu = AndersonMixing(alpha=0.1)
+        AMS  = AndersonMixing(alpha=alpha)
+        AMPI = AndersonMixing(alpha=alpha)
 
         print('\nSelfconsistency\n--------------------------')
 
@@ -146,7 +145,7 @@ class MigdalBase:
             save(savedir+key, [getattr(self, key)])
 
         return savedir, mu, G, D, S, GG
-    #---------------------------------------------------------------------------
+    #-------------------------------------------------------------------
     def susceptibilities(self, sc_iter, G, D, GG, frac=0.8): 
         print('\nComputing Susceptibilities\n--------------------------')
 
@@ -203,12 +202,14 @@ class MigdalBase:
                 break
 
             if iteration%max(sc_iter//20,1)==0:
-                print(f'change {change:.4e}')
-
+                #print(f'change {change:.4e}')
+                print('change ', change)
+                
             iteration += 1
 
-        print(f'change {change:.4e}')
-
+        #print(f'change {change:.4e}')
+        print('change ', change)
+        
         if change>1e-5:
             print('Susceptibility failed to converge')
             return None, None
