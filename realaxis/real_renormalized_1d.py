@@ -31,7 +31,7 @@ class RealAxisMigdal(Migdal):
     
     #----------------------------------------------------------- 
     def compute_GR(self, w, ek, mu, SR):
-        return 1.0/(self.w[None,:]+self.idelta - (ek[:,None]-mu) - SR)
+        return 1.0/(w[None,:]+self.idelta - (ek[:,None]-mu) - SR)
     
     #-----------------------------------------------------------
     def compute_DR(self, PIR):
