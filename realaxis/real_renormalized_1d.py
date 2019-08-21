@@ -62,7 +62,7 @@ class RealAxisMigdal(Migdal):
         SR  = np.zeros([self.nk,self.nr], dtype=complex)
         PIR = np.zeros([self.nk,self.nr], dtype=complex)
         GR  = self.compute_GR(w, ek, mu, SR)
-        DR  = self.compute_DR(PIR)
+        DR  = self.compute_DR(DRbareinv, PIR)
 
         # convert to imaginary frequency
         G = fourier.t2w(G,self.beta, self.dim, 'fermion')[0]
