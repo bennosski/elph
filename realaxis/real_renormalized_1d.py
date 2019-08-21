@@ -64,15 +64,16 @@ class RealAxisMigdal(Migdal):
         PIR = np.zeros([self.nk,self.nr], dtype=complex)
         GR  = self.compute_GR(w, ek, mu, SR)
         DR  = self.compute_DR(PIR)
-        
-        # compute Gsum
+
         # convert to imaginary frequency
-        G  = fourier.t2w(G,  self.beta, self.dim, 'fermion')[0]
+        G = fourier.t2w(G,self.beta, self.dim, 'fermion')[0]
+
+        # compute Gsum
         Gsum_plus  = np.zeros([self.nk,self.nr], dtype=complex)
         Gsum_minus = np.zeros([self.nk,self.nr], dtype=complex)
-        for iw in range(self.nr):
-            Gsum_plus[:,iw]  = np.sum(G/((w[iw]+1j*wn)[None,:]), axis=1) / self.beta
-            Gsum_minus[:,iw] = np.sum(G/((w[iw]-1j*wn)[None,:]), axis=1) / self.beta
+        for i in range(self.nr):
+            Gsum_plus[:,i]  = np.sum(G/((w[i]+1j*wn)[None,:]), axis=1) / self.beta
+            Gsum_minus[:,i] = np.sum(G/((w[i]-1j*wn)[None,:]), axis=1) / self.beta
         # handle sum over pos and negative freqs
         Gsum_plus  += np.conj(Gsum_plus)
         Gsum_minus += np.conj(Gsum_minus)
