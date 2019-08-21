@@ -3,12 +3,12 @@ from renormalized_2d import Migdal
 from convolution import conv
 
 class RealAxisMigdal(Migdal):
-
+   
     def __init__(self, params, basedir):
         super().__init__(params, basedir)
 
     # todo
-  
+    # test
     # functions for real axis Green's function
  
     def compute_GR(self):
