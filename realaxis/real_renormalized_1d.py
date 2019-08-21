@@ -53,9 +53,9 @@ class RealAxisMigdal(Migdal):
                         +basic_conv(A*nF[None,:], GA, ['k+q,k','w+z,z'], [0,1], [True,False])[:,:self.nr])
     
     #-----------------------------------------------------------    
-    def selfconsistency(self, sc_iter, frac=0.5, alpha=0.5, S0=None, PI0=None):
+    def selfconsistency(self, sc_iter, frac=0.5, alpha=0.5, S0=None, PI0=None, mu0=None):
         print('IN SELFCONSISTENCY REAL AXIS')
-        savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0)
+        savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0, mu0=mu0)
 
         # now next steps
 
