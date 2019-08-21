@@ -3,35 +3,53 @@ from renormalized_1d import Migdal
 from convolution import conv
 from functions import band_1dsquare_lattice, mylamb2g0
 import os
+import numpy as np
 
 class RealAxisMigdal(Migdal):
    
     def __init__(self, params, basedir):
         super().__init__(params, basedir)
 
+    def setup_realaxis(self):
+        self.w = np.arange(self.wmin, self.wmax, self.dw)
+        assert len(w)%2==0 and abs(w[len(w)//2])<1e-10
+
+        self.nB = 1.0/(np.exp(self.beta*self.w)+1.0)
+        self.nF = 1.0/(np.exp(self.beta*self.w)-1.0)
+        self.DRbareinv = ((self.w+self.idelta)**2 - self.omega**2)/(2.0*self.omega)
+
+        
     # todo
     # functions for real axis Green's function
  
-    def compute_G(self):
+    def compute_G_realaxis(self):
         pass
 
-    def compute_D(self):
+    def compute_D_realaxis(self):
         pass
 
-    def compute_S(self):
+    def compute_S_realaxis(self):
         pass
 
-    def compute_PI(self):
+    def compute_PI_realaxis(self):
         pass
 
+    def Gsum(self):
+        pass
     
-    def selfconsistency(self, sc_iter, frac=0.5, alpha=0.5, S0=None, PI0=None):
+    def selfconsistency_realaxis(self, sc_iter, frac=0.5, alpha=0.5, S0=None, PI0=None):
         savedir, G, D, S, GG =  super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0)
 
         # now next steps
 
-        # compute Gsum
+        w = self.setup_realaxis()
         
+        # compute Gsum        
+        Gsum_plus  = np.zeros([self.nk,len(w)], dtype=complex)
+        Gsum_minus = np.zeros([self.nk,len(w)], dtype=complex)
+        for iw in range(len(w)):
+            Gsum_plus[:,iw]  = np.sum(G/((w[iw]+iwm)[None,:]), axis=1) / beta
+            Gsum_minus[:,iw] = np.sum(G/((w[iw]-iwm)[None,:]), axis=1) / beta        
 
         # selfconsistency loop...
 
@@ -75,6 +93,11 @@ if __name__=='__main__':
     params['g0']    = 0.125
     params['dim']   = 1
 
+    params['dw']     = 0.001
+    params['wmin']   = -3.1
+    params['wmax']   =  3.1
+    params['idelta'] = 0.020j
+    
     basedir = '/home/groups/simes/bln/data/elph/imagaxis/example/'
     if not os.path.exists(basedir): os.makedirs(basedir)
 
