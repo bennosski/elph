@@ -24,11 +24,7 @@ class RealAxisMigdal(Migdal):
         vn = (2*np.arange(self.nw+1)) * np.pi / self.beta
         ek = self.band(self.nk, 1.0, self.tp)
         
-        return wn, vn, ek, w, nB, nF
-
-    # todo
-    # functions for real axis Green's function
-    
+        return wn, vn, ek, w, nB, nF    
     #----------------------------------------------------------- 
     def compute_GR(self, w, ek, mu, SR):
         return 1.0/(w[None,:]+self.idelta - (ek[:,None]-mu) - SR)
@@ -69,15 +65,17 @@ class RealAxisMigdal(Migdal):
         GR  = self.compute_GR(w, ek, mu, SR)
         DR  = self.compute_DR(PIR)
         
-        # compute Gsum        
+        # compute Gsum
+        # convert to imaginary frequency
+        G  = fourier.t2w(G,  self.beta, self.dim, 'fermion')[0]
         Gsum_plus  = np.zeros([self.nk,self.nr], dtype=complex)
         Gsum_minus = np.zeros([self.nk,self.nr], dtype=complex)
         for iw in range(self.nr):
-            
-            # sum over pos and negative freqs????
-            
             Gsum_plus[:,iw]  = np.sum(G/((w[iw]+1j*wn)[None,:]), axis=1) / self.beta
-            Gsum_minus[:,iw] = np.sum(G/((w[iw]-1j*wn)[None,:]), axis=1) / self.beta        
+            Gsum_minus[:,iw] = np.sum(G/((w[iw]-1j*wn)[None,:]), axis=1) / self.beta
+        # handle sum over pos and negative freqs
+        Gsum_plus  += np.conj(Gsum_plus)
+        Gsum_minus += np.conj(Gsum_minus)
         print('finished Gsum')    
 
         # selfconsistency loop
