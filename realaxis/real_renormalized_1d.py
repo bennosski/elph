@@ -19,20 +19,20 @@ class RealAxisMigdal(Migdal):
 
         nB = 1.0/(np.exp(self.beta*w)+1.0)
         nF = 1.0/(np.exp(self.beta*w)-1.0)
-        self.DRbareinv = ((w+self.idelta)**2 - self.omega**2)/(2.0*self.omega)
+        DRbareinv = ((w+self.idelta)**2 - self.omega**2)/(2.0*self.omega)
 
         wn = (2*np.arange(self.nw)+1) * np.pi / self.beta
         vn = (2*np.arange(self.nw+1)) * np.pi / self.beta
         ek = self.band(self.nk, 1.0, self.tp)
         
-        return wn, vn, ek, w, nB, nF    
+        return wn, vn, ek, w, nB, nF, DRbareinv
     #----------------------------------------------------------- 
     def compute_GR(self, w, ek, mu, SR):
         return 1.0/(w[None,:]+self.idelta - (ek[:,None]-mu) - SR)
     
     #-----------------------------------------------------------
-    def compute_DR(self, PIR):
-        return 1.0/(self.DRbareinv[None,:] - PIR)
+    def compute_DR(self, DRbareinv, PIR):
+        return 1.0/(DRbareinv[None,:] - PIR)
     
     #-----------------------------------------------------------
     def compute_SR(self, GR, Gsum, DR, nB, nF):
@@ -56,10 +56,8 @@ class RealAxisMigdal(Migdal):
 
         # imag axis failed to converge
         if savedir is None: exit()
-        
-        # now next steps
 
-        wn, vn, ek, w, nB, nF = self.setup_realaxis()
+        wn, vn, ek, w, nB, nF, DRbareinv = self.setup_realaxis()
         
         SR  = np.zeros([self.nk,self.nr], dtype=complex)
         PIR = np.zeros([self.nk,self.nr], dtype=complex)
@@ -87,8 +85,8 @@ class RealAxisMigdal(Migdal):
             SR0 = SR[:]
             PIR0 = PIR[:]
 
-            SR  = self.compute_SR(GR, DR, Gsum_minus)
-            PIR = self.compute_PIR(GR, Gsum_plus)
+            SR  = self.compute_SR(GR, Gsum_minus, DR, nB, nF)
+            PIR = self.compute_PIR(GR, Gsum_plus, nF)
 
             SR  = frac*SR  + (1.0-frac)*SR0
             PIR = frac*PIR + (1.0-frac)*PIR0
@@ -97,7 +95,7 @@ class RealAxisMigdal(Migdal):
             change[1] = np.mean(np.abs(PIR-PIR0))/np.mean(np.abs(PIR+PIR0))
 
             GR = self.compute_GR(w, ek, mu, SR)
-            DR = self.compute_DR(PIR)
+            DR = self.compute_DR(DRbareinv, PIR)
     
             if i%1==0: print('change = %1.3e, %1.3e'%(change[0], change[1]))
     
