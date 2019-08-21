@@ -43,7 +43,7 @@ class RealAxisMigdal(Migdal):
 
     #-----------------------------------------------------------
     def compute_PIR(self, GR, Gsum, nF):
-        GA = conj(GR)
+        GA = np.conj(GR)
         A  = -1.0/np.pi * GR.imag
         return 2.0*self.g0**2*self.dw/self.nk*(basic_conv(A, Gsum, ['k+q,k','z,w-z'], [0,1], [True,False])[:,:self.nr] \
                         -basic_conv(A, GA*nF[None,:], ['k+q,k','w+z,z'], [0,1], [True,False])[:,:self.nr] \
