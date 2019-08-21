@@ -40,7 +40,7 @@ class RealAxisMigdal(Migdal):
     #-----------------------------------------------------------
     def compute_SR(self, GR, Gsum, DR, nB, nF):
         B = -1.0/np.pi * DR.imag
-    return -self.g0**2*self.dw/self.nk*(basic_conv(B, Gsum, ['k-q,q','z,w-z'], [0,1], [True,False])[:,:self.nr] \
+        return -self.g0**2*self.dw/self.nk*(basic_conv(B, Gsum, ['k-q,q','z,w-z'], [0,1], [True,False])[:,:self.nr] \
              -basic_conv(B*(1+nB)[None,:], GR, ['k-q,q','z,w-z'], [0,1], [True,False])[:,:self.nr] \
              +basic_conv(B, GR*nF[None,:], ['k-q,q','z,w-z'], [0,1], [True,False])[:,:self.nr])
 
