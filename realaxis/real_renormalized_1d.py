@@ -1,5 +1,5 @@
 import imagaxis
-from renormalized_2d import Migdal
+from renormalized_1d import Migdal
 from convolution import conv
 from functions import band_1dsquare_lattice, mylamb2g0
 import os
