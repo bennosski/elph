@@ -4,6 +4,7 @@ from convolution import basic_conv
 from functions import band_1dsquare_lattice, mylamb2g0
 import os
 import numpy as np
+import fourier
 
 class RealAxisMigdal(Migdal):
     #-----------------------------------------------------------
