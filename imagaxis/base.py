@@ -139,7 +139,7 @@ class MigdalBase:
         if sc_iter>1 and (change[0]>1e-5 or change[1]>1e-5):
             # or abs(n-self.dens)>1e-3):
             print('Failed to converge')
-            return None, None, None, None, None
+            return None, None, None, None, None, None
 
         for key in self.keys:
             save(savedir+key, [getattr(self, key)])

@@ -57,6 +57,9 @@ class RealAxisMigdal(Migdal):
         print('IN SELFCONSISTENCY REAL AXIS')
         savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0, mu0=mu0)
 
+        # imag axis failed to converge
+        if savedir is None: exit()
+        
         # now next steps
 
         wn, vn, ek, w, nB, nF = self.setup_realaxis()
@@ -80,7 +83,7 @@ class RealAxisMigdal(Migdal):
         # selfconsistency loop
         change = [0,0]
         frac = 0.6
-        for i in range(5):
+        for i in range(10):
             SR0 = SR[:]
             PIR0 = PIR[:]
 
@@ -158,7 +161,7 @@ if __name__=='__main__':
     
     migdal = RealAxisMigdal(params, basedir)
 
-    sc_iter, S0, PI0 = 10, None, None
+    sc_iter, S0, PI0 = 100, None, None
     migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, mu0=None)
 
     
