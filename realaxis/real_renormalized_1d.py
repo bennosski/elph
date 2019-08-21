@@ -51,9 +51,11 @@ class RealAxisMigdal(Migdal):
     
     #-----------------------------------------------------------    
     def selfconsistency(self, sc_iter, frac=0.5, alpha=0.5, S0=None, PI0=None, mu0=None):
-        print('IN SELFCONSISTENCY REAL AXIS')
         savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0, mu0=mu0)
 
+        print('Real-axis selfconsistency')
+        print('---------------------------------')
+        
         # imag axis failed to converge
         if savedir is None: exit()
 
@@ -65,7 +67,7 @@ class RealAxisMigdal(Migdal):
         DR  = self.compute_DR(DRbareinv, PIR)
 
         # convert to imaginary frequency
-        G = fourier.t2w(G,self.beta, self.dim, 'fermion')[0]
+        G = fourier.t2w(G, self.beta, self.dim, 'fermion')[0]
 
         # compute Gsum
         Gsum_plus  = np.zeros([self.nk,self.nr], dtype=complex)
@@ -95,6 +97,13 @@ class RealAxisMigdal(Migdal):
             change[1] = np.mean(np.abs(PIR-PIR0))/np.mean(np.abs(PIR+PIR0))
 
             GR = self.compute_GR(w, ek, mu, SR)
+
+            print('GR norm', np.mean(np.sum(GR, axis=1)*self.dw))
+            print('SR mean', np.mean(np.abs(SR)))
+            print('PIR mean', np.mean(np.abs(PIR)))
+            print('GR mean', np.mean(GR))
+            print('DR mean', np.mean(DR))
+            
             DR = self.compute_DR(DRbareinv, PIR)
     
             if i%1==0: print('change = %1.3e, %1.3e'%(change[0], change[1]))
@@ -106,26 +115,6 @@ class RealAxisMigdal(Migdal):
         np.save(savedir+'DR', DR)
         np.save(savedir+'PIR', PIR)
             
-"""
-def compute_PI_real_axis(GR, Gsum):
-    GA = conj(GR)
-    A  = -1.0/pi * GR.imag
-    return 2.0*g**2*dw/Nk**2*(conv(A, Gsum, ['k+q,k','k+q,k','z,w-z'], [0,1,2], [True,True,False])[:,:,:len(w)] \
-                    -conv(A, GA*nF[None,None,:], ['k+q,k','k+q,k','w+z,z'], [0,1,2], [True,True,False])[:,:,:len(w)] \
-                    +conv(A*nF[None,None,:], GA, ['k+q,k','k+q,k','w+z,z'], [0,1,2], [True,True,False])[:,:,:len(w)])
-
-def compute_S_real_axis(GR, DR, Gsum):
-    # compute selfenergy from Marsiglio formula
-    B  = -1.0/pi * DR.imag
-    return -g**2*dw/Nk**2*(conv(B, Gsum, ['k-q,q','k-q,q','z,w-z'], [0,1,2], [True,True,False])[:,:,:len(w)] \
-             -conv(B*(1+nB)[None,None,:], GR, ['k-q,q','k-q,q','z,w-z'], [0,1,2], [True,True,False])[:,:,:len(w)] \
-             +conv(B, GR*nF[None,None,:], ['k-q,q','k-q,q','z,w-z'], [0,1,2], [True,True,False])[:,:,:len(w)])
-
-    def test(self):
-        print(self.nk)
-        print(self.nw)
-"""
-
 
 if __name__=='__main__':
     print('1D Renormalized Migdal Real Axis')
@@ -135,12 +124,12 @@ if __name__=='__main__':
     params['nk']    = 12
     params['t']     = 1.0
     params['tp']    = 0.0
-    params['omega'] = 0.17
+    params['omega'] = 1.0
     params['dens']  = 0.8
     params['renormalized'] = True
     params['sc']    = 0
     params['band']  = band_1dsquare_lattice
-    params['beta']  = 16.0
+    params['beta']  = 1.0
     params['g0']    = 0.125
     params['dim']   = 1
 

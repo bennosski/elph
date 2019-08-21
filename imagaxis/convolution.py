@@ -35,7 +35,7 @@ def basic_conv(a, b, indices_list, axes, circular_list, op='...,...'):
     b_ = b[:]
     
     dims = array([min(d1,d2) for d1,d2 in zip(shape(a), shape(b))])
-    maxdims = array([max(d1,d2) for d1,d2 in zip(shape(a), shape(b))])
+    #maxdims = array([max(d1,d2) for d1,d2 in zip(shape(a), shape(b))])
     
     for indices, axis, circular in zip(indices_list, axes, circular_list):
         if circular: continue
