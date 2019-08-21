@@ -156,7 +156,7 @@ if __name__=='__main__':
     params['g0'] = mylamb2g0(lamb, params['omega'], W)
     print('g0 is ', params['g0'])
     
-    migdal = Migdal(params, basedir)
+    migdal = RealAxisMigdal(params, basedir)
 
     sc_iter, S0, PI0 = 10, None, None
     migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, mu0=None)
