@@ -102,7 +102,6 @@ class RealAxisMigdal(Migdal):
         colorbar()
         title('GR all k')
         show()
-
         
         
         # compute Gsum
@@ -116,6 +115,13 @@ class RealAxisMigdal(Migdal):
         Gsum_minus += np.conj(Gsum_minus)
         print('finished Gsum')    
 
+
+        figure()
+        plot(Gsum_plus[self.nk//2].real)
+        plot(Gsum_minus[self.nk//2].real)
+        title('Gsum')
+        show()
+        
         # selfconsistency loop
         change = [0,0]
         frac = 0.6
@@ -126,6 +132,20 @@ class RealAxisMigdal(Migdal):
             SR  = self.compute_SR(GR, Gsum_minus, DR, nB, nF)
             PIR = self.compute_PIR(GR, Gsum_plus, nF)
 
+            figure()
+            plot(SR[self.nk//2].imag)
+            plot(SR[self.nk//2].real)
+            title('SR')
+            show()
+
+            figure()
+            plot(SR[self.nk//2].imag)
+            plot(SR[self.nk//2].real)
+            title('PIR')
+            show()
+
+            exit()
+            
             SR  = frac*SR  + (1.0-frac)*SR0
             PIR = frac*PIR + (1.0-frac)*PIR0
 
