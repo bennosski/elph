@@ -6,6 +6,10 @@ import os
 import numpy as np
 import fourier
 
+import matplotlib
+matplotlib.use('TkAgg')
+from matplotlib.pyplot import *
+
 class RealAxisMigdal(Migdal):
     #-----------------------------------------------------------
     def __init__(self, params, basedir):
@@ -66,9 +70,31 @@ class RealAxisMigdal(Migdal):
         GR  = self.compute_GR(w, ek, mu, SR)
         DR  = self.compute_DR(DRbareinv, PIR)
 
+        print('AR norm', np.mean(np.sum(-1.0/np.pi*GR.imag, axis=1)*self.dw))
+        print('SR mean', np.mean(np.abs(SR)))
+        print('PIR mean', np.mean(np.abs(PIR)))
+        print('GR mean', np.mean(GR))
+        print('DR mean', np.mean(DR))
+        
         # convert to imaginary frequency
         G = fourier.t2w(G, self.beta, self.dim, 'fermion')[0]
 
+        print('sum G for each k')
+        print(np.sum(G, axis=0))
+
+        figure()
+        plot(G[0,:].imag)
+        plot(G[self.nk//2,:].imag)
+        title('Gmats')
+        legend(['pi', '0'])
+        show()
+        
+        figure()
+        imshow(G.imag, origin='lower', aspect='auto')
+        colorbar()
+        title('Gmats all k')
+        show()
+        
         # compute Gsum
         Gsum_plus  = np.zeros([self.nk,self.nr], dtype=complex)
         Gsum_minus = np.zeros([self.nk,self.nr], dtype=complex)
