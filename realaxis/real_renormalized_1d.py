@@ -79,8 +79,8 @@ class RealAxisMigdal(Migdal):
         # convert to imaginary frequency
         G = fourier.t2w(G, self.beta, self.dim, 'fermion')[0]
 
-        print('sum G for each k')
-        print(np.sum(G, axis=0))
+        #print('sum G for each k')
+        #print(np.sum(G, axis=0))
 
         figure()
         plot(G[0,:].imag)
@@ -88,12 +88,22 @@ class RealAxisMigdal(Migdal):
         title('Gmats')
         legend(['pi', '0'])
         show()
-        
+
+        """
         figure()
         imshow(G.imag, origin='lower', aspect='auto')
         colorbar()
         title('Gmats all k')
         show()
+        """
+        
+        figure()
+        imshow(-1.0/np.pi*GR.imag.T, origin='lower', aspect='auto')
+        colorbar()
+        title('GR all k')
+        show()
+
+        
         
         # compute Gsum
         Gsum_plus  = np.zeros([self.nk,self.nr], dtype=complex)
@@ -147,7 +157,7 @@ if __name__=='__main__':
 
     params = {}
     params['nw']    = 512
-    params['nk']    = 12
+    params['nk']    = 30
     params['t']     = 1.0
     params['tp']    = 0.0
     params['omega'] = 1.0
