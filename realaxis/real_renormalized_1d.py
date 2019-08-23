@@ -57,7 +57,7 @@ class RealAxisMigdal(Migdal):
     def selfconsistency(self, sc_iter, frac=0.5, alpha=0.5, S0=None, PI0=None, mu0=None):
         savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0, mu0=mu0)
 
-        print('Real-axis selfconsistency')
+        print('\nReal-axis selfconsistency')
         print('---------------------------------')
         
         # imag axis failed to converge
@@ -82,13 +82,15 @@ class RealAxisMigdal(Migdal):
         #print('sum G for each k')
         #print(np.sum(G, axis=0))
 
+        """
         figure()
         plot(G[0,:].imag)
         plot(G[self.nk//2,:].imag)
         title('Gmats')
         legend(['pi', '0'])
         show()
-
+        """
+        
         """
         figure()
         imshow(G.imag, origin='lower', aspect='auto')
@@ -96,13 +98,14 @@ class RealAxisMigdal(Migdal):
         title('Gmats all k')
         show()
         """
-        
+
+        """
         figure()
         imshow(-1.0/np.pi*GR.imag.T, origin='lower', aspect='auto')
         colorbar()
         title('GR all k')
         show()
-        
+        """
         
         # compute Gsum
         Gsum_plus  = np.zeros([self.nk,self.nr], dtype=complex)
@@ -116,35 +119,25 @@ class RealAxisMigdal(Migdal):
         print('finished Gsum')    
 
 
+        # can I always use Gsum_plus[::-1]? what if w's are not symmetric?
+        
+        """
         figure()
         plot(Gsum_plus[self.nk//2].real)
         plot(Gsum_minus[self.nk//2].real)
         title('Gsum')
         show()
+        """
         
         # selfconsistency loop
         change = [0,0]
         frac = 0.6
-        for i in range(10):
+        for i in range(5):
             SR0 = SR[:]
             PIR0 = PIR[:]
 
             SR  = self.compute_SR(GR, Gsum_minus, DR, nB, nF)
             PIR = self.compute_PIR(GR, Gsum_plus, nF)
-
-            figure()
-            plot(SR[self.nk//2].imag)
-            plot(SR[self.nk//2].real)
-            title('SR')
-            show()
-
-            figure()
-            plot(SR[self.nk//2].imag)
-            plot(SR[self.nk//2].real)
-            title('PIR')
-            show()
-
-            exit()
             
             SR  = frac*SR  + (1.0-frac)*SR0
             PIR = frac*PIR + (1.0-frac)*PIR0
@@ -165,6 +158,25 @@ class RealAxisMigdal(Migdal):
             if i%1==0: print('change = %1.3e, %1.3e'%(change[0], change[1]))
     
             if i>5 and change[0]<1e-15 and change[1]<1e-15: break
+
+        figure()
+        plot(SR[self.nk//2].imag)
+        plot(SR[self.nk//2].real)
+        title('SR')
+        show()
+
+        figure()
+        plot(SR[self.nk//2].imag)
+        plot(SR[self.nk//2].real)
+        title('PIR')
+        show()
+            
+        figure()
+        imshow(-1.0/np.pi*GR.imag.T, origin='lower', aspect='auto')
+        colorbar()
+        title('GR all k')
+        show()
+
             
         np.save(savedir+'GR', GR)
         np.save(savedir+'SR', SR)
