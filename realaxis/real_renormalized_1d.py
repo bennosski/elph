@@ -189,7 +189,7 @@ if __name__=='__main__':
 
     params = {}
     params['nw']    = 512
-    params['nk']    = 30
+    params['nk']    = 60
     params['t']     = 1.0
     params['tp']    = 0.0
     params['omega'] = 1.0
@@ -204,7 +204,7 @@ if __name__=='__main__':
     params['dw']     = 0.001
     params['wmin']   = -3.1
     params['wmax']   =  3.1
-    params['idelta'] = 0.020j
+    params['idelta'] = 0.040j
     
     basedir = '/home/groups/simes/bln/data/elph/imagaxis/example/'
     if not os.path.exists(basedir): os.makedirs(basedir)
