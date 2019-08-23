@@ -159,6 +159,7 @@ class RealAxisMigdal(Migdal):
     
             if i>5 and change[0]<1e-15 and change[1]<1e-15: break
 
+        """
         figure()
         plot(SR[self.nk//2].imag)
         plot(SR[self.nk//2].real)
@@ -176,8 +177,10 @@ class RealAxisMigdal(Migdal):
         colorbar()
         title('GR all k')
         show()
+        """
 
-            
+        np.save('savedir.npy', [savedir])            
+        np.save(savedir+'w', w)
         np.save(savedir+'GR', GR)
         np.save(savedir+'SR', SR)
         np.save(savedir+'DR', DR)
@@ -189,7 +192,7 @@ if __name__=='__main__':
 
     params = {}
     params['nw']    = 512
-    params['nk']    = 60
+    params['nk']    = 200
     params['t']     = 1.0
     params['tp']    = 0.0
     params['omega'] = 0.5
@@ -197,14 +200,14 @@ if __name__=='__main__':
     params['renormalized'] = True
     params['sc']    = 0
     params['band']  = band_1dsquare_lattice
-    params['beta']  = 1.0
+    params['beta']  = 20.0
     params['g0']    = 0.125
     params['dim']   = 1
 
     params['dw']     = 0.001
-    params['wmin']   = -3.1
-    params['wmax']   =  3.1
-    params['idelta'] = 0.040j
+    params['wmin']   = -4.1
+    params['wmax']   = +4.1
+    params['idelta'] = 0.010j
     
     basedir = '/home/groups/simes/bln/data/elph/imagaxis/example/'
     if not os.path.exists(basedir): os.makedirs(basedir)
