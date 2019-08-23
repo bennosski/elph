@@ -21,8 +21,8 @@ class RealAxisMigdal(Migdal):
         self.nr = len(w)
         assert self.nr%2==0 and abs(w[self.nr//2])<1e-10
 
-        nB = 1.0/(np.exp(self.beta*w)+1.0)
-        nF = 1.0/(np.exp(self.beta*w)-1.0)
+        nB = 1.0/(np.exp(self.beta*w)-1.0)
+        nF = 1.0/(np.exp(self.beta*w)+1.0)
         DRbareinv = ((w+self.idelta)**2 - self.omega**2)/(2.0*self.omega)
 
         wn = (2*np.arange(self.nw)+1) * np.pi / self.beta
