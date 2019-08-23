@@ -192,8 +192,8 @@ if __name__=='__main__':
     params['nk']    = 60
     params['t']     = 1.0
     params['tp']    = 0.0
-    params['omega'] = 1.0
-    params['dens']  = 0.8
+    params['omega'] = 0.5
+    params['dens']  = 1.0
     params['renormalized'] = True
     params['sc']    = 0
     params['band']  = band_1dsquare_lattice
