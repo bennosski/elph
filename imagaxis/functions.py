@@ -119,7 +119,7 @@ def band(nk, t, tp):
     ek = -2.0*t*(cos(kxs)+cos(kys)) - 4.0*(tp)*cos(kxs)*cos(kys)
     return ek
 
-def band_1dsquare_lattice(nk, t, tp):
+def band_1d_lattice(nk, t, tp):
     assert tp==0.0
     #return -2.0*(cos(kxs) + cos(kys))  #+ alpha**2
     kxs = arange(-pi, pi, 2*pi/nk)

@@ -36,7 +36,7 @@ class MigdalBase:
         self.dim = len(shape(self.band(1, 1.0, self.tp)))        
         print('dim    = {}'.format(self.dim))
         
-        savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_beta{:.4f}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), self.dim, self.g0, self.nw, self.omega, self.dens, self.beta)
+        savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_beta{:.4f}_sc{}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), self.dim, self.g0, self.nw, self.omega, self.dens, self.beta, 1 if self.sc else 0)
         if not os.path.exists(self.basedir+'data/'): os.mkdir(self.basedir+'data/')
         if not os.path.exists(savedir): os.mkdir(savedir)
 
@@ -76,11 +76,18 @@ class MigdalBase:
     #-----------------------------------------------------------
     def dyson_fermion(self, wn, ek, mu, S, axis):
         Sw, jumpS = fourier.t2w(S, self.beta, axis, 'fermion')
-        
         mu = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,Sw))-self.dens, mu)[0]
-
         Gw = self.compute_G(wn, ek, mu, Sw)        
-        jumpG = -1 #np.ones((self.nk, self.nk, 1))
+
+        if len(shape(S))==self.dim + 3:
+            # superconducting case
+            shp = ones(self.dim + 3, int)
+            shp[-2] = 2
+            shp[-1] = 2
+            jumpG = -reshape(identity(2), shp)
+        else:
+            jumpG = -1
+
         return mu, fourier.w2t(Gw, self.beta, axis, 'fermion', jumpG)
     #-----------------------------------------------------------
     def dyson_boson(self, vn, PI, axis):
@@ -97,12 +104,14 @@ class MigdalBase:
         AMS  = AndersonMixing(alpha=alpha)
         AMPI = AndersonMixing(alpha=alpha)
 
-        print('\nSelfconsistency\n--------------------------')
+        print('\nImag-axis selfconsistency\n--------------------------')
 
         if S0 is None or PI0 is None: 
             S, PI = self.init_selfenergies()
         else:
             S, PI  = S0, PI0
+
+        GG = None
 
         change = [0, 0]
         for i in range(sc_iter):
@@ -122,21 +131,24 @@ class MigdalBase:
             S  = frac*S + (1-frac)*S0
             #S = AMS.step(S0, S)
 
-            GG = self.compute_GG(G)
-            PI = self.g0**2 * GG
-            change[1] = mean(abs(PI-PI0))/(mean(abs(PI+PI0))+1e-10)
-            PI = frac*PI + (1-frac)*PI0
-            #PI = AMPI.step(PI0, PI)
+            if self.renormalized:
+                GG = self.compute_GG(G)
+                PI = self.g0**2 * GG
+                change[1] = mean(abs(PI-PI0))/(mean(abs(PI+PI0))+1e-10)
+                PI = frac*PI + (1-frac)*PI0
+                #PI = AMPI.step(PI0, PI)
 
             #if i%max(sc_iter//30,1)==0:
             if True:
                 print('iter={} change={:.3e}, {:.3e} fill={:.13f} mu={:.5f}'.format(i, change[0], change[1], n, mu))
+                if True:
+                    print('sc ODLRO={:.4e}'.format(sum(S[...,0,1])/(self.nw*self.nk)))
 
-            if i>10 and change[0]<1e-14 and change[1]<1e-14:
+            if i>10 and sum(change)<2e-14:
                 # and abs(self.dens-n)<1e-5:
                 break
 
-        if sc_iter>1 and (change[0]>1e-5 or change[1]>1e-5):
+        if sc_iter>1 and sum(change)>1e-5:
             # or abs(n-self.dens)>1e-3):
             print('Failed to converge')
             return None, None, None, None, None, None
@@ -154,7 +166,8 @@ class MigdalBase:
         # convert to imaginary frequency
         G  = fourier.t2w(G,  self.beta, self.dim, 'fermion')[0]
         D  = fourier.t2w(D,  self.beta, self.dim, 'boson')
-        GG = fourier.t2w(GG, self.beta, self.dim, 'boson')
+        if self.renormalized:
+            GG = fourier.t2w(GG, self.beta, self.dim, 'boson')
 
         F0 = G * conj(G)
 
@@ -218,16 +231,18 @@ class MigdalBase:
         print(f'Xsc {Xsc:.4f}')
 
         # compute the CDW susceptibility
-        X0 = -GG[...,0]
-        Xcdw = real(X0/(1.0 - 2.0*self.g0**2/self.omega * X0))
+        Xcdw = None
+        if self.renormalized:
+            X0 = -GG[...,0]
+            Xcdw = real(X0/(1.0 - 2.0*self.g0**2/self.omega * X0))
 
-        Xcdw = ravel(Xcdw)
-        a = argmax(abs(Xcdw))
-        print('Xcdw = %1.4f'%Xcdw[a])
+            Xcdw = ravel(Xcdw)
+            a = argmax(abs(Xcdw))
+            print('Xcdw = %1.4f'%Xcdw[a])
 
-        if Xsc<0.0 or any(Xcdw<0.0): 
-            print('Xcdw blew up')
-            return None, None
+            if Xsc<0.0 or any(Xcdw<0.0): 
+                print('Xcdw blew up')
+                return None, None
 
         return Xsc, Xcdw
 
