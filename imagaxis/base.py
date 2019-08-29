@@ -97,6 +97,10 @@ class MigdalBase:
     #-----------------------------------------------------------
     def selfconsistency(self, sc_iter, frac=0.9, alpha=0.5, S0=None, PI0=None, mu0=None):
         savedir, wn, vn, ek, mu, deriv, dndmu = self.setup()
+
+        save('savedir.npy', [savedir])
+        for key in self.keys:
+            save(savedir+key, [getattr(self, key)])
         
         if mu0 is not None:
             mu = mu0
@@ -140,9 +144,11 @@ class MigdalBase:
 
             #if i%max(sc_iter//30,1)==0:
             if True:
-                print('iter={} change={:.3e}, {:.3e} fill={:.13f} mu={:.5f}'.format(i, change[0], change[1], n, mu))
-                if True:
-                    print('sc ODLRO={:.4e}'.format(sum(S[...,0,1])/(self.nw*self.nk)))
+                odrlo = 'ODLRO={:.4e}'.format(mean(S[...,0,0,1]))
+                print('iter={} change={:.3e}, {:.3e} fill={:.13f} mu={:.5f}, {}'.format(i, change[0], change[1], n, mu, odrlo if self.sc else ''))
+
+                #save(savedir+'S%d.npy'%i, S[self.nk//4,self.nk//4])
+                #save(savedir+'PI%d.npy'%i, PI[self.nk//4,self.nk//4])
 
             if i>10 and sum(change)<2e-14:
                 # and abs(self.dens-n)<1e-5:
@@ -152,9 +158,6 @@ class MigdalBase:
             # or abs(n-self.dens)>1e-3):
             print('Failed to converge')
             return None, None, None, None, None, None
-
-        for key in self.keys:
-            save(savedir+key, [getattr(self, key)])
 
         return savedir, mu, G, D, S, GG
     #-------------------------------------------------------------------
