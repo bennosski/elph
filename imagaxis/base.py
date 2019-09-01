@@ -13,7 +13,7 @@ from anderson import AndersonMixing
 
 class MigdalBase:
     #----------------------------------------------------------
-    def __init__(self, params, basedir):
+    def __init__(self, params, basedir, loaddir=None):
         # basedir is the folder where results will be saved
         if not os.path.exists(basedir): os.makedirs(basedir)
         self.basedir = basedir
@@ -76,7 +76,11 @@ class MigdalBase:
     #-----------------------------------------------------------
     def dyson_fermion(self, wn, ek, mu, S, axis):
         Sw, jumpS = fourier.t2w(S, self.beta, axis, 'fermion')
-        mu = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,Sw))-self.dens, mu)[0]
+
+        if abs(self.dens-1.0)>1e-10:
+            mu = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,Sw))-self.dens, mu)[0]
+        else:
+            mu = 0
         Gw = self.compute_G(wn, ek, mu, Sw)        
 
         if len(shape(S))==self.dim + 3:
@@ -99,14 +103,24 @@ class MigdalBase:
         savedir, wn, vn, ek, mu, deriv, dndmu = self.setup()
 
         save('savedir.npy', [savedir])
+
+        if os.path.exists(savedir+'S.npy') and os.path.exists(savedir+'GG.npy'):
+            print('\nImag-axis calculation already done!!!! \n USING EXISTING DATA!!!!!')
+            S = load(savedir+'S.npy')
+            G = load(savedir+'G.npy')
+            mu = 0.0 if abs(self.dens-1.0)<1e-10 else None
+            GG = load(savedir+'GG.npy')
+            D = None
+            return savedir, mu, G, D, S, GG
+
         for key in self.keys:
             save(savedir+key, [getattr(self, key)])
         
         if mu0 is not None:
             mu = mu0
 
-        AMS  = AndersonMixing(alpha=alpha)
-        AMPI = AndersonMixing(alpha=alpha)
+        AMS  = AndersonMixing(alpha=alpha, frac=frac, n=2)
+        AMPI = AndersonMixing(alpha=alpha, frac=frac, n=2)
 
         print('\nImag-axis selfconsistency\n--------------------------')
 
@@ -132,20 +146,25 @@ class MigdalBase:
             # compute new selfenergies S(tau) and PI(tau)
             S  = self.compute_S(G, D)
             change[0] = mean(abs(S-S0))/(mean(abs(S+S0))+1e-10)
-            S  = frac*S + (1-frac)*S0
-            #S = AMS.step(S0, S)
+            if alpha is None:
+                S  = frac*S + (1-frac)*S0
+            else:
+                S = AMS.step(S0, S)
 
             if self.renormalized:
                 GG = self.compute_GG(G)
                 PI = self.g0**2 * GG
                 change[1] = mean(abs(PI-PI0))/(mean(abs(PI+PI0))+1e-10)
-                PI = frac*PI + (1-frac)*PI0
-                #PI = AMPI.step(PI0, PI)
+                if alpha is None:
+                    PI = frac*PI + (1-frac)*PI0
+                else:
+                    PI = AMPI.step(PI0, PI)
 
             #if i%max(sc_iter//30,1)==0:
             if True:
-                odrlo = 'ODLRO={:.4e}'.format(mean(S[...,0,0,1]))
-                print('iter={} change={:.3e}, {:.3e} fill={:.13f} mu={:.5f}, {}'.format(i, change[0], change[1], n, mu, odrlo if self.sc else ''))
+                odrlo = ', ODLRO={:.4e}'.format(mean(S[...,0,0,1]))
+                PImax = ', PImax={:.4e}'.format(amax(abs(PI)))
+                print('iter={} change={:.3e}, {:.3e} fill={:.13f} mu={:.5f}{}{}'.format(i, change[0], change[1], n, mu, odrlo if self.sc else '', PImax if self.renormalized else ''))
 
                 #save(savedir+'S%d.npy'%i, S[self.nk//4,self.nk//4])
                 #save(savedir+'PI%d.npy'%i, PI[self.nk//4,self.nk//4])
@@ -158,6 +177,21 @@ class MigdalBase:
             # or abs(n-self.dens)>1e-3):
             print('Failed to converge')
             return None, None, None, None, None, None
+
+        '''
+        if os.path.exists('savedirs.npy'):
+            savedirs = list(np.load('savedirs.npy'))
+        else:
+            savedirs = []
+        savedirs.append(savedir)
+        np.save('savedirs.npy', savedirs)
+        '''
+
+        np.save(savedir+'mu.npy', [mu])
+        np.save(savedir+'G.npy',G)
+        np.save(savedir+'D.npy', D)
+        np.save(savedir+'S.npy',S)
+        np.save(savedir+'GG.npy',GG)
 
         return savedir, mu, G, D, S, GG
     #-------------------------------------------------------------------

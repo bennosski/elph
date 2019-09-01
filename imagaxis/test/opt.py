@@ -16,15 +16,15 @@ print(np.sqrt(np.sum(x**2)))
 
 #------------------------------------
 
-AM = AndersonMixing(0.01)
+AM = AndersonMixing(alpha=0.01, n=2)
 
 #g = lambda x : np.cos(x)-0.5
 #g = lambda x : np.cos(x)+0.5
 #g = lambda x : 0.5*x + 3.0
 
 # example of overshoot in naive
-#g = lambda x : -2.0*x**2 + 2.0
-g = lambda x : -2.0*x + 2.0
+g = lambda x : -2.0*x**2 + 2.0
+#g = lambda x : -2.0*x + 2.0
 
 x = 0.1
 errs = []
