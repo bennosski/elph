@@ -1,4 +1,5 @@
 from numpy import *
+import numpy as np
 import time
 from convolution import conv
 import os
@@ -104,14 +105,11 @@ class MigdalBase:
 
         save('savedir.npy', [savedir])
 
-        if os.path.exists(savedir+'S.npy') and os.path.exists(savedir+'GG.npy'):
+        if os.path.exists(savedir+'S.npy') and os.path.exists(savedir+'PI.npy'):
             print('\nImag-axis calculation already done!!!! \n USING EXISTING DATA!!!!!')
-            S = load(savedir+'S.npy')
-            G = load(savedir+'G.npy')
-            mu = 0.0 if abs(self.dens-1.0)<1e-10 else None
-            GG = load(savedir+'GG.npy')
-            D = None
-            return savedir, mu, G, D, S, GG
+            S0  = np.load(savedir+'S.npy')
+            PI0 = np.load(savedir+'PI.npy')
+            mu0 = np.load(savedir+'mu.npy')[0]
 
         for key in self.keys:
             save(savedir+key, [getattr(self, key)])
@@ -127,7 +125,7 @@ class MigdalBase:
         if S0 is None or PI0 is None: 
             S, PI = self.init_selfenergies()
         else:
-            S, PI  = S0, PI0
+            S, PI  = S0[:], PI0[:]
 
         GG = None
 
@@ -162,12 +160,18 @@ class MigdalBase:
 
             #if i%max(sc_iter//30,1)==0:
             if True:
-                odrlo = ', ODLRO={:.4e}'.format(mean(S[...,0,0,1]))
-                PImax = ', PImax={:.4e}'.format(amax(abs(PI)))
-                print('iter={} change={:.3e}, {:.3e} fill={:.13f} mu={:.5f}{}{}'.format(i, change[0], change[1], n, mu, odrlo if self.sc else '', PImax if self.renormalized else ''))
+                odrlo = ', ODLRO={:.4e}'.format(mean(S[...,0,0,1])) if self.sc else ''
+                PImax = ', PImax={:.4e}'.format(amax(abs(PI))) if self.renormalized else ''
+                print('iter={} change={:.3e}, {:.3e} fill={:.13f} mu={:.5f}{}{}'.format(i, change[0], change[1], n, mu, odrlo, PImax))
 
                 #save(savedir+'S%d.npy'%i, S[self.nk//4,self.nk//4])
                 #save(savedir+'PI%d.npy'%i, PI[self.nk//4,self.nk//4])
+
+            np.save(savedir+'mu.npy', [mu])
+            np.save(savedir+'S.npy', S)
+            np.save(savedir+'PI.npy', PI)
+
+            if i==10: exit()
 
             if i>10 and sum(change)<2e-14:
                 # and abs(self.dens-n)<1e-5:
@@ -178,6 +182,9 @@ class MigdalBase:
             print('Failed to converge')
             return None, None, None, None, None, None
 
+        np.save(savedir+'G.npy', G)
+        np.save(savedir+'D.npy', D)
+
         '''
         if os.path.exists('savedirs.npy'):
             savedirs = list(np.load('savedirs.npy'))
@@ -187,11 +194,6 @@ class MigdalBase:
         np.save('savedirs.npy', savedirs)
         '''
 
-        np.save(savedir+'mu.npy', [mu])
-        np.save(savedir+'G.npy',G)
-        np.save(savedir+'D.npy', D)
-        np.save(savedir+'S.npy',S)
-        np.save(savedir+'GG.npy',GG)
 
         return savedir, mu, G, D, S, GG
     #-------------------------------------------------------------------

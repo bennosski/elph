@@ -132,6 +132,11 @@ def band_square_lattice(nk, t, tp):
     ek = -2.0*t*(cos(kxs)+cos(kys)) - 4.0*(tp)*cos(kxs)*cos(kys)
     return ek
 
+def gexp_1d(nk, q0):
+    qs = arange(-pi, pi, 2*pi/nk)
+    return exp(-abs(qs/q0))
+
+
 '''
 params = {}
 params['nw']    = 512

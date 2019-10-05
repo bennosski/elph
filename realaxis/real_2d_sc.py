@@ -48,9 +48,9 @@ class RealAxisMigdal(Migdal):
         B  = -1.0/np.pi * DR.imag[:,:,:,None,None] * np.ones([self.nk,self.nk,self.nr,2,2])
         tau3GRtau3 = np.einsum('ab,...bc,cd->...ad',Migdal.tau3,GR,Migdal.tau3)
         return -self.g0**2*self.dw/self.nk**2 * ( \
-              basic_conv(B, Gsum, ['k-q,q','k-q,q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
-             -basic_conv(B*(1+nB[None,None,:,None,None]), tau3GRtau3, ['k-q,q','k-q,q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
-             +basic_conv(B, tau3GRtau3*nF[None,None,:,None,None], ['k-q,q','k-q,q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr])
+              basic_conv(B, Gsum, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
+             -basic_conv(B*(1+nB[None,None,:,None,None]), tau3GRtau3, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
+             +basic_conv(B, tau3GRtau3*nF[None,None,:,None,None], ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr])
 
     #-----------------------------------------------------------
     def compute_PIR(self, GR, Gsum, nF):
@@ -104,8 +104,8 @@ class RealAxisMigdal(Migdal):
 
         # can I always use Gsum_plus[::-1]? what if w's are not symmetric?
 
-        AMSR  = AndersonMixing(alpha=alpha)
-        AMPIR = AndersonMixing(alpha=alpha)
+        #AMSR  = AndersonMixing(alpha=alpha)
+        #AMPIR = AndersonMixing(alpha=alpha)
         
         # selfconsistency loop
         change = [0,0]
@@ -144,24 +144,31 @@ if __name__=='__main__':
 
     print('2D Renormalized Migdal Real Axis')
 
-    ibeta = int(sys.argv[1])
-    betas = np.linspace(1.0, 20.0, 20) 
-   
     params = {}
     params['nw']    = 512
     params['nk']    = 20
     params['t']     = 1.0
-    params['tp']    = 0.0
+    params['tp']    = -0.3
+    params['dens']  = 0.8
+    # params['tp'] = 0.0
+    # params['dens'] = 1.0
     params['omega'] = 1.0
-    params['dens']  = 1.0
-    params['renormalized'] = True
     params['sc'] = True
     params['band']  = band_square_lattice
-    params['beta']  = betas[ibeta]   # 20.0
     params['dim']   = 2
+
+    ibeta = int(sys.argv[1])
+    betas = np.linspace(1.0, 50.0, 50) 
+    params['beta']  = betas[ibeta] 
+    renorm = True if sys.argv[2]=='True' else False
+    params['renormalized'] = renorm
+    #lamb = 0.2
+    #lamb = 0.3   # try this one as well......
+    lamb = float(sys.argv[3])
+
     W    = 8.0
-    lamb = 0.2
     params['g0'] = mylamb2g0(lamb, params['omega'], W)
+    params['gq2'] = 1
 
     params['dw']     = 0.001
     params['wmin']   = -4.1

@@ -42,8 +42,8 @@ class RealAxisMigdal(Migdal):
     #-----------------------------------------------------------
     def compute_SR(self, GR, Gsum, DR, nB, nF):
         B = -1.0/np.pi * DR.imag
-        return -self.g0**2*self.dw/self.nk**2*(basic_conv(B, Gsum, ['k-q,q','k-q,q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr]                -basic_conv(B*(1+nB)[None,None,:], GR, ['k-q,q','k-q,q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
-               +basic_conv(B, GR*nF[None,None,:], ['k-q,q','k-q,q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr])
+        return -self.g0**2*self.dw/self.nk**2*(basic_conv(B, Gsum, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr]                -basic_conv(B*(1+nB)[None,None,:], GR, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
+               +basic_conv(B, GR*nF[None,None,:], ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr])
 
     #-----------------------------------------------------------
     def compute_PIR(self, GR, Gsum, nF):
@@ -155,6 +155,7 @@ if __name__=='__main__':
     W    = 8.0
     lamb = 1.5/W
     params['g0'] = mylamb2g0(lamb, params['omega'], W)
+    params['gq2'] = 1
     print('g0 is ', params['g0'])
     
     migdal = RealAxisMigdal(params, basedir)

@@ -47,9 +47,9 @@ class RealAxisMigdal(Migdal):
         B  = -1.0/np.pi * DR.imag[:,:,None,None] * np.ones([self.nk,self.nr,2,2])
         tau3GRtau3 = np.einsum('ab,...bc,cd->...ad',Migdal.tau3,GR,Migdal.tau3)
         return -self.g0**2*self.dw/self.nk*( \
-                basic_conv(B, Gsum, ['k-q,q','z,w-z'], [0,1], [True,False])[:,:self.nr] \
-               -basic_conv(B*(1+nB[None,:,None,None]), tau3GRtau3, ['k-q,q','z,w-z'], [0,1], [True,False])[:,:self.nr] \
-               +basic_conv(B, tau3GRtau3*nF[None,:,None,None], ['k-q,q','z,w-z'], [0,1], [True,False])[:,:self.nr])
+                basic_conv(B, Gsum, ['q,k-q','z,w-z'], [0,1], [True,False])[:,:self.nr] \
+               -basic_conv(B*(1+nB[None,:,None,None]), tau3GRtau3, ['q,k-q','z,w-z'], [0,1], [True,False])[:,:self.nr] \
+               +basic_conv(B, tau3GRtau3*nF[None,:,None,None], ['q,k-q','z,w-z'], [0,1], [True,False])[:,:self.nr])
 
     #-----------------------------------------------------------
     def compute_PIR(self, GR, Gsum, nF):
@@ -152,6 +152,7 @@ if __name__=='__main__':
     lamb = 1.0
     W    = 4.0
     params['g0'] = mylamb2g0(lamb, params['omega'], W)
+    params['gq2'] = 1
 
     params['dw']     = 0.001
     params['wmin']   = -4.1

@@ -1,10 +1,9 @@
 
 import matplotlib
-matplotlib.use('TkAgg')
+#matplotlib.use('TkAgg')
 from matplotlib.pyplot import *
 import numpy as np
 
- 
 
 #basedir = '/home/groups/simes/bln/data/elph/imagaxis/example/'
 
@@ -12,11 +11,16 @@ import numpy as np
 #print('savedir', savedir)
 
 
+"""
 savedirs = list(np.load('savedirs.npy'))
 for i,s in enumerate(savedirs):
     print(i,s)
 i = int(input('which dir?'))
 savedir = savedirs[i]
+"""
+
+savedir = np.load('savedir.npy')[0]
+print(savedir)
 
 SR = np.load(savedir+'SR.npy')
 PIR = np.load(savedir+'PIR.npy')
@@ -46,28 +50,44 @@ if dim==1 and not sc:
     A = -1.0/np.pi*GR.imag
 
     figure()
+    plot(w, A[nk//2,:])
+    title('A(0)')
+    ylim(0, 3.0)
+    xlim(-3, -1.5)
+    savefig('figs/gkq/A.png')
+
+    figure()
+    imshow(A.T, origin='lower', aspect='auto', extent=[-np.pi,np.pi,w[0],w[-1]], vmax=2.5)
+    colorbar()
+    title('Akw all k')
+    savefig('figs/gkq/Ak.png')
+
+    B = -1.0/np.pi*DR.imag
+
+    figure()
+    imshow(B.T, origin='lower', aspect='auto', extent=[-np.pi,np.pi,w[0],w[-1]])
+    ylim(0, 0.2)
+    colorbar()
+    title('Bkw all k')
+    savefig('figs/gkq/Bk.png')
+
+    figure()
     plot(w, SR[nk//2].imag)
     plot(w, SR[nk//2].real)
     title('SR')
-    show()
+    xlim(-3,-1)
+    savefig('figs/gkq/SR.png')
+
+    exit()
 
     figure()
     plot(w, PIR[nk//2].imag)
     plot(w, PIR[nk//2].real)
     title('PIR')
     show()
+ 
+    exit()
 
-    figure()
-    imshow(A.T, origin='lower', aspect='auto', extent=[-np.pi,np.pi,w[0],w[-1]])
-    colorbar()
-    title('GR all k')
-    show()
-
-    figure()
-    imshow(-1.0/np.pi*DR.imag.T, origin='lower', aspect='auto', extent=[-np.pi,np.pi,w[0],w[-1]])
-    colorbar()
-    title('GR all k')
-    show()
 
 if dim==2 and sc:
     A = -1.0/np.pi*GR[:,:,:,0,0].imag

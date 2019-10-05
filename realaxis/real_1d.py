@@ -1,7 +1,7 @@
 import imagaxis
 from migdal_1d import Migdal
 from convolution import basic_conv
-from functions import band_1d_lattice, mylamb2g0
+from functions import band_1d_lattice, mylamb2g0, gexp_1d
 import os
 import numpy as np
 import fourier
@@ -42,15 +42,15 @@ class RealAxisMigdal(Migdal):
     #-----------------------------------------------------------
     def compute_SR(self, GR, Gsum, DR, nB, nF):
         B = -1.0/np.pi * DR.imag
-        return -self.g0**2*self.dw/self.nk*(basic_conv(B, Gsum, ['k-q,q','z,w-z'], [0,1], [True,False])[:,:self.nr] \
-             -basic_conv(B*(1+nB)[None,:], GR, ['k-q,q','z,w-z'], [0,1], [True,False])[:,:self.nr] \
-             +basic_conv(B, GR*nF[None,:], ['k-q,q','z,w-z'], [0,1], [True,False])[:,:self.nr])
+        return -self.g0**2*self.dw/self.nk*(basic_conv(self.gq2[:,None]*B, Gsum, ['q,k-q','z,w-z'], [0,1], [True,False])[:,:self.nr] \
+             -basic_conv(self.gq2[:,None]*B*(1+nB)[None,:], GR, ['q,k-q','z,w-z'], [0,1], [True,False])[:,:self.nr] \
+             +basic_conv(self.gq2[:,None]*B, GR*nF[None,:], ['q,k-q','z,w-z'], [0,1], [True,False])[:,:self.nr])
 
     #-----------------------------------------------------------
     def compute_PIR(self, GR, Gsum, nF):
         GA = np.conj(GR)
         A  = -1.0/np.pi * GR.imag
-        return 2.0*self.g0**2*self.dw/self.nk*(basic_conv(A, Gsum, ['k+q,k','z,w-z'], [0,1], [True,False])[:,:self.nr] \
+        return 2.0*self.g0**2*self.gq2[:,None]*self.dw/self.nk*(basic_conv(A, Gsum, ['k+q,k','z,w-z'], [0,1], [True,False])[:,:self.nr] \
                         -basic_conv(A, GA*nF[None,:], ['k+q,k','w+z,z'], [0,1], [True,False])[:,:self.nr] \
                         +basic_conv(A*nF[None,:], GA, ['k+q,k','w+z,z'], [0,1], [True,False])[:,:self.nr])
     
@@ -95,8 +95,8 @@ class RealAxisMigdal(Migdal):
         
         # selfconsistency loop
         change = [0,0]
-        frac = 0.6
-        for i in range(5):
+        frac = 0.9
+        for i in range(8):
             SR0 = SR[:]
             PIR0 = PIR[:]
 
@@ -132,34 +132,35 @@ if __name__=='__main__':
 
     params = {}
     params['nw']    = 512
-    params['nk']    = 200
+    params['nk']    = 400
     params['t']     = 1.0
     params['tp']    = 0.0
-    params['omega'] = 0.5
+    params['omega'] = 0.14
     params['dens']  = 1.0
-    params['renormalized'] = True
+    params['renormalized'] = False
     params['sc']    = 0
     params['band']  = band_1d_lattice
-    params['beta']  = 20.0
-    params['g0']    = 0.125
+    params['beta']  = 80.0
     params['dim']   = 1
 
     params['dw']     = 0.001
     params['wmin']   = -4.1
     params['wmax']   = +4.1
-    params['idelta'] = 0.010j
+    params['idelta'] = 0.005j
     
-    basedir = '/home/groups/simes/bln/data/elph/imagaxis/example/'
+    basedir = '/home/groups/simes/bln/data/elph/imagaxis/forward/'
     if not os.path.exists(basedir): os.makedirs(basedir)
 
-    lamb = 0.1
+    lamb = 1.0
     W    = 8.0
     params['g0'] = mylamb2g0(lamb, params['omega'], W)
+    params['q0'] = 0.05
+    params['gq2'] = gexp_1d(params['nk'], params['q0'])**2
     print('g0 is ', params['g0'])
     
     migdal = RealAxisMigdal(params, basedir)
 
-    sc_iter, S0, PI0 = 100, None, None
-    migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, mu0=None)
+    sc_iter, S0, PI0 = 2000, None, None
+    migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, mu0=None, frac=0.1)
 
     

@@ -1,5 +1,7 @@
 from numpy import *
-from params import params
+import matplotlib
+matplotlib.use('TkAgg')
+#from params import params
 from scipy import optimize
 from matplotlib.pyplot import *
 from scipy.interpolate import UnivariateSpline
