@@ -33,11 +33,12 @@ class MigdalBase:
         print('tp     = {:.3f}'.format(self.tp))
         print('dens   = {}'.format(self.dens))
         print('renorm = {}'.format(self.renormalized))
-        print('SC     = {}'.format(self.sc))
+        print('sc     = {}'.format(self.sc))
+        print('Q      = {}'.format(self.Q))
         self.dim = len(shape(self.band(1, 1.0, self.tp)))        
         print('dim    = {}'.format(self.dim))
         
-        savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_beta{:.4f}_sc{}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), self.dim, self.g0, self.nw, self.omega, self.dens, self.beta, 1 if self.sc else 0)
+        savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_beta{:.4f}_Q{}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), self.dim, self.g0, self.nw, self.omega, self.dens, self.beta, self.Q)
         if not os.path.exists(self.basedir+'data/'): os.mkdir(self.basedir+'data/')
         if not os.path.exists(savedir): os.mkdir(savedir)
 
@@ -49,17 +50,19 @@ class MigdalBase:
         wn = (2*arange(self.nw)+1) * pi / self.beta
         vn = (2*arange(self.nw+1)) * pi / self.beta
         
-        ek = self.band(self.nk, 1.0, self.tp)
+        ek = self.band(self.nk, 1.0, self.tp, Q=self.Q)
 
+        '''
         # estimate filling and dndmu at the desired filling
         mu = optimize.fsolve(lambda mu : 2.0*mean(1.0/(exp(self.beta*(ek-mu))+1.0))-self.dens, 0.0)[0]
         deriv = lambda mu : 2.0*mean(self.beta*exp(self.beta*(ek-mu))/(exp(self.beta*(ek-mu))+1.0)**2)
         dndmu = deriv(mu)
-
+        
         print('mu optimized = %1.3f'%mu)
         print('dndmu = %1.3f'%dndmu)
-        
-        return savedir, wn, vn, ek, mu, deriv, dndmu
+        '''
+
+        return savedir, wn, vn, ek
     #-----------------------------------------------------------
     def compute_fill(self, Gw): pass
     #-----------------------------------------------------------
@@ -101,11 +104,15 @@ class MigdalBase:
         return fourier.w2t(Dw, self.beta, axis, 'boson')
     #-----------------------------------------------------------
     def selfconsistency(self, sc_iter, frac=0.9, alpha=0.5, S0=None, PI0=None, mu0=None):
-        savedir, wn, vn, ek, mu, deriv, dndmu = self.setup()
+        savedir, wn, vn, ek = self.setup()
 
         save('savedir.npy', [savedir])
 
-        if os.path.exists(savedir+'S.npy') and os.path.exists(savedir+'PI.npy'):
+        ############################
+        # FOR NOW SKIP THIS STUFF
+        #############################
+        if False and os.path.exists(savedir+'S.npy') and os.path.exists(savedir+'PI.npy'):
+            
             print('\nImag-axis calculation already done!!!! \n USING EXISTING DATA!!!!!')
             S0  = np.load(savedir+'S.npy')
             PI0 = np.load(savedir+'PI.npy')
@@ -116,6 +123,8 @@ class MigdalBase:
         
         if mu0 is not None:
             mu = mu0
+        else:
+            mu = 0
 
         AMS  = AndersonMixing(alpha=alpha, frac=frac, n=2)
         AMPI = AndersonMixing(alpha=alpha, frac=frac, n=2)
@@ -160,7 +169,7 @@ class MigdalBase:
 
             #if i%max(sc_iter//30,1)==0:
             if True:
-                odrlo = ', ODLRO={:.4e}'.format(mean(S[...,0,0,1])) if self.sc else ''
+                odrlo = ', ODLRO={:.4e}'.format(mean(abs(S[...,0,0,1]))) if self.sc else ''
                 PImax = ', PImax={:.4e}'.format(amax(abs(PI))) if self.renormalized else ''
                 print('iter={} change={:.3e}, {:.3e} fill={:.13f} mu={:.5f}{}{}'.format(i, change[0], change[1], n, mu, odrlo, PImax))
 
@@ -170,8 +179,6 @@ class MigdalBase:
             np.save(savedir+'mu.npy', [mu])
             np.save(savedir+'S.npy', S)
             np.save(savedir+'PI.npy', PI)
-
-            if i==10: exit()
 
             if i>10 and sum(change)<2e-14:
                 # and abs(self.dens-n)<1e-5:

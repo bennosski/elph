@@ -113,23 +113,34 @@ def mylamb2g0(lamb, omega, W):
 def myg02lamb(g0, omega, W):
     return 2.0 * g0**2 / (omega * W)
 
-def band(nk, t, tp):
+def band(nk, t, tp, Q=None):
     #return -2.0*(cos(kxs) + cos(kys))  #+ alpha**2
     kys, kxs = meshgrid(arange(-pi, pi, 2*pi/nk), arange(-pi, pi, 2*pi/nk))
     ek = -2.0*t*(cos(kxs)+cos(kys)) - 4.0*(tp)*cos(kxs)*cos(kys)
     return ek
 
-def band_1d_lattice(nk, t, tp):
+def band_1d_lattice(nk, t, tp, Q=None):
     assert tp==0.0
     #return -2.0*(cos(kxs) + cos(kys))  #+ alpha**2
     kxs = arange(-pi, pi, 2*pi/nk)
     ek = -2.0*t*cos(kxs)
+ 
+    if Q is not None:
+       ekpq = -2.0*t*cos(kxs+Q)
+       ek = (ek, ekpq)
+
     return ek
 
-def band_square_lattice(nk, t, tp):
+def band_square_lattice(nk, t, tp, Q=None):
     #return -2.0*(cos(kxs) + cos(kys))  #+ alpha**2
     kys, kxs = meshgrid(arange(-pi, pi, 2*pi/nk), arange(-pi, pi, 2*pi/nk))
     ek = -2.0*t*(cos(kxs)+cos(kys)) - 4.0*(tp)*cos(kxs)*cos(kys)
+
+    if Q is not None:
+        Qx, Qy = Q
+        ekpq = -2.0*t*(cos(kxs+Qx)+cos(kys+Qy)) - 4.0*(tp)*cos(kxs+Qx)*cos(kys+Qy)
+        ek = (ek, ekpq)
+
     return ek
 
 def gexp_1d(nk, q0):
