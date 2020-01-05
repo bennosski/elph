@@ -19,13 +19,19 @@ print('sys.argv', sys.argv)
 
 job_index = int(sys.argv[1])
 
-fill, omega  = 0.8, 0.357342
+job_index2 = int(sys.argv[2])
 
-#fill, omega  = 0.4, 0.2137289
+if job_index2==1:
+    fill, omega  = 0.8, 0.357342
 
-#fill, omega  = 0.8, 3.57342472
+elif job_index2==2:
+    fill, omega  = 0.4, 0.2137289
 
-#fill, omega  = 0.4, 2.137289
+elif job_index2==3:
+    fill, omega  = 0.8, 3.57342472
+
+elif job_index2==4:
+    fill, omega  = 0.4, 2.137289
 
 #------------------------------------------------
 
@@ -61,7 +67,7 @@ params = setup(job_index)
 #basedir = '/scratch/users/bln/elph/imagaxis/dqmc/xs_no_initial_guess/'
 #basedir = '/home/users/bln/elph/data/dqmc/xs_no_initial_guess/'
 
-basedir = '/home/groups/tpd/bln/migdal/'
+basedir = '/home/groups/tpd/bln/migdal_mu0None/'
 
 S0, PI0, mu0 = None, None, None
 betas = []
@@ -73,7 +79,7 @@ Xcdws = []
 
 beta  = 1.6
 dbeta = 0.4
-while (beta < 30.0):
+while (dbeta > 0.09):
 
     print('2D Renormalized Migdal')
     
@@ -86,15 +92,22 @@ while (beta < 30.0):
     savedir, mu, G, D, S, GG = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, mu0=mu0, frac=0.2)
     PI = params['g0']**2 * GG
 
-    if G is None: break
+    if G is None:
+        dbeta /= 2
+        beta -= dbeta
+        continue
 
     sc_iter = 2000
     Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, GG, frac=0.2)
 
-    save(savedir + 'Xsc.npy',  [Xsc])
-    save(savedir + 'Xcdw.npy', [Xcdw])
+    #save(basedir + 'fill%1.1f_omega%1.6f/Xsc_lamb%1.6f.npy',  [Xsc])
+    #save(basedir + 'fill%1.1f_omega%1.6f/Xsc_lamb%1.6f.npy',  [Xsc])
+    #save(basedir + 'Xcdw.npy', [Xcdw])
 
-    if Xsc is None or Xcdw is None: break
+    if Xsc is None or Xcdw is None:
+        dbeta /= 2
+        beta -= dbeta
+        continue
     
     betas.append(beta)
     Xscs.append(Xsc)
@@ -102,10 +115,7 @@ while (beta < 30.0):
 
     save(basedir + 'xs_single_fill_fill%1.1f_omega%1.6f_Xscs_lamb%1.6f.npy'%(fill, omega, lambs[job_index]),  Xscs)
     save(basedir + 'xs_single_fill_fill%1.1f_omega%1.6f_Xcdws_lamb%1.6f.npy'%(fill, omega, lambs[job_index]),  Xcdws)
-    save(basedir + 'xs_single_fill_fill%1.1f_omega%1.6f_betas.npy', betas)
-
-    #save(basedir + 'Xcdws_beta%1.6f.npy'%beta, Xcdws)
-    #save(basedir + 'lambs.npy', lambs)
+    save(basedir + 'xs_single_fill_fill%1.1f_omega%1.6f_betas_lamb%1.6f.npy'%(fill, omega, lambs[job_index]), betas)
 
     print('------------------------------------------')
     print('simulation took', time.time()-time0, 's')
@@ -113,5 +123,5 @@ while (beta < 30.0):
 
     beta += dbeta
 
-    mu0, S0, PI0 = mu, S, PI
-
+    #mu0, S0, PI0 = mu, S, PI
+    mu0, S0, PI0 = None, S, PI
