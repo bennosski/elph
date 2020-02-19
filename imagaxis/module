@@ -2,4 +2,4 @@
 
 module purge
 ml python/3.6.1
-source migdal/bin/activate
+#source migdal/bin/activate

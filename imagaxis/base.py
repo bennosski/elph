@@ -52,7 +52,7 @@ class MigdalBase:
         
         ek = self.band(self.nk, 1.0, self.tp, Q=self.Q)
 
-        '''
+        
         # estimate filling and dndmu at the desired filling
         mu = optimize.fsolve(lambda mu : 2.0*mean(1.0/(exp(self.beta*(ek-mu))+1.0))-self.dens, 0.0)[0]
         deriv = lambda mu : 2.0*mean(self.beta*exp(self.beta*(ek-mu))/(exp(self.beta*(ek-mu))+1.0)**2)
@@ -60,9 +60,9 @@ class MigdalBase:
         
         print('mu optimized = %1.3f'%mu)
         print('dndmu = %1.3f'%dndmu)
-        '''
+        
 
-        return savedir, wn, vn, ek
+        return savedir, wn, vn, ek, mu, dndmu
     #-----------------------------------------------------------
     def compute_fill(self, Gw): pass
     #-----------------------------------------------------------
@@ -81,10 +81,13 @@ class MigdalBase:
     def dyson_fermion(self, wn, ek, mu, S, axis):
         Sw, jumpS = fourier.t2w(S, self.beta, axis, 'fermion')
 
+        '''
         if abs(self.dens-1.0)>1e-10:
             mu = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,Sw))-self.dens, mu)[0]
         else:
             mu = 0
+        '''
+
         Gw = self.compute_G(wn, ek, mu, Sw)        
 
         if len(shape(S))==self.dim + 3:
@@ -104,7 +107,7 @@ class MigdalBase:
         return fourier.w2t(Dw, self.beta, axis, 'boson')
     #-----------------------------------------------------------
     def selfconsistency(self, sc_iter, frac=0.9, alpha=0.5, S0=None, PI0=None, mu0=None):
-        savedir, wn, vn, ek = self.setup()
+        savedir, wn, vn, ek, mu, dndmu = self.setup()
 
         save('savedir.npy', [savedir])
 
@@ -124,7 +127,7 @@ class MigdalBase:
         if mu0 is not None:
             mu = mu0
         else:
-            mu = 0
+            mu = mu
 
         AMS  = AndersonMixing(alpha=alpha, frac=frac, n=2)
         AMPI = AndersonMixing(alpha=alpha, frac=frac, n=2)
@@ -149,6 +152,11 @@ class MigdalBase:
             n = self.compute_n(G)
             #mu -= alpha*(n-self.dens)/dndmu
             #mu = optimize.fsolve(lambda mu : self.compute_n(self.compute_G(wn,ek,mu,S))-self.dens, mu)[0]
+
+            
+            if abs(self.dens-1.0)>1e-10:
+                mu -= 0.1*(n-self.dens)/dndmu
+            
 
             # compute new selfenergies S(tau) and PI(tau)
             S  = self.compute_S(G, D)
