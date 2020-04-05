@@ -81,12 +81,11 @@ class MigdalBase:
     def dyson_fermion(self, wn, ek, mu, S, axis):
         Sw, jumpS = fourier.t2w(S, self.beta, axis, 'fermion')
 
-        '''
         if abs(self.dens-1.0)>1e-10:
-            mu = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,Sw))-self.dens, mu)[0]
+            mu_new = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,Sw))-self.dens, mu)[0]
+            mu = mu_new*0.9 + mu*0.1
         else:
             mu = 0
-        '''
 
         Gw = self.compute_G(wn, ek, mu, Sw)        
 
@@ -106,20 +105,24 @@ class MigdalBase:
         Dw  = self.compute_D(vn, PIw)
         return fourier.w2t(Dw, self.beta, axis, 'boson')
     #-----------------------------------------------------------
-    def selfconsistency(self, sc_iter, frac=0.9, alpha=0.5, S0=None, PI0=None, mu0=None):
+    def selfconsistency(self, sc_iter, frac=0.9, alpha=None, S0=None, PI0=None, mu0=None, cont=False):
         savedir, wn, vn, ek, mu, dndmu = self.setup()
 
         save('savedir.npy', [savedir])
 
-        ############################
-        # FOR NOW SKIP THIS STUFF
-        #############################
-        if False and os.path.exists(savedir+'S.npy') and os.path.exists(savedir+'PI.npy'):
-            
+        if os.path.exists(savedir+'S.npy') and os.path.exists(savedir+'PI.npy'):
             print('\nImag-axis calculation already done!!!! \n USING EXISTING DATA!!!!!')
             S0  = np.load(savedir+'S.npy')
             PI0 = np.load(savedir+'PI.npy')
             mu0 = np.load(savedir+'mu.npy')[0]
+            if not cont:
+                print('NOT continuing with imag axis')
+                mu, G = self.dyson_fermion(wn, ek, mu0, S0, self.dim)
+                D = self.dyson_boson(vn, PI0, self.dim)            
+                return savedir, mu0, G, D, S0, PI0 / self.g0**2
+            else:
+                print('continuing with imag axis')
+
 
         for key in self.keys:
             save(savedir+key, [getattr(self, key)])
@@ -134,14 +137,16 @@ class MigdalBase:
 
         print('\nImag-axis selfconsistency\n--------------------------')
 
-        if S0 is None or PI0 is None: 
+        if S0 is None: 
             S, PI = self.init_selfenergies()
         else:
-            S, PI  = S0[:], PI0[:]
+            S, PI = S0[:], PI0[:]
 
-        GG = None
+
+        GG = np.zeros_like(PI)
 
         change = [0, 0]
+        best_change = 1
         for i in range(sc_iter):
             S0, PI0  = S[:], PI[:]
 
@@ -153,10 +158,10 @@ class MigdalBase:
             #mu -= alpha*(n-self.dens)/dndmu
             #mu = optimize.fsolve(lambda mu : self.compute_n(self.compute_G(wn,ek,mu,S))-self.dens, mu)[0]
 
-            
+            '''
             if abs(self.dens-1.0)>1e-10:
-                mu -= 0.1*(n-self.dens)/dndmu
-            
+                mu -= 0.01*(n-self.dens)/dndmu
+            '''
 
             # compute new selfenergies S(tau) and PI(tau)
             S  = self.compute_S(G, D)
@@ -165,6 +170,7 @@ class MigdalBase:
                 S  = frac*S + (1-frac)*S0
             else:
                 S = AMS.step(S0, S)
+
 
             if self.renormalized:
                 GG = self.compute_GG(G)
@@ -175,6 +181,10 @@ class MigdalBase:
                 else:
                     PI = AMPI.step(PI0, PI)
 
+                # real part only?
+                # PI = PI.real
+
+
             #if i%max(sc_iter//30,1)==0:
             if True:
                 odrlo = ', ODLRO={:.4e}'.format(mean(abs(S[...,0,0,1]))) if self.sc else ''
@@ -184,9 +194,12 @@ class MigdalBase:
                 #save(savedir+'S%d.npy'%i, S[self.nk//4,self.nk//4])
                 #save(savedir+'PI%d.npy'%i, PI[self.nk//4,self.nk//4])
 
-            np.save(savedir+'mu.npy', [mu])
-            np.save(savedir+'S.npy', S)
-            np.save(savedir+'PI.npy', PI)
+            chg = 2*change[0]*change[1]/(change[0]+change[1]) 
+            if chg < best_change:
+                best_change = chg
+                np.save(savedir+'mu.npy', [mu])
+                np.save(savedir+'S.npy', S)
+                np.save(savedir+'PI.npy', PI)
 
             if i>10 and sum(change)<2e-14:
                 # and abs(self.dens-n)<1e-5:
@@ -208,7 +221,6 @@ class MigdalBase:
         savedirs.append(savedir)
         np.save('savedirs.npy', savedirs)
         '''
-
 
         return savedir, mu, G, D, S, GG
     #-------------------------------------------------------------------

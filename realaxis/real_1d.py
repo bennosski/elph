@@ -7,9 +7,6 @@ import numpy as np
 import fourier
 from anderson import AndersonMixing
 
-import matplotlib
-matplotlib.use('TkAgg')
-from matplotlib.pyplot import *
 
 class RealAxisMigdal(Migdal):
     #-----------------------------------------------------------
@@ -56,6 +53,7 @@ class RealAxisMigdal(Migdal):
     
     #-----------------------------------------------------------    
     def selfconsistency(self, sc_iter, frac=0.5, alpha=0.5, S0=None, PI0=None, mu0=None):
+
         savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0, mu0=mu0)
 
         print('\nReal-axis selfconsistency')
@@ -95,8 +93,8 @@ class RealAxisMigdal(Migdal):
         
         # selfconsistency loop
         change = [0,0]
-        frac = 0.9
-        for i in range(8):
+        frac = 0.2
+        for i in range(20):
             SR0 = SR[:]
             PIR0 = PIR[:]
 
@@ -117,7 +115,6 @@ class RealAxisMigdal(Migdal):
             if i%1==0: print('change = %1.3e, %1.3e'%(change[0], change[1]))
     
             if i>5 and np.sum(change)<2e-15: break
-
 
         np.save('savedir.npy', [savedir])            
         np.save(savedir+'w', w)

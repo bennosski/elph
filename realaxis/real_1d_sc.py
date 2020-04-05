@@ -7,9 +7,6 @@ import numpy as np
 import fourier
 from anderson import AndersonMixing
 
-import matplotlib
-matplotlib.use('TkAgg')
-from matplotlib.pyplot import *
 
 class RealAxisMigdal(Migdal):
     #-----------------------------------------------------------
@@ -21,7 +18,7 @@ class RealAxisMigdal(Migdal):
         w = np.arange(self.wmin, self.wmax, self.dw)
         self.nr = len(w)
         assert self.nr%2==0 and abs(w[self.nr//2])<1e-10
-        assert self.sc is True
+        #assert self.sc is True
 
         nB = 1.0/(np.exp(self.beta*w)-1.0)
         nF = 1.0/(np.exp(self.beta*w)+1.0)

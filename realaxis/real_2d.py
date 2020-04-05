@@ -7,9 +7,6 @@ import numpy as np
 import fourier
 from anderson import AndersonMixing
 
-import matplotlib
-matplotlib.use('TkAgg')
-from matplotlib.pyplot import *
 
 class RealAxisMigdal(Migdal):
     #-----------------------------------------------------------
@@ -56,6 +53,8 @@ class RealAxisMigdal(Migdal):
     #-----------------------------------------------------------    
     def selfconsistency(self, sc_iter, frac=0.5, alpha=0.5, S0=None, PI0=None, mu0=None):
         savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0, mu0=mu0)
+
+        print('savedir ', savedir)
 
         del D
         del GG

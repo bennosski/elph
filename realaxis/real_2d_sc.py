@@ -8,9 +8,6 @@ import fourier
 from anderson import AndersonMixing
 import time
 
-import matplotlib
-matplotlib.use('TkAgg')
-from matplotlib.pyplot import *
 
 class RealAxisMigdal(Migdal):
     #-----------------------------------------------------------
@@ -22,7 +19,7 @@ class RealAxisMigdal(Migdal):
         w = np.arange(self.wmin, self.wmax, self.dw)
         self.nr = len(w)
         assert self.nr%2==0 and abs(w[self.nr//2])<1e-10
-        assert self.sc is True
+        #assert self.sc is True
 
         nB = 1.0/(np.exp(self.beta*w)-1.0)
         nF = 1.0/(np.exp(self.beta*w)+1.0)
@@ -109,8 +106,8 @@ class RealAxisMigdal(Migdal):
         
         # selfconsistency loop
         change = [0,0]
-        fracR = 0.9
-        for i in range(5):
+        fracR = 0.5
+        for i in range(30):
             SR0 = SR[:]
             PIR0 = PIR[:]
 
@@ -131,12 +128,12 @@ class RealAxisMigdal(Migdal):
     
             if i>5 and np.sum(change)<2e-15: break
 
-        np.save('savedir.npy', [savedir])            
-        np.save(savedir+'w', w)
-        np.save(savedir+'GR', GR)
-        np.save(savedir+'SR', SR)
-        np.save(savedir+'DR', DR)
-        np.save(savedir+'PIR', PIR)
+            np.save('savedir.npy', [savedir])            
+            np.save(savedir+'w', w)
+            np.save(savedir+'GR', GR)
+            np.save(savedir+'SR', SR)
+            np.save(savedir+'DR', DR)
+            np.save(savedir+'PIR', PIR)
             
 
 if __name__=='__main__':
@@ -146,20 +143,28 @@ if __name__=='__main__':
 
     params = {}
     params['nw']    = 512
-    params['nk']    = 20
+    params['nk']    = 60
     params['t']     = 1.0
-    params['tp']    = -0.3
-    params['dens']  = 0.8
-    # params['tp'] = 0.0
-    # params['dens'] = 1.0
+
+    if sys.argv[4]=='False':
+        params['tp']    = -0.3
+        params['dens']  = 0.8
+    elif sys.argv[4]=='True':
+        params['tp'] = 0.0
+        params['dens'] = 1.0
+    else:
+        raise Exception
+
     params['omega'] = 1.0
     params['sc'] = True
     params['band']  = band_square_lattice
     params['dim']   = 2
 
-    ibeta = int(sys.argv[1])
-    betas = np.linspace(1.0, 50.0, 50) 
-    params['beta']  = betas[ibeta] 
+    #ibeta = int(sys.argv[1])
+    #betas = np.linspace(1.0, 50.0, 50) 
+    #params['beta']  = betas[ibeta] 
+    
+    params['beta']  = float(sys.argv[1]) 
     renorm = True if sys.argv[2]=='True' else False
     params['renormalized'] = renorm
     #lamb = 0.2
@@ -175,7 +180,7 @@ if __name__=='__main__':
     params['wmax']   = +4.1
     params['idelta'] = 0.010j
     
-    basedir = '/home/groups/simes/bln/data/elph/imagaxis/example/'
+    basedir = '/home/groups/simes/bln/data/elph/production/'
     if not os.path.exists(basedir): os.makedirs(basedir)
     
     migdal = RealAxisMigdal(params, basedir)

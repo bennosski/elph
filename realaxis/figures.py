@@ -20,6 +20,17 @@ import os
 
 class figures:
 
+    def marsiglio_fig9(self):
+        basedir = 'home/groups/tpd/bln/data/elph/marsiglio_fig9/'
+
+        folderR = ''
+  
+        f = figure()
+        f.set_size_inches(15, 5)
+
+        
+
+
     def forward_scattering(self):
 
         params = {}
