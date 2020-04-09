@@ -1,0 +1,100 @@
+from numpy import *
+from convolution import conv
+from base import MigdalBase
+from functions import mylamb2g0, band_square_lattice
+import os
+import time
+
+class Migdal(MigdalBase):
+    tau0 = array([[1.0, 0.0], [0.0, 1.0]])
+    tau1 = array([[0.0, 1.0], [1.0, 0.0]])
+    tau3 = array([[1.0, 0.0], [0.0,-1.0]])
+    I00 = array([[1.0, 0.0],  [0.0, 0.0]])
+    I11 = array([[0.0, 0.0],  [0.0, 1.0]])
+
+    #------------------------------------------------------------
+    def setup(self):
+        out = super().setup()
+        assert self.dim==2
+        return out
+    #------------------------------------------------------------
+    def compute_fill(self, Gw):
+        return 1.0 + 2./(self.nk**2 * self.beta) * 2.0*sum(Gw[...,0,0]).real # second 2 accounting for negative matsubara freqs
+    #------------------------------------------------------------
+    def compute_n(self, Gtau):
+        return -2.0*mean(Gtau[...,-1,0,0]).real
+    #------------------------------------------------------------
+    def compute_G(self, wn, eks, mu, S):
+        ek, ekpq = eks
+        ginv = 1j*wn[None,None,:,None,None]*Migdal.tau0[None,None,None,:,:] - (ek - mu)[:,:,None,None,None]*Migdal.I00[None,None,None,:,:] - (ekpq - mu)[:,:,None,None,None]*Migdal.I11[None,None,None,:,:] - S
+        return linalg.inv(ginv)
+    #------------------------------------------------------------
+    def compute_D(self, vn, PI):
+        return 1.0/(-((vn**2)[None,:] + self.omega**2)/(2.0*self.omega) - PI)
+    #------------------------------------------------------------
+    def compute_S(self, G, D):
+        #tau3Gtau3 = einsum('ab,kqwbc,cd->kqwad', Migdal.tau3, G, Migdal.tau3)
+        return -self.g0**2/self.nk**2 * conv(G, D[:,:,:,None,None], ['k-q,q','k-q,q'], [0,1], [True,True], beta=self.beta)
+    #------------------------------------------------------------
+    def compute_GG(self, G):
+        #tau3G = einsum('ab,kqwbc->kqwac', Migdal.tau3, G)
+        return 1.0/self.nk**2 * trace(conv(G, -G[:,::-1], ['k,k+q','k,k+q'], [0,1], [True,True], beta=self.beta, op='...ab,...bc->...ac'), axis1=-2, axis2=-1)
+    #------------------------------------------------------------
+    def init_selfenergies(self):
+        S  = zeros([self.nk,self.nk,self.ntau,2,2], dtype=complex)
+        PI = zeros([self.nk,self.nk,self.ntau], dtype=complex)
+        if self.sc:
+           S[...,0,0,1] = -0.1
+           S[...,0,1,0] = +0.1
+        return S, PI
+    #------------------------------------------------------------
+    def compute_x0(self, F0x, D, jumpF0, jumpD):
+        raise NotImplementedError
+        #return -self.g0**2/self.nk * conv(F0x, D, ['k-q,q', 'm,n-m'], [0,1], [True,False], self.beta, kinds=('fermion','boson','fermion'), op='...,...', jumps=(jumpF0, jumpD))
+
+
+if __name__=='__main__':
+    time0 = time.time()
+
+    # example usage as follows :
+    print('2D Migdal with superconductivity')
+
+    params = {}
+    params['nw']    = 512
+    params['nk']    = 20
+    params['t']     = 1.0
+    params['tp']    = 0.0
+    params['omega'] = 1.0
+    params['dens']  = 1.0
+    params['renormalized'] = True
+    params['sc']    = True
+    params['Q']     = (pi, pi)
+    params['band']  = band_square_lattice
+    params['beta']  = 20.0
+    params['dim']   = 2
+
+    basedir = '/home/groups/simes/bln/data/elph/imagaxis/example2/'
+    if not os.path.exists(basedir): os.makedirs(basedir)
+
+    lamb = 0.5
+    W = 8.0
+    params['g0'] = mylamb2g0(lamb, params['omega'], W)
+    print('g0 is ', params['g0'])
+    
+    migdal = Migdal(params, basedir)
+
+    sc_iter = 2000
+    S0, PI0, mu0  = None, None, None
+    savedir, mu, G, D, S, GG = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, mu0=None, frac=0.2)
+    if not params['renormalized']:
+        PI = None
+    else:
+        PI = params['g0']**2 * GG
+    save(savedir + 'S.npy', S)
+    save(savedir + 'PI.npy', PI)
+    save(savedir + 'G.npy', G)
+    save(savedir + 'D.npy', D)
+
+    print('------------------------------------------')
+    print('simulation took', time.time()-time0, 's')
+
