@@ -106,8 +106,8 @@ class RealAxisMigdal(Migdal):
         
         # selfconsistency loop
         change = [0,0]
-        fracR = 0.5
-        for i in range(30):
+        fracR = 0.8
+        for i in range(10):
             SR0 = SR[:]
             PIR0 = PIR[:]
 

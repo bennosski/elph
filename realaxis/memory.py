@@ -2,9 +2,13 @@
 
 # memory estimate
 
-nk = 20
+#nk = 20
+#nw = 512
+#nr = 8200
+
+nk = 100
 nw = 512
-nr = 8200
+nr = 820
 
 # S, S0, PI, PI0, G, GG, D
 # fac = 14

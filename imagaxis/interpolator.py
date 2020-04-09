@@ -12,7 +12,13 @@ class Interp:
         nk = np.load(folder + '/nk.npy')[0]
         ntau = np.shape(S)[2]
  
-        ks = np.arange(-np.pi, np.pi, 2*np.pi/nk)
+        dk = 2*np.pi/nk
+        ks = np.arange(-np.pi, np.pi + dk/2, dk)
+        Sext = np.concatenate((S, S[:,0,:,:,:][:,None,:,:,:]), axis=1)
+        Sext = np.concatenate((Sext, Sext[0,:,:,:,:][None,:,:,:,:]), axis=0)
+
+        PIext = np.concatenate((PI, PI[:,0,:][:,None,:]), axis=1)
+        PIext = np.concatenate((PIext, PIext[0,:,:][None,:,:]), axis=0)
 
         ksint = np.arange(-np.pi, np.pi, 2*np.pi/Nk)
 
@@ -20,15 +26,14 @@ class Interp:
         for it in range(ntau):
             for a in range(2):
                 for b in range(2):
-                    I = interpolate.interp2d(ks, ks, S, kind='linear')
-                    self.S[:,:,it,a,b] = I(ksint, ksint)
+                    Ir = interpolate.interp2d(ks, ks, Sext[:,:,it,a,b].real, kind='linear')
+                    Ii = interpolate.interp2d(ks, ks, Sext[:,:,it,a,b].imag, kind='linear')
+                    self.S[:,:,it,a,b] = Ir(ksint, ksint) + 1j*Ii(ksint, ksint)
 
         self.PI = np.zeros([Nk, Nk, ntau], dtype=complex)
         for it in range(ntau):
-            for a in range(2):
-                for b in range(2):
-                    I = interpolate.interp2d(ks, ks, PI, kind='linear')
-                    self.PI[:,:,it,a,b] = I(ksint, ksint)
-
+            Ir = interpolate.interp2d(ks, ks, PIext[:,:,it].real, kind='linear')
+            Ii = interpolate.interp2d(ks, ks, PIext[:,:,it].imag, kind='linear')
+            self.PI[:,:,it] = Ir(ksint, ksint) + 1j*Ii(ksint, ksint)
       
 
