@@ -201,7 +201,8 @@ class MigdalBase:
                 #save(savedir+'S%d.npy'%i, S[self.nk//4,self.nk//4])
                 #save(savedir+'PI%d.npy'%i, PI[self.nk//4,self.nk//4])
 
-            chg = 2*change[0]*change[1]/(change[0]+change[1]) 
+            #chg = 2*change[0]*change[1]/(change[0]+change[1]) 
+            chg = np.mean(change)
             if chg < best_change:
                 best_change = chg
                 np.save(savedir+'bestchg.npy', [best_change])
