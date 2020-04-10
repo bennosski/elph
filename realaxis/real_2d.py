@@ -119,6 +119,9 @@ class RealAxisMigdal(Migdal):
     
             if i>5 and np.sum(change)<2e-15: break
 
+        if not self.renormalized: # compute the bare propagator
+            DR = self.compute_DR(DRbareinv, PIR)
+
         np.save('savedir.npy', [savedir])            
         np.save(savedir+'w', w)
         np.save(savedir+'GR', GR)
