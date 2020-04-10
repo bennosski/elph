@@ -129,6 +129,7 @@ class RealAxisMigdal(Migdal):
             if i>5 and np.sum(change)<2e-15: break
 
             np.save('savedir.npy', [savedir])            
+            np.save('realchg.npy', [np.mean(change)])
             np.save(savedir+'w', w)
             np.save(savedir+'GR', GR)
             np.save(savedir+'SR', SR)

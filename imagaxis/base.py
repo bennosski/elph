@@ -109,6 +109,10 @@ class MigdalBase:
         save('savedir.npy', [savedir])
 
         if interp:
+            if len(os.listdir(savedir))>2:
+                print('DATA ALREADY EXISTS. PLEASE DELETE FIRST')
+                exit()
+
             # used for seeding a calculation with more k points from a calculation done with fewer k points
             S0 = interp.S
             PI0 = interp.PI 

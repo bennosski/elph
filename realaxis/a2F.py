@@ -76,13 +76,12 @@ print(v)
 # for each k, compute FS integral over k'
 # compute FS avg to get a2F
 
-def compute_lamb(basedir, folder):
+def compute_lamb(basedir, folder, ntheta=5):
     # only compute lambda without a2F 
     # only for the unrenormalized case
     
     wr, nr, nk, SR, DR, mu, t, tp, g0, omega = load(basedir, folder)
     
-    ntheta = 5
     dtheta = np.pi/(2*ntheta)
     thetas = np.arange(dtheta/2, np.pi/2, dtheta)
     assert len(thetas) == ntheta
@@ -120,11 +119,10 @@ def compute_lamb(basedir, folder):
     return lamb
 
 
-def a2F(basedir, folder):
+def a2F(basedir, folder, ntheta=5):
     
     wr, nr, nk, SR, DR, mu, t, tp, g0, omega = load(basedir, folder)
     
-    ntheta = 5
     dtheta = np.pi/(2*ntheta)
     thetas = np.arange(dtheta/2, np.pi/2, dtheta)
     assert len(thetas) == ntheta
