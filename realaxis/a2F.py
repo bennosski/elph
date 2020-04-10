@@ -76,9 +76,53 @@ print(v)
 # for each k, compute FS integral over k'
 # compute FS avg to get a2F
 
+def compute_lamb(basedir, folder):
+    # only compute lambda without a2F 
+    # only for the unrenormalized case
+    
+    wr, nr, nk, SR, DR, mu, t, tp, g0, omega = load(basedir, folder)
+    
+    ntheta = 5
+    dtheta = np.pi/(2*ntheta)
+    thetas = np.arange(dtheta/2, np.pi/2, dtheta)
+    assert len(thetas) == ntheta
+    
+    corners = ((-np.pi,-np.pi), 
+               (np.pi, -np.pi),
+               (-np.pi, np.pi),
+               (np.pi, np.pi))
+    
+    kxfs  = []
+    kyfs  = []
+    dEdks = []
+    vels  = []
+    rs    = []
+    Is = interpS(SR, wr, nr, nk)
+    for corner in corners:
+        for theta in thetas:
+            (kx, ky), r, dEdk =  kF(theta, corner[0], corner[1], t, tp, mu)
+            kxfs.append(kx)
+            kyfs.append(ky)
+            rs.append(r)
+            dEdks.append(dEdk)
+            v = vel(kx, ky, dEdk, Is, wr, nr)
+            vels.append(v)
+    
+    lamb = 0
+    for ik in range(ntheta):
+        lamb += rs[ik] / vels[ik] * dtheta
+    lamb *= 4
+    
+    lamb *= 2 * g0**2 / omega / (2*np.pi)**2
+
+    print('lamb = ', lamb)
+    
+    return lamb
+
+
 def a2F(basedir, folder):
     
-    wr, nr, nk, SR, DR, mu, t, tp, g0 = load(basedir, folder)
+    wr, nr, nk, SR, DR, mu, t, tp, g0, omega = load(basedir, folder)
     
     ntheta = 5
     dtheta = np.pi/(2*ntheta)
@@ -114,9 +158,7 @@ def a2F(basedir, folder):
         
     # get B interp
     B = -1.0/np.pi * DR.imag
-    nkf = 4*ntheta
     
-    Bint = np.zeros((nkf, nr-nr//2+1))
     a2F = np.zeros(nr)
     
     for iw in range(nr//2, nr):
@@ -142,14 +184,14 @@ def a2F(basedir, folder):
     plt.plot(wr, a2F)
     plt.savefig(basedir + 'a2F')
     
-    np.save('../data/'+folder+'/a2F.npy', a2F)
+    np.save(basedir + 'data/'+folder+'/a2F.npy', a2F)
     
     dw = (wr[-1]-wr[0]) / (len(wr)-1)
     lamb = 2 * np.sum(a2F[nr//2+1:] / wr[nr//2+1:]) * dw
     
     print('lamb_from_a2F = ', lamb)
     
-    np.save('../data/'+folder+'/lamb_from_a2F.npy', [lamb])
+    np.save(basedir + 'data/'+folder+'/lamb_from_a2F.npy', [lamb])
     
 
 def load(basedir, folder):
@@ -163,6 +205,7 @@ def load(basedir, folder):
     t  = np.load(basedir + 'data/'+folder+'/t.npy')[0]
     tp = np.load(basedir + 'data/'+folder+'/tp.npy')[0]
     g0 = np.load(basedir + 'data/'+folder+'/g0.npy')[0]
+    omega = np.load(basedir+'data/'+folder+'/omega.npy')[0]
     
     # extend SR and DR for interpolation
     SR = np.concatenate((SR, SR[0,...][None,:,:,:,:]), axis=0)
@@ -177,7 +220,7 @@ def load(basedir, folder):
     plt.plot(wr, SR[nk//4,nk//4,:,0,0].imag)
     '''
     
-    return wr, nr, nk, SR, DR, mu, t, tp, g0
+    return wr, nr, nk, SR, DR, mu, t, tp, g0, omega
 
 
 if __name__=='__main__':
@@ -188,4 +231,7 @@ if __name__=='__main__':
       
     folder = folders[0]
     
-    a2F('../', folder)
+    #a2F('../', folder)
+    
+    compute_lamb('../', folder)
+    
