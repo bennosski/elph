@@ -106,8 +106,9 @@ class MigdalBase:
     def selfconsistency(self, sc_iter, frac=0.9, alpha=None, S0=None, PI0=None, mu0=None, cont=False, interp=None):
         savedir, wn, vn, ek, mu, dndmu = self.setup()
 
-        save('savedir.npy', [savedir])
+        np.save('savedir.npy', [savedir])
 
+        best_change = 1
         if interp:
             if len(os.listdir(savedir))>2:
                 print('DATA ALREADY EXISTS. PLEASE DELETE FIRST')
@@ -121,6 +122,7 @@ class MigdalBase:
             S0  = np.load(savedir+'S.npy')
             PI0 = np.load(savedir+'PI.npy')
             mu0 = np.load(savedir+'mu.npy')[0]
+            best_change = np.load(savedir+'bestchg.npy')[0]
             if not cont:
                 print('NOT continuing with imag axis')
                 mu, G = self.dyson_fermion(wn, ek, mu0, S0, self.dim)
@@ -131,7 +133,7 @@ class MigdalBase:
 
 
         for key in self.keys:
-            save(savedir+key, [getattr(self, key)])
+            np.save(savedir+key, [getattr(self, key)])
         
         if mu0 is not None:
             mu = mu0
@@ -150,9 +152,7 @@ class MigdalBase:
 
 
         GG = np.zeros_like(PI)
-
         change = [0, 0]
-        best_change = 1
         for i in range(sc_iter):
             S0, PI0  = S[:], PI[:]
 
@@ -171,7 +171,7 @@ class MigdalBase:
 
             # compute new selfenergies S(tau) and PI(tau)
             S  = self.compute_S(G, D)
-            change[0] = mean(abs(S-S0))/(mean(abs(S+S0))+1e-10)
+            change[0] = np.mean(abs(S-S0))/(np.mean(abs(S+S0))+1e-10)
             if alpha is None:
                 S  = frac*S + (1-frac)*S0
             else:
@@ -181,7 +181,7 @@ class MigdalBase:
             if self.renormalized:
                 GG = self.compute_GG(G)
                 PI = self.g0**2 * GG
-                change[1] = mean(abs(PI-PI0))/(mean(abs(PI+PI0))+1e-10)
+                change[1] = np.mean(abs(PI-PI0))/(np.mean(abs(PI+PI0))+1e-10)
                 if alpha is None:
                     PI = frac*PI + (1-frac)*PI0
                 else:
@@ -194,12 +194,12 @@ class MigdalBase:
             #if i%max(sc_iter//30,1)==0:
             if True:
                 #odrlo = ', ODLRO={:.4e}'.format(mean(abs(S[...,0,0,1]))) if self.sc else ''
-                odrlo = ', ODLRO={:.4e}'.format(amax(abs(S[...,:,0,1]))) if self.sc else ''
+                odrlo = ', ODLRO={:.4e}'.format(np.amax(abs(S[...,:,0,1]))) if self.sc else ''
 
                 if len(np.shape(PI)) == len(np.shape(S)):
-                    odrlo += ' {:.4e} '.format(amax(abs(PI[...,:,0,1])))
+                    odrlo += ' {:.4e} '.format(np.amax(abs(PI[...,:,0,1])))
                 
-                PImax = ', PImax={:.4e}'.format(amax(abs(PI))) if self.renormalized else ''
+                PImax = ', PImax={:.4e}'.format(np.amax(abs(PI))) if self.renormalized else ''
                 print('iter={} change={:.3e}, {:.3e} fill={:.13f} mu={:.5f}{}{}'.format(i, change[0], change[1], n, mu, odrlo, PImax))
 
                 #save(savedir+'S%d.npy'%i, S[self.nk//4,self.nk//4])

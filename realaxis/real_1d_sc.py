@@ -50,9 +50,9 @@ class RealAxisMigdal(Migdal):
 
     #-----------------------------------------------------------
     def compute_PIR(self, GR, Gsum, nF):
-        tau3GA = np.einsum('ab,...bc->...ac', Migdal.tau3, conj(GR))
+        tau3GA = np.einsum('ab,...bc->...ac', Migdal.tau3, np.conj(GR))
         tau3A  = np.einsum('ab,...bc->...ac', Migdal.tau3, -1.0/np.pi * GR.imag)
-        return self.g0**2*self.dw/self.nk * einsum('...aa->...', \
+        return self.g0**2*self.dw/self.nk * np.einsum('...aa->...', \
                 basic_conv(tau3A, Gsum, ['k+q,k','z,w-z'], [0,1], [True,False], op='...ab,...bc->...ac')[:,:self.nr] \
                -basic_conv(tau3A, tau3GA*nF[None,:,None,None], ['k+q,k','w+z,z'], [0,1], [True,False], op='...ab,...bc->...ac')[:,:self.nr] \
                +basic_conv(tau3A*nF[None,:,None,None], tau3GA, ['k+q,k','w+z,z'], [0,1], [True,False], op='...ab,...bc->...ac')[:,:self.nr])
@@ -101,7 +101,6 @@ class RealAxisMigdal(Migdal):
         
         # selfconsistency loop
         change = [0,0]
-        frac = 0.9
         for i in range(5):
             SR0 = SR[:]
             PIR0 = PIR[:]
