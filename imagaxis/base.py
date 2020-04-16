@@ -5,6 +5,7 @@ from convolution import conv
 import os
 import sys
 from scipy import optimize
+from scipy.ndimage.filters import gaussian_filter
 from functions import lamb2g0_ilya
 import fourier
 import matplotlib 
@@ -79,11 +80,14 @@ class MigdalBase:
     def dyson_fermion(self, wn, ek, mu, S, axis):
         Sw, jumpS = fourier.t2w(S, self.beta, axis, 'fermion')
 
+        mu = -1.11
+        '''
         if abs(self.dens-1.0)>1e-10:
             mu_new = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,Sw))-self.dens, mu)[0]
             mu = mu_new*0.9 + mu*0.1
         else:
             mu = 0
+        '''
 
         Gw = self.compute_G(wn, ek, mu, Sw)        
 
@@ -102,6 +106,160 @@ class MigdalBase:
         PIw = fourier.t2w(PI, self.beta, axis, 'boson')
         Dw  = self.compute_D(vn, PIw)
         return fourier.w2t(Dw, self.beta, axis, 'boson')
+
+
+    def zero_mixing_iter(self, x0, x1, f0, f1):
+        e0 = x0 - f0
+        e1 = x1 - f1
+        me0 = np.mean(e0)
+        me1 = np.mean(e1)
+        #x0, x1 = x1, (e0*x1 - e1*x0) / (e0 - e1)
+        frac = 0.99
+        xn0 = x1
+        #xn1 = frac*(e0*x1 - e1*x0) / (e0 - e1)  + (1-frac)*x1
+        xn1 = frac*(me0*x1 - me1*x0) / (me0 - me1)  + (1-frac)*x1
+        return xn0, xn1, e0, e1
+
+
+    def selfconsistency1(self, sc_iter, frac=0.9, S0=None, PI0=None, mu0=None, cont=False, interp=None):
+        savedir, wn, vn, ek, mu, dndmu = self.setup()
+
+        np.save('savedir.npy', [savedir])
+
+        best_change = 1
+        if interp:
+            if len(os.listdir(savedir))>2:
+                print('DATA ALREADY EXISTS. PLEASE DELETE FIRST')
+                exit()
+
+            # used for seeding a calculation with more k points from a calculation done with fewer k points
+            S0 = interp.S
+            PI0 = interp.PI 
+        elif os.path.exists(savedir+'S.npy') and os.path.exists(savedir+'PI.npy'):
+            print('\nImag-axis calculation already done!!!! \n USING EXISTING DATA!!!!!')
+            S0  = np.load(savedir+'S.npy')
+            PI0 = np.load(savedir+'PI.npy')
+            mu0 = np.load(savedir+'mu.npy')[0]
+            best_change = np.load(savedir+'bestchg.npy')[0]
+            print('best_change', best_change)
+            if not cont:
+                print('NOT continuing with imag axis')
+                mu, G = self.dyson_fermion(wn, ek, mu0, S0, self.dim)
+                D = self.dyson_boson(vn, PI0, self.dim)            
+                return savedir, mu0, G, D, S0, PI0 / self.g0**2
+            else:
+                print('continuing with imag axis')
+
+
+        for key in self.keys:
+            np.save(savedir+key, [getattr(self, key)])
+        
+        if mu0 is not None:
+            mu = mu0
+        else:
+            mu = mu
+
+        print('\nImag-axis selfconsistency\n--------------------------')
+
+        if S0 is None: 
+            S0, PI0 = self.init_selfenergies()
+
+        mu = -1.11
+        def step(S, PI, mu):
+            mu, G = self.dyson_fermion(wn, ek, mu, S, self.dim)
+            D = self.dyson_boson(vn, PI, self.dim)
+            S = self.compute_S(G, D)
+            n = self.compute_n(G)
+
+            if self.renormalized:
+                GG = self.compute_GG(G)
+                PI = self.g0**2 * GG
+                
+            return S, PI, GG, n
+                           
+        n = 0
+        S1, PI1, GG1, n = step(S0, PI0, mu)
+        fS0, fPI0 = S1.copy(), PI1.copy()
+
+        frac = 0.4
+        S1 = frac*S1 + (1-frac)*S0
+        PI1 = frac*PI1 + (1-frac)*PI0
+
+        fS1, fPI1, GG1, n = step(S1, PI1, mu)       
+        GG = np.zeros_like(PI0)
+        change = [0, 0]
+        for i in range(sc_iter):
+            fS0, fPI0 = fS1, fPI1
+            fS1, fPI1, GG1, n = step(S1, PI1, mu)
+            S0, S1, eS0, eS1 = self.zero_mixing_iter(S0, S1, fS0, fS1)
+            PI0, PI1, ePI0, ePI1 = self.zero_mixing_iter(PI0, PI1, fPI0, fPI1)
+
+            change = [np.mean(np.abs(eS1)), np.mean(np.abs(ePI1))]
+
+
+            #if i%max(sc_iter//30,1)==0:
+            if True:
+                #odrlo = ', ODLRO={:.4e}'.format(mean(abs(S[...,0,0,1]))) if self.sc else ''
+                odrlo = ', ODLRO={:.4e}'.format(np.amax(abs(S1[...,:,0,1]))) if self.sc else ''
+
+                if len(np.shape(PI1)) == len(np.shape(S1)):
+                    odrlo += ' {:.4e} '.format(np.amax(abs(PI1[...,:,0,1])))
+                
+                PImax = ', PImax={:.4e}'.format(np.amax(abs(PI1))) if self.renormalized else ''
+                print('iter={} change={:.3e}, {:.3e} fill={:.13f} mu={:.5f}{}{}'.format(i, change[0], change[1], n, mu, odrlo, PImax))
+
+                #save(savedir+'S%d.npy'%i, S[self.nk//4,self.nk//4])
+                #save(savedir+'PI%d.npy'%i, PI[self.nk//4,self.nk//4])
+
+            #chg = 2*change[0]*change[1]/(change[0]+change[1]) 
+            chg = np.mean(change)
+            if chg < best_change:
+                best_change = chg
+                np.save(savedir+'bestchg.npy', [best_change, change[0], change[1]])
+                np.save(savedir+'mu.npy', [mu])
+                np.save(savedir+'S.npy', S1)
+                np.save(savedir+'PI.npy', PI1)
+
+            if i>10 and sum(change)<2e-14:
+                # and abs(self.dens-n)<1e-5:
+                break
+
+        if sc_iter>1 and sum(change)>1e-5:
+            # or abs(n-self.dens)>1e-3):
+            print('Failed to converge')
+            return None, None, None, None, None, None
+
+        np.save(savedir+'G.npy', G)
+        np.save(savedir+'D.npy', D)
+
+        '''
+        if os.path.exists('savedirs.npy'):
+            savedirs = list(np.load('savedirs.npy'))
+        else:
+            savedirs = []
+        savedirs.append(savedir)
+        np.save('savedirs.npy', savedirs)
+        '''
+
+        return savedir, mu, G, D, S1, GG1
+
+
+    def random_frac(self):
+        assert self.nk%2==0
+        x = np.random.random(size=(self.nk+1, self.nk+1)) - 0.4
+        x += x[::-1]
+        x += x[:,::-1]
+        x += x.T
+        #x = gaussian_filter(x, self.nk*0.1, mode='wrap')
+        return x[:-1, :-1] / 8
+        '''
+        x += x.T
+        x += x[::-1].T
+        x += x[:,::-1]
+        x += x[::-1]
+        return x[:-1, :-1] / 16
+        '''
+
     #-----------------------------------------------------------
     def selfconsistency(self, sc_iter, frac=0.9, alpha=None, S0=None, PI0=None, mu0=None, cont=False, interp=None):
         savedir, wn, vn, ek, mu, dndmu = self.setup()
@@ -123,6 +281,7 @@ class MigdalBase:
             PI0 = np.load(savedir+'PI.npy')
             mu0 = np.load(savedir+'mu.npy')[0]
             best_change = np.load(savedir+'bestchg.npy')[0]
+            print('best_change', best_change)
             if not cont:
                 print('NOT continuing with imag axis')
                 mu, G = self.dyson_fermion(wn, ek, mu0, S0, self.dim)
@@ -140,8 +299,9 @@ class MigdalBase:
         else:
             mu = mu
 
-        AMS  = AndersonMixing(alpha=alpha, frac=frac, n=2)
-        AMPI = AndersonMixing(alpha=alpha, frac=frac, n=2)
+        if alpha is not None:
+            AMS  = AndersonMixing(alpha=alpha, frac=frac, n=2)
+            AMPI = AndersonMixing(alpha=alpha, frac=frac, n=2)
 
         print('\nImag-axis selfconsistency\n--------------------------')
 
@@ -172,8 +332,13 @@ class MigdalBase:
             # compute new selfenergies S(tau) and PI(tau)
             S  = self.compute_S(G, D)
             change[0] = np.mean(abs(S-S0))/(np.mean(abs(S+S0))+1e-10)
+
+            #gamma = 0.2
+            gamma = 0.2
+            r = self.random_frac()
             if alpha is None:
-                S  = frac*S + (1-frac)*S0
+                S  = gamma*frac*r[:,:,None,None,None]*S + (1-gamma*frac*r[:,:,None,None,None])*S0
+                #@S  = gamma*frac*S + (1-gamma*frac)*S0
             else:
                 S = AMS.step(S0, S)
 
@@ -182,8 +347,11 @@ class MigdalBase:
                 GG = self.compute_GG(G)
                 PI = self.g0**2 * GG
                 change[1] = np.mean(abs(PI-PI0))/(np.mean(abs(PI+PI0))+1e-10)
+    
+                r = self.random_frac()
                 if alpha is None:
-                    PI = frac*PI + (1-frac)*PI0
+                    PI = r[:,:,None]*frac*PI + (1-r[:,:,None]*frac)*PI0
+                    #PI = frac*PI + (1-frac)*PI0
                 else:
                     PI = AMPI.step(PI0, PI)
 
@@ -209,7 +377,7 @@ class MigdalBase:
             chg = np.mean(change)
             if chg < best_change:
                 best_change = chg
-                np.save(savedir+'bestchg.npy', [best_change])
+                np.save(savedir+'bestchg.npy', [best_change, change[0], change[1]])
                 np.save(savedir+'mu.npy', [mu])
                 np.save(savedir+'S.npy', S)
                 np.save(savedir+'PI.npy', PI)

@@ -52,7 +52,7 @@ g_phil = g_beth * sqrt(2 omega)
 lambda_phil = lambda_beth 
 
 alpha_mars = g_beth
-lambda_mars = lambda_beth * W = lambda_phil * W
+plambda_mars = lambda_beth * W = lambda_phil * W
 
 g_phil = g_beth * sqrt(2 omega)
 
