@@ -8,15 +8,17 @@ from scipy import optimize
 from scipy.ndimage.filters import gaussian_filter
 from functions import lamb2g0_ilya
 import fourier
-import matplotlib 
-matplotlib.use('TkAgg')
-from matplotlib.pyplot import *
+#import matplotlib 
+#matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
 from anderson import AndersonMixing
+from scipy.linalg import solve
+
 
 class MigdalBase:
     #----------------------------------------------------------
     def __init__(self, params, basedir, loaddir=None):
-        # basedir is the folder where results will be saved
+        # basedir is the folder when results will be saved
         if not os.path.exists(basedir): os.makedirs(basedir)
         self.basedir = basedir
         self.keys = params.keys() 
@@ -60,6 +62,7 @@ class MigdalBase:
         
         print('mu optimized = %1.3f'%mu)
         print('dndmu = %1.3f'%dndmu)
+        print('savedir = ',savedir)
         
         return savedir, wn, vn, ek, mu, dndmu
     #-----------------------------------------------------------
@@ -77,6 +80,519 @@ class MigdalBase:
     #-----------------------------------------------------------
     def init_selfenergies(self): pass
     #-----------------------------------------------------------
+
+
+    def main_renormalized(self, frac, interp=None, cont=True):
+        
+        savedir, wn, vn, ek, mu, dndmu = self.setup()
+        mu = -1.11
+        
+        St, PIt = None, None
+        
+        best_change = 1
+        if interp:
+            if len(os.listdir(savedir))>2:
+                print('DATA ALREADY EXISTS. PLEASE DELETE FIRST')
+                exit()
+
+            # used for seeding a calculation with more k points from a calculation done with fewer k points
+            S0 = interp.S
+            PI0 = interp.PI 
+        elif os.path.exists(savedir+'S.npy') and os.path.exists(savedir+'PI.npy'):
+            print('\nImag-axis calculation already done!!!! \n USING EXISTING DATA!!!!!')
+            St  = np.load(savedir+'S.npy')
+            PIt = np.load(savedir+'PI.npy')
+            mu0 = np.load(savedir+'mu.npy')[0]
+            best_change = np.load(savedir+'bestchg.npy')[0]
+            print('best_change', best_change)
+            if not cont:
+                print('NOT continuing with imag axis')
+                mu, G = self.dyson_fermion(wn, ek, mu0, St, self.dim)
+                D = self.dyson_boson(vn, PIt, self.dim)            
+                return savedir, mu0, G, D, St, PIt / self.g0**2
+            else:
+                print('continuing with imag axis')
+
+        for key in self.keys:
+            np.save(savedir+key, [getattr(self, key)])
+        
+        
+        # move to setup
+        if self.sc:
+            # superconducting case
+            shp = ones(self.dim + 3, int)
+            shp[-2] = 2
+            shp[-1] = 2
+            jumpG = -reshape(identity(2), shp)
+        else:
+            jumpG = -1
+            
+        
+        if St is None and PIt is None:
+            St, PIt = self.init_selfenergies()
+        Sw, jumpS = fourier.t2w(St, beta=self.beta, axis=self.dim, kind='fermion')
+        PIw = fourier.t2w(PIt, beta=self.beta, axis=self.dim, kind='boson')
+        Dw  = self.compute_D(vn, PIw)
+            
+        change = [None, None]
+        for it in range(200):
+            Gw = self.compute_G(wn, ek, mu, Sw) 
+            Dw  = self.compute_D(vn, PIw)
+    
+            Gw2 = Gw**2
+            
+            dJdS = 1 + self.g0**2 / (self.nk**2 * self.beta) * Dw[self.nk//2,self.nk//2,0] * Gw2
+            
+            '''
+            G2w = np.concatenate((Gw, Gw), axis=0)
+            G2w = np.concatenate((G2w, G2w), axis=1)
+            G2w = G2w[::2, ::2]
+            
+            dJdPI = 1 - self.g0**2 / (self.nk**2 * self.beta) * (
+                np.trace(np.einsum('...ab,bc->...ac', Gw2, Gw[0,0,0]), axis1=-1, axis2=-2) +
+                np.trace(np.einsum('...ab,...bc->...ac', G2w, Gw2), axis1=-1, axis2=-2))
+            '''
+            
+            Gt = fourier.w2t(Gw, self.beta, self.dim, 'fermion', jumpG)
+            Dt = fourier.w2t(Dw, self.beta, self.dim, 'boson')
+            
+            St = self.compute_S(Gt, Dt)
+            PIt = self.g0**2 * self.compute_GG(Gt)
+            
+            newSw, jumpS = fourier.t2w(St, beta=self.beta, axis=self.dim, kind='fermion')
+            newPIw = fourier.t2w(PIt, beta=self.beta, axis=self.dim, kind='boson')
+           
+            change[0] = np.mean(np.abs(newSw-Sw))/np.mean(np.abs(newSw+Sw))
+            change[1] = np.mean(np.abs(newPIw-PIw))/np.mean(np.abs(newPIw+PIw))
+            odlro = np.mean(np.abs(Sw[...,0,1]))
+            print('iter {} change = {:.5e} {:5e}  odlro = {:.5e}'.format(it, *change, odlro))
+            
+            chg = np.mean(change)        
+            if chg < best_change:
+                best_change = chg
+                np.save(savedir+'bestchg.npy', [best_change, change[0], change[1]])
+                np.save(savedir+'mu.npy', [mu])
+                np.save(savedir+'S.npy', St)
+                np.save(savedir+'PI.npy', PIt)
+            
+            Sw = Sw - frac /dJdS * (Sw - newSw)
+            PIw = PIw - frac * (PIw - newPIw)
+            
+            if chg < 1e-14: break
+            
+        
+    def main_unrenormalized(self):
+        
+        savedir, wn, vn, ek, mu, dndmu = self.setup()
+        mu = -1.11
+        
+        # move to setup
+        if self.sc:
+            # superconducting case
+            shp = ones(self.dim + 3, int)
+            shp[-2] = 2
+            shp[-1] = 2
+            jumpG = -reshape(identity(2), shp)
+        else:
+            jumpG = -1
+            
+            
+        St, PIt = self.init_selfenergies()
+        Sw, jumpS = fourier.t2w(St, beta=self.beta, axis=self.dim, kind='fermion')
+        PIw = fourier.t2w(PIt, beta=self.beta, axis=self.dim, kind='boson')
+        Dw  = self.compute_D(vn, PIw)
+        Dt = fourier.w2t(Dw, self.beta, self.dim, 'boson')
+           
+        tau3 = np.array([[1,0], [0,-1]])
+        for it in range(200):
+            Gw = self.compute_G(wn, ek, mu, Sw) 
+
+            dJdS = 1 + self.g0**2 / (self.nk**2 * self.beta) * Dw[self.nk//2,self.nk//2,0] * \
+                np.einsum('ab,...bc,cd->...ad', tau3, Gw**2, tau3)
+           
+            Gt = fourier.w2t(Gw, self.beta, self.dim, 'fermion', jumpG)
+            
+            St = self.compute_S(Gt, Dt)
+           
+            newSw, jumpS = fourier.t2w(St, beta=self.beta, axis=self.dim, kind='fermion')
+      
+            change = np.mean(np.abs(newSw-Sw))/np.mean(np.abs(newSw+Sw))
+            odlro = np.mean(np.abs(Sw[...,0,1]))
+            print('iter {} change = {:.5e}  odlro = {:.5e}'.format(it, change, odlro))
+            
+            Sw = Sw -  1/dJdS * (Sw - newSw)
+       
+            if change < 1e-14: break
+          
+            
+        
+        
+        
+    def main_renormalized_matrix(self, fracS, fracPI, interp=None, cont=True):
+        # 37 iters to 1e-4 both for omega=1, beta=80, lamb=1/6
+        
+        savedir, wn, vn, ek, mu, dndmu = self.setup()
+        mu = -1.11
+        
+        St, PIt = None, None
+        
+        best_change = 1
+        if interp:
+            if len(os.listdir(savedir))>2:
+                print('DATA ALREADY EXISTS. PLEASE DELETE FIRST')
+                exit()
+
+            # used for seeding a calculation with more k points from a calculation done with fewer k points
+            St = interp.S
+            PIt = interp.PI 
+        elif os.path.exists(savedir+'S.npy') and os.path.exists(savedir+'PI.npy'):
+            print('\nImag-axis calculation already done!!!! \n USING EXISTING DATA!!!!!')
+            St  = np.load(savedir+'S.npy')
+            PIt = np.load(savedir+'PI.npy')
+            mu0 = np.load(savedir+'mu.npy')[0]
+            best_change = np.load(savedir+'bestchg.npy')[0]
+            print('best_change', best_change)
+            if not cont:
+                print('NOT continuing with imag axis')
+                mu, G = self.dyson_fermion(wn, ek, mu0, St, self.dim)
+                D = self.dyson_boson(vn, PIt, self.dim)            
+                return savedir, mu0, G, D, St, PIt / self.g0**2
+            else:
+                print('continuing with imag axis')
+
+        for key in self.keys:
+            np.save(savedir+key, [getattr(self, key)])
+        
+        
+        
+        # move to setup
+        if self.sc:
+            # superconducting case
+            shp = ones(self.dim + 3, int)
+            shp[-2] = 2
+            shp[-1] = 2
+            jumpG = -reshape(identity(2), shp)
+        else:
+            jumpG = -1
+            
+        if St is None and PIt is None:   
+            St, PIt = self.init_selfenergies()
+        Sw, jumpS = fourier.t2w(St, beta=self.beta, axis=self.dim, kind='fermion')
+        PIw = fourier.t2w(PIt, beta=self.beta, axis=self.dim, kind='boson')
+        Dw  = self.compute_D(vn, PIw)
+        Dt = fourier.w2t(Dw, self.beta, self.dim, 'boson')
+                
+        change = [None, None]
+        tau3 = np.array([[1,0], [0,-1]])
+        for it in range(200):
+            Gw = self.compute_G(wn, ek, mu, Sw) 
+            Dw  = self.compute_D(vn, PIw)
+            
+            Gt = fourier.w2t(Gw, self.beta, self.dim, 'fermion', jumpG)
+            Dt = fourier.w2t(Dw, self.beta, self.dim, 'boson')
+            
+            St = self.compute_S(Gt, Dt)
+            PIt = self.g0**2 * self.compute_GG(Gt)
+            
+            newSw, jumpS = fourier.t2w(St, beta=self.beta, axis=self.dim, kind='fermion')
+            newPIw = fourier.t2w(PIt, beta=self.beta, axis=self.dim, kind='boson')
+           
+            change[0] = np.mean(np.abs(newSw-Sw))/np.mean(np.abs(newSw+Sw))
+            change[1] = np.mean(np.abs(newPIw-PIw))/np.mean(np.abs(newPIw+PIw))
+            odlro = np.mean(np.abs(Sw[...,0,1]))
+            print('iter {} change = {:.5e} {:5e}  odlro = {:.5e}'.format(it, *change, odlro))
+            
+            chg = np.mean(change)        
+            if chg < best_change:
+                best_change = chg
+                np.save(savedir+'bestchg.npy', [best_change, change[0], change[1]])
+                np.save(savedir+'mu.npy', [mu])
+                np.save(savedir+'S.npy', St)
+                np.save(savedir+'PI.npy', PIt)
+
+
+            Dflat = np.reshape(Dw[:,:,0], [-1])
+            Drmk = Dflat[:,None] - Dflat[None,:]
+            
+            tGw2t = np.einsum('ab,...bc,cd->...ad', tau3, Gw**2, tau3)
+            tGw2t = np.reshape(tGw2t, [self.nk**2, self.nw, 2, 2])
+            
+            J = Sw - newSw
+            J = np.reshape(J, [self.nk**2, self.nw, 2, 2])
+            
+            for n in range(self.nw):
+                # dJdS will be nk^2 x nk^2
+                
+                #tG2t = np.einsum('ab,kbc,cd->kad', tau3, Gw2[:, n], tau3)
+                
+                for a in range(2):
+                    for b in range(2):
+                        dJdS = np.eye(self.nk**2) + self.g0**2 / (self.nk**2 * self.beta) * Drmk * tGw2t[None, :, n, a, b]
+                
+                        dS = solve(dJdS, J[:, n, a, b])
+                        
+                        Sw[:,:,n,a,b] -= fracS * np.reshape(dS, (self.nk, self.nk))
+            
+            PIw = (1-fracPI) * PIw + fracPI * newPIw
+                    
+            if np.mean(change) < 1e-14: break    
+        
+        
+    def main_renormalized_matrix_full(self):
+        # makes no sense
+        # can't combine n=0 for fermion and m=0 for boson
+        # would really need to combine all freqs and k points togeter
+        # how about an average over frequency?????
+        
+        savedir, wn, vn, ek, mu, dndmu = self.setup()
+        mu = -1.11
+        
+        # move to setup
+        if self.sc:
+            # superconducting case
+            shp = ones(self.dim + 3, int)
+            shp[-2] = 2
+            shp[-1] = 2
+            jumpG = -reshape(identity(2), shp)
+        else:
+            jumpG = -1
+            
+            
+        St, PIt = self.init_selfenergies()
+        Sw, jumpS = fourier.t2w(St, beta=self.beta, axis=self.dim, kind='fermion')
+        PIw = fourier.t2w(PIt, beta=self.beta, axis=self.dim, kind='boson')
+        Dw  = self.compute_D(vn, PIw)
+        Dt = fourier.w2t(Dw, self.beta, self.dim, 'boson')
+                
+        change = [None, None]
+        tau3 = np.array([[1,0], [0,-1]])
+        for it in range(200):
+            Gw = self.compute_G(wn, ek, mu, Sw) 
+            Dw  = self.compute_D(vn, PIw)
+            
+            print('shapes ', np.shape(Gw), np.shape(Dw))
+            exit()
+            
+            Gt = fourier.w2t(Gw, self.beta, self.dim, 'fermion', jumpG)
+            Dt = fourier.w2t(Dw, self.beta, self.dim, 'boson')
+            
+            St = self.compute_S(Gt, Dt)
+            PIt = self.g0**2 * self.compute_GG(Gt)
+            
+            newSw, jumpS = fourier.t2w(St, beta=self.beta, axis=self.dim, kind='fermion')
+            newPIw = fourier.t2w(PIt, beta=self.beta, axis=self.dim, kind='boson')
+           
+            change[0] = np.mean(np.abs(newSw-Sw))/np.mean(np.abs(newSw+Sw))
+            change[1] = np.mean(np.abs(newPIw-PIw))/np.mean(np.abs(newPIw+PIw))
+            odlro = np.mean(np.abs(Sw[...,0,1]))
+            print('iter {} change = {:.5e} {:5e}  odlro = {:.5e}'.format(it, *change, odlro))
+            
+
+            Dflat = np.reshape(Dw[:,:,0], [-1])
+            Drmk = Dflat[:,None] - Dflat[None,:]
+            
+            Gflat = np.reshape(Gw[:,:,0], [-1,2,2])
+            tG0kmrt = Gflat[None,:,:,:] - Gflat[:,None,:,:]
+            tG0kmrt = np.einsum('ab,rkbc,cd->rkad', tau3, tG0kmrt, tau3)
+            
+            tGw2t = np.einsum('ab,...bc,cd->...ad', tau3, Gw**2, tau3)
+            tGw2t = np.reshape(tGw2t, [self.nk**2, self.nw, 2, 2])
+            
+            Dw2 = Dw**2
+            
+            G2w = np.concatenate((Gw, Gw), axis=0)
+            G2w = np.concatenate((G2w, G2w), axis=1)
+            G2w = G2w[::2, ::2]
+            G2w = np.reshape(G2w, [self.nk**2, self.nw, 2, 2])
+            
+            JS = Sw - newSw
+            JS = np.reshape(JS, [self.nk**2, self.nw, 2, 2])
+            JPI = PIw - newPIw
+            JPI = np.reshape(JPI, [self.nk**2, self.nw, 2, 2])
+            J = np.concatenate((JS, JPI), axis=0)
+            
+            for n in range(self.nw):
+                # dJdS will be nk^2 x nk^2
+                
+                Gflat = np.reshape(Gw[:,:,n], [-1,2,2])
+                Gkmr  = Gflat[None,:,:,:] - Gflat[:,None,:,:]
+                
+                #tGw2t = np.einsum('ab,kbc,cd->kad', tau3, Gw2[:, n], tau3)
+                
+                dJdS = np.zeros((2*self.nk**2, 2*self.nk**2))
+                
+                dJdS[self.nk**2:, :self.nk**2] = -self.g0**2 / (self.nk**2 * self.beta) * \
+                            (np.einsum('kab, rkbc->rkac', tGw2t[:,n], Gkmr) + \
+                             np.einsum('kab, kbc->kac', G2w[:,n], tGw2t[:,n])[None,:])
+                                     
+                dJdS[self.nk**2:, self.nk**2:] = np.eye(self.nk**2)
+                
+                for a in range(2):
+                    for b in range(2):
+                        dJdS[:self.nk**2, :self.nk**2] = np.eye(2*self.nk**2) + self.g0**2 / (self.nk**2 * self.beta) * Drmk * tG2t[None, :, n, a, b]
+                
+                        dJdS[:self.nk**2, self.nk**2:] = self.g0**2 / (self.nk**2 * self.beta) * Dw2[None,:,n] * tG0kmrt[:,:,a,b]
+                        
+                        dS = solve(dJdS, J[:, n, a, b])
+                        
+                        Sw[:,:,n,a,b] -= 0.9 * np.reshape(dS, (self.nk, self.nk))
+            
+            PIw = 0.1 * PIw + 0.9 * newPIw
+                    
+            if np.mean(change) < 1e-14: break    
+        
+        
+        
+    def main_unrenormalized_matrix(self):
+        # ~ 22 iters to 1e-4 stable for omega=1, beta=80, lamb=0.3
+        
+        savedir, wn, vn, ek, mu, dndmu = self.setup()
+        mu = -1.11
+        
+        # move to setup
+        if self.sc:
+            # superconducting case
+            shp = ones(self.dim + 3, int)
+            shp[-2] = 2
+            shp[-1] = 2
+            jumpG = -reshape(identity(2), shp)
+        else:
+            jumpG = -1
+            
+            
+        St, PIt = self.init_selfenergies()
+        Sw, jumpS = fourier.t2w(St, beta=self.beta, axis=self.dim, kind='fermion')
+        PIw = fourier.t2w(PIt, beta=self.beta, axis=self.dim, kind='boson')
+        Dw  = self.compute_D(vn, PIw)
+        Dt = fourier.w2t(Dw, self.beta, self.dim, 'boson')
+           
+        Dflat = np.reshape(Dw[:,:,0], [-1])
+        Drmk = Dflat[:,None] - Dflat[None,:]
+                
+        
+        tau3 = np.array([[1,0], [0,-1]])
+        for it in range(200):
+            Gw = self.compute_G(wn, ek, mu, Sw) 
+
+            Gt = fourier.w2t(Gw, self.beta, self.dim, 'fermion', jumpG)
+            
+            St = self.compute_S(Gt, Dt)
+           
+            newSw, jumpS = fourier.t2w(St, beta=self.beta, axis=self.dim, kind='fermion')
+      
+            change = np.mean(np.abs(newSw-Sw))/np.mean(np.abs(newSw+Sw))
+            odlro = np.mean(np.abs(Sw[...,0,1]))
+            print('iter {} change = {:.5e}  odlro = {:.5e}'.format(it, change, odlro))
+            
+            tGw2t = np.einsum('ab,...bc,cd->...ad', tau3, Gw**2, tau3)
+            tGw2t = np.reshape(tGw2t, [self.nk**2, self.nw, 2, 2])
+            
+            J = Sw - newSw
+            J = np.reshape(J, [self.nk**2, self.nw, 2, 2])
+
+            J = Sw - newSw
+            J = np.reshape(J, [self.nk**2, self.nw, 2, 2])
+            
+            for n in range(self.nw):
+                # dJdS will be nk^2 x nk^2
+                
+                #tG2t = np.einsum('ab,kbc,cd->kad', tau3, Gw2[:, n], tau3)
+                
+                for a in range(2):
+                    for b in range(2):
+                        
+                        dJdS = np.eye(self.nk**2) + self.g0**2 / (self.nk**2 * self.beta) * Drmk * tGw2t[None, :, n, a, b]
+                
+                        dS = solve(dJdS, J[:, n, a, b])
+                        
+                        Sw[:,:,n,a,b] -= 0.9 * np.reshape(dS, (self.nk, self.nk))
+            
+                    
+            if change < 1e-14: break    
+        
+        
+        
+    def main_unrenormalized_wrong(self):
+        # doesn't work because we need to minimize J^2 not find a root
+        # i.e. using inverse of hessian
+        
+        
+        savedir, wn, vn, ek, mu, dndmu = self.setup()
+        mu = -1.11
+        
+        # move to setup
+        if self.sc:
+            # superconducting case
+            shp = ones(self.dim + 3, int)
+            shp[-2] = 2
+            shp[-1] = 2
+            jumpG = -reshape(identity(2), shp)
+        else:
+            jumpG = -1
+            
+            
+        St, PIt = self.init_selfenergies()
+        Sw, jumpS = fourier.t2w(St, beta=self.beta, axis=self.dim, kind='fermion')
+        PIw = fourier.t2w(PIt, beta=self.beta, axis=self.dim, kind='boson')
+        Dw  = self.compute_D(vn, PIw)
+        Dt = fourier.w2t(Dw, self.beta, self.dim, 'boson')
+        sumDw = np.sum(Dw)
+        
+        tau3 = np.array([[1,0], [0,-1]])
+        for it in range(200):
+            Gw = self.compute_G(wn, ek, mu, Sw) 
+
+            #dJdS = 1 + self.g0**2 / (self.nk**2 * self.beta) * Dw[self.nk//2,self.nk//2,0] * \
+            #    np.einsum('ab,...bc,cd->...ad', tau3, Gw**2, tau3)
+           
+            Gt = fourier.w2t(Gw, self.beta, self.dim, 'fermion', jumpG)
+            
+            St = self.compute_S(Gt, Dt)
+           
+            newSw, jumpS = fourier.t2w(St, beta=self.beta, axis=self.dim, kind='fermion')
+      
+        
+            '''
+            Jnk = Sw - newSw
+            J = np.sum(Jnk**2)
+            
+            Jtk = fourier.w2t(Jnk, self.beta, self.dim, 'fermion', jump=0)
+            convJDt = conv(Jtk, Dt[:,:,:,None,None], ['k-q,q','k-q,q'], [0,1], [True,True], beta=self.beta)
+            convJDw, _ = fourier.t2w(convJDt, beta=self.beta, axis=self.dim, kind='fermion')
+            
+            print('shape Jnk', np.shape(Jnk))
+            print('shape Gw', np.shape(Gw))
+            print('convJDw', np.shape(convJDw))
+            dJdS = 2*Jnk + 2*self.g0**2 / self.nk**2 * \
+                np.einsum('ab,...bc,cd->...ad', tau3, Gw**2, tau3) * convJDw
+            '''
+            
+            Jnk = Sw - newSw
+            sJnk = np.sign(Jnk)
+            J = np.sum(np.abs(Jnk))
+            
+            Jtk = fourier.w2t(sJnk, self.beta, self.dim, 'fermion', jump=0)
+            convJDt = conv(Jtk, Dt[:,:,:,None,None], ['k-q,q','k-q,q'], [0,1], [True,True], beta=self.beta)
+            convJDw, _ = fourier.t2w(convJDt, beta=self.beta, axis=self.dim, kind='fermion')
+            
+            print('shape Jnk', np.shape(Jnk))
+            print('shape Gw', np.shape(Gw))
+            print('convJDw', np.shape(convJDw))
+            dJdS = sJnk + self.g0**2 / self.nk**2 * \
+                np.einsum('ab,...bc,cd->...ad', tau3, Gw**2, tau3) * convJDw
+           
+            
+            change = np.mean(np.abs(newSw-Sw))/np.mean(np.abs(newSw+Sw))
+            odlro = np.mean(np.abs(Sw[...,0,1]))
+            print('iter {} change = {:.5e}  odlro = {:.5e}'.format(it, change, odlro))
+            
+            Sw = Sw - 0.001 * J / dJdS
+       
+            if change < 1e-14: break
+    
+
+
+
     def dyson_fermion(self, wn, ek, mu, S, axis):
         Sw, jumpS = fourier.t2w(S, self.beta, axis, 'fermion')
 
@@ -106,6 +622,152 @@ class MigdalBase:
         PIw = fourier.t2w(PI, self.beta, axis, 'boson')
         Dw  = self.compute_D(vn, PIw)
         return fourier.w2t(Dw, self.beta, axis, 'boson')
+
+
+    def random_S(self):
+        assert self.nk%2==0
+        x = np.random.randn(self.nk+1, self.nk+1, self.ntau, 2, 2)
+        x += x[::-1]
+        x += x[:,::-1]
+        x += np.transpose(x, axes=(1,0,2,3,4))
+        x += np.transpose(x, axes=(0,1,2,4,3))
+        return x[:-1, :-1] / 16
+    
+
+    def random_PI(self):
+        assert self.nk%2==0
+        x = np.random.randn(self.nk+1, self.nk+1, self.ntau)
+        x += x[::-1]
+        x += x[:,::-1]
+        x += np.transpose(x, axes=(1,0,2))
+        return x[:-1, :-1] / 8
+    
+
+    def gradient_descent(self, sc_iter, learning_rate, dr=1e-4, frac=0.9, alpha=None, S0=None, PI0=None, mu0=None, cont=False, interp=None):
+        # stochastic descent selfconsistency
+        
+        savedir, wn, vn, ek, mu, dndmu = self.setup()
+
+        np.save('savedir.npy', [savedir])
+
+        best_change = 1
+        if interp:
+            if len(os.listdir(savedir))>2:
+                print('DATA ALREADY EXISTS. PLEASE DELETE FIRST')
+                exit()
+
+            # used for seeding a calculation with more k points from a calculation done with fewer k points
+            S0 = interp.S
+            PI0 = interp.PI 
+        elif os.path.exists(savedir+'S.npy') and os.path.exists(savedir+'PI.npy'):
+            print('\nImag-axis calculation already done!!!! \n USING EXISTING DATA!!!!!')
+            S0  = np.load(savedir+'S.npy')
+            PI0 = np.load(savedir+'PI.npy')
+            mu0 = np.load(savedir+'mu.npy')[0]
+            best_change = np.load(savedir+'bestchg.npy')[0]
+            print('best_change', best_change)
+            if not cont:
+                print('NOT continuing with imag axis')
+                mu, G = self.dyson_fermion(wn, ek, mu0, S0, self.dim)
+                D = self.dyson_boson(vn, PI0, self.dim)            
+                return savedir, mu0, G, D, S0, PI0 / self.g0**2
+            else:
+                print('continuing with imag axis')
+
+
+        for key in self.keys:
+            np.save(savedir+key, [getattr(self, key)])
+        
+
+        print('\nImag-axis selfconsistency\n--------------------------')
+
+        if S0 is None: 
+            S0, PI0 = self.init_selfenergies()
+        
+        
+        # store an S and a J
+        # random update rup of S obeying symmetries
+        # store S updated and S updated next -> Jnext
+        # update S -= learning_rate * (Jnext - J) * rup
+        # linear mixing between updated and old if desired (or more advanced optimizer)
+        
+        def step(S, PI):
+            mu = None
+            _, G = self.dyson_fermion(wn, ek, mu, S, self.dim)
+            D = self.dyson_boson(vn, PI, self.dim)
+            Snext  = self.compute_S(G, D)
+            PInext = self.g0**2 * self.compute_GG(G)
+            return Snext, PInext
+        
+
+        S0next, PI0next = step(S0, PI0)
+        J0S  = np.mean(abs(S0next-S0))/np.mean(abs(S0next+S0))
+        J0PI = np.mean(abs(PI0next-PI0))/np.mean(abs(PI0next+PI0))
+
+        n = 0
+        change = [0, 0]
+        for i in range(sc_iter):
+            rs  = self.random_S()
+            rpi = self.random_PI()
+            
+            S1 = S0  + dr * rs 
+            PI1 = PI0 + dr * rpi
+            
+            S1next, PI1next = step(S1, PI1)
+            J1S  = np.mean(abs(S1next-S1))/np.mean(abs(S1next+S1))
+            J1PI = np.mean(abs(PI1next-PI1))/np.mean(abs(PI1next+PI1))
+            
+            S1  =  S0 - learning_rate * (J1S - J0S) * rs
+            PI1 = PI0 - learning_rate * (J1PI - J0PI) * rpi
+            
+            change[0] = np.mean(abs(S1-S0))/np.mean(abs(S1+S0))
+            change[1] = np.mean(abs(PI1-PI0))/np.mean(abs(PI1+PI0))
+    
+            S0 = S1[:]
+            PI0 = PI1[:]
+            S0next, PI0next = step(S0, PI0)
+            J0S  = np.mean(abs(S0next-S0))/np.mean(abs(S0next+S0))
+            J0PI = np.mean(abs(PI0next-PI0))/np.mean(abs(PI0next+PI0))
+
+
+            print('wtf', np.mean(np.abs(S1[...,0,1])))
+
+            #if i%max(sc_iter//30,1)==0:
+            if True:
+                #odlro = ', ODLRO={:.4e}'.format(mean(abs(S[...,0,0,1]))) if self.sc else ''
+                odlro = ', ODLRO={:.4e}'.format(np.amax(abs(S1[...,0,1]))) if self.sc else ''
+
+                if len(np.shape(PI1)) == len(np.shape(S1)):
+                    odrlo += ' {:.4e} '.format(np.amax(abs(PI1[...,0,1])))
+                
+                PImax = ', PImax={:.4e}'.format(np.amax(abs(PI1))) if self.renormalized else ''
+                print('iter={} change={:.3e}, {:.3e} fill={:.13f} mu={:.5f}{}{}'.format(i, change[0], change[1], n, mu, odlro, PImax))
+
+                #save(savedir+'S%d.npy'%i, S[self.nk//4,self.nk//4])
+                #save(savedir+'PI%d.npy'%i, PI[self.nk//4,self.nk//4])
+
+            #chg = 2*change[0]*change[1]/(change[0]+change[1]) 
+            chg = np.mean(change)
+            if chg < best_change:
+                best_change = chg
+                np.save(savedir+'bestchg.npy', [best_change, change[0], change[1]])
+                np.save(savedir+'mu.npy', [mu])
+                np.save(savedir+'S.npy', S1)
+                np.save(savedir+'PI.npy', PI1)
+
+            if i>10 and sum(change)<2e-14:
+                # and abs(self.dens-n)<1e-5:
+                break
+
+        if sc_iter>1 and sum(change)>1e-5:
+            # or abs(n-self.dens)>1e-3):
+            print('Failed to converge')
+            return None, None, None, None, None, None
+
+        np.save(savedir+'G.npy', G)
+        np.save(savedir+'D.npy', D)
+
+        return savedir, mu, G, D, S1, PI1 / self.g0**2
 
 
     def zero_mixing_iter(self, x0, x1, f0, f1):
@@ -260,8 +922,8 @@ class MigdalBase:
         return x[:-1, :-1] / 16
         '''
 
-    #-----------------------------------------------------------
-    def selfconsistency(self, sc_iter, frac=0.9, alpha=None, S0=None, PI0=None, mu0=None, cont=False, interp=None):
+
+    def selfconsistency0(self, sc_iter, frac=0.9, alpha=None, S0=None, PI0=None, mu0=None, cont=False, interp=None):
         savedir, wn, vn, ek, mu, dndmu = self.setup()
 
         np.save('savedir.npy', [savedir])
@@ -334,11 +996,12 @@ class MigdalBase:
             change[0] = np.mean(abs(S-S0))/(np.mean(abs(S+S0))+1e-10)
 
             #gamma = 0.2
-            gamma = 0.2
-            r = self.random_frac()
+            #gamma = 0.2
+            gamma = 1
+            #r = self.random_frac()
             if alpha is None:
-                S  = gamma*frac*r[:,:,None,None,None]*S + (1-gamma*frac*r[:,:,None,None,None])*S0
-                #@S  = gamma*frac*S + (1-gamma*frac)*S0
+                #S  = gamma*frac*r[:,:,None,None,None]*S + (1-gamma*frac*r[:,:,None,None,None])*S0
+                S  = gamma*frac*S + (1-gamma*frac)*S0
             else:
                 S = AMS.step(S0, S)
 
@@ -348,10 +1011,10 @@ class MigdalBase:
                 PI = self.g0**2 * GG
                 change[1] = np.mean(abs(PI-PI0))/(np.mean(abs(PI+PI0))+1e-10)
     
-                r = self.random_frac()
+                #r = self.random_frac()
                 if alpha is None:
-                    PI = r[:,:,None]*frac*PI + (1-r[:,:,None]*frac)*PI0
-                    #PI = frac*PI + (1-frac)*PI0
+                    #PI = r[:,:,None]*frac*PI + (1-r[:,:,None]*frac)*PI0
+                    PI = frac*PI + (1-frac)*PI0
                 else:
                     PI = AMPI.step(PI0, PI)
 
