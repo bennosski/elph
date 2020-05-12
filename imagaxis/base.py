@@ -334,11 +334,17 @@ class MigdalBase:
             change[0] = np.mean(abs(S-S0))/(np.mean(abs(S+S0))+1e-10)
 
             #gamma = 0.2
-            gamma = 0.2
-            r = self.random_frac()
+            gamma = 0.8
+            #r = self.random_frac()
             if alpha is None:
-                S  = gamma*frac*r[:,:,None,None,None]*S + (1-gamma*frac*r[:,:,None,None,None])*S0
-                #@S  = gamma*frac*S + (1-gamma*frac)*S0
+                #S  = gamma*frac*r[:,:,None,None,None]*S + (1-gamma*frac*r[:,:,None,None,None])*S0
+                #S  = gamma*frac*S + (1-gamma*frac)*S0
+                
+                power = 0
+                if i>2:
+                    S = S0 - S0**(power+1) + S*S0**power 
+
+                S = frac*S + (1-frac)*S0
             else:
                 S = AMS.step(S0, S)
 
@@ -348,10 +354,15 @@ class MigdalBase:
                 PI = self.g0**2 * GG
                 change[1] = np.mean(abs(PI-PI0))/(np.mean(abs(PI+PI0))+1e-10)
     
-                r = self.random_frac()
+                #r = self.random_frac()
                 if alpha is None:
-                    PI = r[:,:,None]*frac*PI + (1-r[:,:,None]*frac)*PI0
-                    #PI = frac*PI + (1-frac)*PI0
+                    #PI = r[:,:,None]*frac*PI + (1-r[:,:,None]*frac)*PI0
+                    
+                    power = -1
+                    if False:
+                        PI = PI0 - PI0**(power+1) + PI*PI0**power 
+                        
+                    PI = frac*PI + (1-frac)*PI0
                 else:
                     PI = AMPI.step(PI0, PI)
 
