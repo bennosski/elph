@@ -41,8 +41,8 @@ class Migdal(MigdalBase):
         S  = zeros([self.nk,self.nk,self.ntau,2,2], dtype=complex)
         PI = zeros([self.nk,self.nk,self.ntau], dtype=complex)
         if self.sc:
-           S[...,0,0,1] = 1e-3
-           S[...,0,1,0] = 1e-3
+           S[...,0,0,1] = 1e-2
+           S[...,0,1,0] = 1e-2
         return S, PI
     #------------------------------------------------------------
     def compute_x0(self, F0x, D, jumpF0, jumpD):

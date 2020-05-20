@@ -30,21 +30,48 @@ class Migdal(MigdalBase):
         return linalg.inv(ginv)
     #------------------------------------------------------------
     def compute_D(self, vn, PI):
-        return 1.0/(-((vn**2)[None,None,:] + self.omega**2)/(2.0*self.omega) - PI)
+        return 1.0/(-((vn**2)[None,None,:,None,None] + self.omega**2)/(2.0*self.omega) - PI)
     #------------------------------------------------------------
     def compute_S(self, G, D):
-        #tau3Gtau3 = einsum('ab,kqwbc,cd->kqwad', Migdal.tau3, G, Migdal.tau3)
-        return -self.g0**2/self.nk**2 * conv(G, D, ['k-q,q','k-q,q'], [0,1], [True,True], beta=self.beta)
+        #return -self.g0**2/self.nk**2 * conv(G, D, ['k-q,q','k-q,q'], [0,1], [True,True], beta=self.beta)
+        out = np.zeros((self.nk,self.nk,self.nw,2,2))
+        idxs = [(0,0,0,0), (0,1,0,1), (1,0,1,0), (1,1,1,1)]
+        for i,j,a,b in idxs:
+            out[:,:,:,0,0] += conv(G[:,:,:,i,j], D[:,:,:,a,b], ['k-q,q','k-q,q'], [0,1], [True,True], beta=self.beta)
+        idxs = [(0,0,0,1), (0,1,0,0), (1,0,1,1), (1,1,1,0)]
+        for i,j,a,b in idxs:
+            out[:,:,:,0,1] += conv(G[:,:,:,i,j], D[:,:,:,a,b], ['k-q,q','k-q,q'], [0,1], [True,True], beta=self.beta)
+        idxs = [(0,0,1,0), (0,1,1,1), (1,0,0,0), (1,1,0,1)]
+        for i,j,a,b in idxs:
+            out[:,:,:,1,0] += conv(G[:,:,:,i,j], D[:,:,:,a,b], ['k-q,q','k-q,q'], [0,1], [True,True], beta=self.beta)
+        idxs = [(0,0,1,1), (0,1,1,0), (1,0,0,1), (1,1,0,0)]
+        for i,j,a,b in idxs:
+            out[:,:,:,1,1] += conv(G[:,:,:,i,j], D[:,:,:,a,b], ['k-q,q','k-q,q'], [0,1], [True,True], beta=self.beta)
+        return -self.g0**2/self.nk**2 * out
     #------------------------------------------------------------
     def compute_GG(self, G):
-        #tau3G = einsum('ab,kqwbc->kqwac', Migdal.tau3, G)
-        return 1.0/self.nk**2 * trace(conv(G, -G[:,::-1], ['k,k+q','k,k+q'], [0,1], [True,True], beta=self.beta, op='...ab,...bc->...ac'), axis1=-2, axis2=-1)
+        out = np.zeros((self.nk,self.nk,self.nw,2,2))
+        Grev = -G[:,:,::-1]
+        idxs = [(0,0,0,0), (0,1,0,1), (1,0,1,0), (1,1,1,1)]
+        for i,j,a,b in idxs:
+            out[:,:,:,0,0] += conv(G[:,:,:,i,j], [:,:,:,a,b], ['k-q,q','k-q,q'], [0,1], [True,True], beta=self.beta)
+        idxs = [(0,0,0,1), (0,1,0,0), (1,0,1,1), (1,1,1,0)]
+        for i,j,a,b in idxs:
+            out[:,:,:,0,1] += conv(G[:,:,:,i,j], D[:,:,:,a,b], ['k-q,q','k-q,q'], [0,1], [True,True], beta=self.beta)
+        idxs = [(0,0,1,0), (0,1,1,1), (1,0,0,0), (1,1,0,1)]
+        for i,j,a,b in idxs:
+            out[:,:,:,1,0] += conv(G[:,:,:,i,j], D[:,:,:,a,b], ['k-q,q','k-q,q'], [0,1], [True,True], beta=self.beta)
+        idxs = [(0,0,1,1), (0,1,1,0), (1,0,0,1), (1,1,0,0)]
+        for i,j,a,b in idxs:
+            out[:,:,:,1,1] += conv(G[:,:,:,i,j], D[:,:,:,a,b], ['k-q,q','k-q,q'], [0,1], [True,True], beta=self.beta)
+        return -self.g0**2/self.nk**2 * out
+
     #------------------------------------------------------------
     def init_selfenergies(self):
         S  = zeros([self.nk,self.nk,self.ntau,2,2], dtype=complex)
         PI = zeros([self.nk,self.nk,self.ntau], dtype=complex)
-        if self.sc:
-           S[...,0,0,1] = -0.1
+        if hasattr(self, 'cdw') and self.cdw:
+           S[...,0,0,1] = +0.1
            S[...,0,1,0] = +0.1
         return S, PI
     #------------------------------------------------------------
@@ -67,7 +94,7 @@ if __name__=='__main__':
     params['omega'] = 1.0
     params['dens']  = 1.0
     params['renormalized'] = True
-    params['sc']    = True
+    params['cdw']   = True
     params['Q']     = (pi, pi)
     params['band']  = band_square_lattice
     params['beta']  = 20.0
