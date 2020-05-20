@@ -1,12 +1,12 @@
 import imagaxis
 from migdal_2d import Migdal
 from convolution import basic_conv
-from functions import band_square_lattice, mylamb2g0
+from functions import band_square_lattice, mylamb2g0, gexp_2d, omega_q
 import os
 import numpy as np
 import fourier
 from anderson import AndersonMixing
-
+import matplotlib.pyplot as plt
 
 class RealAxisMigdal(Migdal):
     #-----------------------------------------------------------
@@ -21,11 +21,15 @@ class RealAxisMigdal(Migdal):
 
         nB = 1.0/(np.exp(self.beta*w)-1.0)
         nF = 1.0/(np.exp(self.beta*w)+1.0)
-        DRbareinv = ((w+self.idelta)**2 - self.omega**2)/(2.0*self.omega)
-
+        
+        if hasattr(self, 'omega_q'):
+            DRbareinv = ((w[None,None,:]+self.idelta)**2 - self.omega_q[:,:,None]**2)/(2.0*self.omega_q[:,:,None])
+        else:
+            DRbareinv = ((w+self.idelta)**2 - self.omega**2)/(2.0*self.omega)
+            
         wn = (2*np.arange(self.nw)+1) * np.pi / self.beta
         vn = (2*np.arange(self.nw+1)) * np.pi / self.beta
-        ek = self.band(self.nk, 1.0, self.tp)
+        ek = self.band(self.nk, self.t, self.tp)
         
         return wn, vn, ek, w, nB, nF, DRbareinv
     #----------------------------------------------------------- 
@@ -34,25 +38,42 @@ class RealAxisMigdal(Migdal):
     
     #-----------------------------------------------------------
     def compute_DR(self, DRbareinv, PIR):
-        return 1.0/(DRbareinv[None,None,:] - PIR)
+        if hasattr(self, 'omega_q'):
+            return 1.0/(DRbareinv - PIR)
+        else:
+            return 1.0/(DRbareinv[None,None,:] - PIR)
     
     #-----------------------------------------------------------
     def compute_SR(self, GR, Gsum, DR, nB, nF):
         B = -1.0/np.pi * DR.imag
-        return -self.g0**2*self.dw/self.nk**2*(basic_conv(B, Gsum, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr]                -basic_conv(B*(1+nB)[None,None,:], GR, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
+        if hasattr(self, 'gq2'):
+            return -self.g0**2*self.dw/self.nk**2*(basic_conv(self.gq2[:,:,None]*B, Gsum, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr]                
+               -basic_conv(self.gq2[:,:,None]*B*(1+nB)[None,None,:], GR, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
+               +basic_conv(self.gq2[:,:,None]*B, GR*nF[None,None,:], ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr])        
+        else:
+            return -self.g0**2*self.dw/self.nk**2*(basic_conv(B, Gsum, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr]                
+               -basic_conv(B*(1+nB)[None,None,:], GR, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
                +basic_conv(B, GR*nF[None,None,:], ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr])
 
     #-----------------------------------------------------------
     def compute_PIR(self, GR, Gsum, nF):
         GA = np.conj(GR)
         A  = -1.0/np.pi * GR.imag
-        return 2.0*self.g0**2*self.dw/self.nk**2*(basic_conv(A, Gsum, ['k+q,k','k+q,k','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
+        if hasattr(self, 'gq2'):
+            return 2.0*self.g0**2*self.gq2[:,:,None]*self.dw/self.nk**2*(basic_conv(A, Gsum, ['k+q,k','k+q,k','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
+               -basic_conv(A, GA*nF[None,None,:], ['k+q,k','k+q,k','w+z,z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
+               +basic_conv(A*nF[None,None,:], GA, ['k+q,k','k+q,k','w+z,z'], [0,1,2], [True,True,False])[:,:,:self.nr])
+        else:
+            return 2.0*self.g0**2*self.dw/self.nk**2*(basic_conv(A, Gsum, ['k+q,k','k+q,k','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
                -basic_conv(A, GA*nF[None,None,:], ['k+q,k','k+q,k','w+z,z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
                +basic_conv(A*nF[None,None,:], GA, ['k+q,k','k+q,k','w+z,z'], [0,1,2], [True,True,False])[:,:,:self.nr])
     
     #-----------------------------------------------------------    
-    def selfconsistency(self, sc_iter, frac=0.5, alpha=0.5, S0=None, PI0=None, mu0=None):
-        savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0, mu0=mu0)
+    def selfconsistency(self, sc_iter, frac=0.5, alpha=0.5, S0=None, PI0=None, mu0=None, cont=False):
+        savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0, mu0=mu0, cont=cont)
+
+        for key in self.keys:
+            np.save(savedir+key, [getattr(self, key)])
 
         print('savedir ', savedir)
 
@@ -97,8 +118,9 @@ class RealAxisMigdal(Migdal):
         
         # selfconsistency loop
         change = [0,0]
-        frac = 0.9
-        for i in range(20):
+        frac = 0.8
+        best_chg = None
+        for i in range(100):
             SR0 = SR[:]
             PIR0 = PIR[:]
 
@@ -119,48 +141,143 @@ class RealAxisMigdal(Migdal):
     
             if i>5 and np.sum(change)<2e-15: break
 
-
-        np.save('savedir.npy', [savedir])            
-        np.save(savedir+'w', w)
-        np.save(savedir+'GR', GR)
-        np.save(savedir+'SR', SR)
-        np.save(savedir+'DR', DR)
-        np.save(savedir+'PIR', PIR)
+            if best_chg is None or np.mean(change) < best_chg:
+                best_chg = np.mean(change)
+                np.save('savedir.npy', [savedir])            
+                np.save(savedir+'w', w)
+                np.save(savedir+'GR', GR)
+                np.save(savedir+'SR', SR)
+                np.save(savedir+'DR', DR)
+                np.save(savedir+'PIR', PIR)
+                
             
 
 if __name__=='__main__':
+    def read_params(basedir, folder):
+        
+        params = {}
+        for fname in os.listdir(os.path.join(basedir, 'data/', folder)):
+            if '.npy' in fname:
+                data = np.load(os.path.join(basedir, 'data/', folder, fname), allow_pickle=True)
+                params[fname[:-4]] = data
+    
+        floats = ['beta', 'dens', 'dw', 'g0', 'mu', 'omega', \
+                  'idelta', 't', 'tp', 'wmax', 'wmin']
+        ints   = ['dim', 'nk', 'nw']
+        bools  = ['sc']
+        
+        for f in floats:
+            if f in params:
+                params[f] = params[f][0]
+        for i in ints:
+            if i in ints:
+                params[i] = int(params[i][0])
+        for b in bools:
+            if b in bools:
+                params[b] = bool(params[b][0])
+            
+        params['band'] = None
+    
+        return params
+
+
+    def plot():
+        basedir = '../test/'
+        
+        #folder = 'data_unrenormalized_nk40_abstp0.000_dim2_g01.73691_nw256_omega0.100_dens0.000_beta40.0000_QNone/'
+        #folder = 'data_renormalized_nk40_abstp0.000_dim2_g01.73691_nw256_omega0.100_dens0.000_beta20.0000_QNone/'
+        
+        params = read_params(basedir, folder)
+        GR = np.load(os.path.join(basedir, 'data', folder, 'GR.npy'))
+        
+        nk = params['nk']
+        plt.figure()
+        plt.plot(-1/np.pi * GR[nk//2, nk//2, :].imag)
+        plt.savefig(basedir+'data/'+folder+'G00')
+        plt.close()
+        
+        A = -1/np.pi * GR[:, nk//2, :].imag
+        plt.figure()
+        plt.imshow(A.T, origin='lower', aspect='auto', extent=[-np.pi,np.pi,-0.2,0.2])
+        plt.colorbar()
+        plt.xlim(-np.pi/2, np.pi/2)
+        plt.savefig(basedir+'data/'+folder+'Akw')
+        plt.close()
+        
+        omegq = omega_q(params['omega'], J=0.020, nk=params['nk'])
+        
+        DR = np.load(os.path.join(basedir, 'data', folder, 'DR.npy'))
+        
+        B = np.zeros((nk, np.shape(DR)[2]))
+        for ik in range(nk):
+            B[ik] = -1/np.pi * DR[ik, nk//2, :].imag
+        
+        
+        plt.figure()
+        plt.imshow(B.T, origin='lower', aspect='auto', extent=[-np.pi,np.pi,-0.2,0.2])
+        plt.colorbar()
+        plt.xlim(-np.pi, np.pi)
+        plt.ylim(0, 0.12)
+        #plt.plot(np.arange(-np.pi, np.pi, 2*np.pi/nk), np.diag(omegq))
+        plt.plot(np.arange(-np.pi, np.pi, 2*np.pi/nk), omegq[:, nk//2])
+        plt.savefig(basedir+'data/'+folder+'Bkw')
+        plt.close()
+        
+        
+    plot()
+    exit
+    
     print('2D Renormalized Migdal Real Axis')
 
     params = {}
-    params['nw']    = 512
-    params['nk']    =   4
-    params['t']     = 1.0
+    params['nw']    = 256
+    params['nk']    = 40
+    params['t']     = 0.040
     params['tp']    = 0.0
-    params['omega'] = 0.5
-    params['dens']  = 1.0
-    params['renormalized'] = False
+    params['omega'] = 0.100
+    params['omega_q'] = omega_q(params['omega'], J=0.020, nk=params['nk'])
+    params['dens']  = 0.0
+    params['renormalized'] = True
     params['sc']    = 0
     params['band']  = band_square_lattice
-    params['beta']  = 8.0
+    params['beta']  = 20.0
     params['dim']   = 2
-
-    params['dw']     = 0.001
-    params['wmin']   = -4.1
-    params['wmax']   = +4.1
-    params['idelta'] = 0.025j
     
-    basedir = '/home/groups/simes/bln/data/elph/imagaxis/example/'
+    params['fixed_mu'] = -0.090
+    #params['fixed_mu'] = -0.00
+
+    #basedir = '/home/groups/simes/bln/data/elph/imagaxis/example/'
+    basedir = '../test/'
     if not os.path.exists(basedir): os.makedirs(basedir)
 
-    W    = 8.0
-    lamb = 1.5/W
-    params['g0'] = mylamb2g0(lamb, params['omega'], W)
-    params['gq2'] = 1
+    #lamb = 1/6
+    #lamb = 188.56
+    W    = 8.0*params['t']
+    #params['g0'] = mylamb2g0(lamb, params['omega'], W)
+    params['g0'] = 1.73691219
     print('g0 is ', params['g0'])
+    
+    
+    #params['q0'] = None
+    params['q0'] = 0.3
+    if params['q0'] is not None:
+        params['gq2'] = gexp_2d(params['nk'], q0=params['q0'])**2
+    
+
+    params['dw']     = 0.001
+    params['wmin']   = -1.0
+    params['wmax']   = +1.0
+    params['idelta'] = 0.005j
+    
+    #basedir = '/home/groups/simes/bln/data/elph/imagaxis/example/'
+    basedir = '../test/'
+    if not os.path.exists(basedir): os.makedirs(basedir)
+
+    
     
     migdal = RealAxisMigdal(params, basedir)
 
-    sc_iter, S0, PI0 = 2000, None, None
-    migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, mu0=None, frac=0.2)
+    sc_iter, S0, PI0 = 100, None, None
+    migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, mu0=None, frac=0.2, cont=False)
 
     

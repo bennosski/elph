@@ -34,12 +34,13 @@ class MigdalBase:
         print('tp     = {:.3f}'.format(self.tp))
         print('dens   = {}'.format(self.dens))
         print('renorm = {}'.format(self.renormalized))
-        print('sc     = {}'.format(self.sc))
-        print('Q      = {}'.format(self.Q))
+        if hasattr(self, 'sc'): print('sc     = {}'.format(self.sc))
+        if hasattr(self, 'Q'): print('Q      = {}'.format(self.Q))
         self.dim = len(shape(self.band(1, 1.0, self.tp)))        
         print('dim    = {}'.format(self.dim))
         
-        savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_beta{:.4f}_Q{}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), self.dim, self.g0, self.nw, self.omega, self.dens, self.beta, self.Q)
+        Q = None if not hasattr(self, 'Q') else self.Q
+        savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_beta{:.4f}_Q{}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), self.dim, self.g0, self.nw, self.omega, self.dens, self.beta, Q)
         if not os.path.exists(self.basedir+'data/'): os.mkdir(self.basedir+'data/')
         if not os.path.exists(savedir): os.mkdir(savedir)
 
@@ -51,7 +52,8 @@ class MigdalBase:
         wn = (2*arange(self.nw)+1) * pi / self.beta
         vn = (2*arange(self.nw+1)) * pi / self.beta
         
-        ek = self.band(self.nk, 1.0, self.tp, Q=self.Q)
+        ek = self.band(self.nk, self.t, self.tp, Q)
+        
         
         # estimate filling and dndmu at the desired filling
         mu = optimize.fsolve(lambda mu : 2.0*mean(1.0/(exp(self.beta*(ek-mu))+1.0))-self.dens, 0.0)[0]
@@ -80,7 +82,8 @@ class MigdalBase:
     def dyson_fermion(self, wn, ek, mu, S, axis):
         Sw, jumpS = fourier.t2w(S, self.beta, axis, 'fermion')
 
-        mu = -1.11
+        mu = self.fixed_mu
+        #mu = -1.11
         '''
         if abs(self.dens-1.0)>1e-10:
             mu_new = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,Sw))-self.dens, mu)[0]
@@ -101,7 +104,8 @@ class MigdalBase:
             jumpG = -1
 
         return mu, fourier.w2t(Gw, self.beta, axis, 'fermion', jumpG)
-    #-----------------------------------------------------------
+   
+    
     def dyson_boson(self, vn, PI, axis):
         PIw = fourier.t2w(PI, self.beta, axis, 'boson')
         Dw  = self.compute_D(vn, PIw)

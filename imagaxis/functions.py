@@ -5,7 +5,7 @@ import sys
 Definitions:
 
 --------
-Phil
+Phil 
 --------
 
 D0 = -2*omega/(ivn^2 + omega^2)
@@ -48,13 +48,24 @@ lamb = g^2/(omega^2 * W)
 
 ----------------------------
 
-g_phil = g_beth * sqrt(2 omega)
+Latest but contradicting result:
+    
+Hint_beth = g_beth n X = g _beth (b + b^dag) / sqrt(2 omega)
+Hint_phil = g_phil n (b + b^dag)
+
+g_phil = g_beth / sqrt(2 omega)
+
+lamb = 2 g_phil^2 / (omega W) = g_beth^2 / (omega^2 W)
+
+----------------------------
+
+g_phil = g_beth * sqrt(2 omega) ?????
 lambda_phil = lambda_beth 
 
 alpha_mars = g_beth
 plambda_mars = lambda_beth * W = lambda_phil * W
 
-g_phil = g_beth * sqrt(2 omega)
+g_phil = g_beth * sqrt(2 omega) ?????
 
 g_phil = alpha_mars * sqrt(2 omega)
 
@@ -146,6 +157,15 @@ def band_square_lattice(nk, t, tp, Q=None):
 def gexp_1d(nk, q0):
     qs = arange(-pi, pi, 2*pi/nk)
     return exp(-abs(qs/q0))
+
+
+def gexp_2d(nk, q0):
+    qs = arange(-pi, pi, 2*pi/nk)
+    return exp(-sqrt(qs[:,None]**2 + qs[None,:]**2)/q0)
+
+def omega_q(omega, J, nk):
+    qs = arange(-pi, pi, 2*pi/nk)
+    return omega + J/2*(sin(qs[:,None]/2)**2 + sin(qs[None,:]/2)**2)
 
 
 '''

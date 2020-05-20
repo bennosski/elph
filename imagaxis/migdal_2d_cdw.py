@@ -9,8 +9,8 @@ class Migdal(MigdalBase):
     tau0 = array([[1.0, 0.0], [0.0, 1.0]])
     tau1 = array([[0.0, 1.0], [1.0, 0.0]])
     tau3 = array([[1.0, 0.0], [0.0,-1.0]])
-    I00 = array([[1.0, 0.0],  [0.0, 0.0]])
-    I11 = array([[0.0, 0.0],  [0.0, 1.0]])
+    I00  = array([[1.0, 0.0],  [0.0, 0.0]])
+    I11  = array([[0.0, 0.0],  [0.0, 1.0]])
 
     #------------------------------------------------------------
     def setup(self):
@@ -30,11 +30,11 @@ class Migdal(MigdalBase):
         return linalg.inv(ginv)
     #------------------------------------------------------------
     def compute_D(self, vn, PI):
-        return 1.0/(-((vn**2)[None,:] + self.omega**2)/(2.0*self.omega) - PI)
+        return 1.0/(-((vn**2)[None,None,:] + self.omega**2)/(2.0*self.omega) - PI)
     #------------------------------------------------------------
     def compute_S(self, G, D):
         #tau3Gtau3 = einsum('ab,kqwbc,cd->kqwad', Migdal.tau3, G, Migdal.tau3)
-        return -self.g0**2/self.nk**2 * conv(G, D[:,:,:,None,None], ['k-q,q','k-q,q'], [0,1], [True,True], beta=self.beta)
+        return -self.g0**2/self.nk**2 * conv(G, D, ['k-q,q','k-q,q'], [0,1], [True,True], beta=self.beta)
     #------------------------------------------------------------
     def compute_GG(self, G):
         #tau3G = einsum('ab,kqwbc->kqwac', Migdal.tau3, G)

@@ -37,7 +37,10 @@ def interpS(SR, wr, nr, nk):
     ks = np.linspace(-np.pi, np.pi, nk+1)
     Is = []
     for iw in (-2, 2):
-        Ir = interp2d(ks, ks, SR[:,:,nr//2+iw,0,0].real, kind='linear')
+        if len(SR)==5:
+            Ir = interp2d(ks, ks, SR[:,:,nr//2+iw,0,0].real, kind='linear')
+        else:
+            Ir = interp2d(ks, ks, SR[:,:,nr//2+iw].real, kind='linear')
         Is.append(Ir)
     return Is
 
@@ -77,7 +80,7 @@ print(v)
 # compute FS avg to get a2F
 
 def compute_lamb(basedir, folder, ntheta=5):
-    # only compute lambda without a2F 
+    # compute lambda without a2F (assuming fixed omega)
     # only for the unrenormalized case
     
     wr, nr, nk, SR, DR, mu, t, tp, g0, omega = load(basedir, folder)
@@ -114,7 +117,8 @@ def compute_lamb(basedir, folder, ntheta=5):
     
     lamb *= 2 * g0**2 / omega / (2*np.pi)**2
 
-    print('lamb = ', lamb)
+    print('lamb electronic = ', lamb)
+    np.save(basedir + 'data/'+folder+'/lamb_electronic.npy', [lamb])
     
     return lamb
 
@@ -206,8 +210,8 @@ def load(basedir, folder):
     omega = np.load(basedir+'data/'+folder+'/omega.npy')[0]
     
     # extend SR and DR for interpolation
-    SR = np.concatenate((SR, SR[0,...][None,:,:,:,:]), axis=0)
-    SR = np.concatenate((SR, SR[:,0,...][:,None,:,:,:]), axis=1)
+    SR = np.concatenate((SR, SR[0,...][None,...]), axis=0)
+    SR = np.concatenate((SR, SR[:,0,...][:,None,...]), axis=1)
     DR = np.concatenate((DR, DR[0,:,:][None,:,:]), axis=0)
     DR = np.concatenate((DR, DR[:,0,:][:,None,:]), axis=1)
     
@@ -229,7 +233,7 @@ if __name__=='__main__':
       
     folder = folders[0]
     
-    #a2F('../', folder)
+    a2F('../', folder)
     
-    compute_lamb('../', folder)
+    #compute_lamb('../', folder)
     

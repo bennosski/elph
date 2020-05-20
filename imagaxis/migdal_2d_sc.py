@@ -35,7 +35,7 @@ class Migdal(MigdalBase):
     #------------------------------------------------------------
     def compute_GG(self, G):
         tau3G = einsum('ab,kqwbc->kqwac', Migdal.tau3, G)
-        return 1.0/self.nk**2 * trace(conv(tau3G, -tau3G[:,::-1], ['k,k+q','k,k+q'], [0,1], [True,True], beta=self.beta, op='...ab,...bc->...ac'), axis1=-2, axis2=-1)
+        return 1.0/self.nk**2 * trace(conv(tau3G, -tau3G[:,:,::-1], ['k,k+q','k,k+q'], [0,1], [True,True], beta=self.beta, op='...ab,...bc->...ac'), axis1=-2, axis2=-1)
     #------------------------------------------------------------
     def init_selfenergies(self):
         S  = zeros([self.nk,self.nk,self.ntau,2,2], dtype=complex)
