@@ -59,7 +59,7 @@ class RealAxisMigdal(Migdal):
           +basic_conv(tau3A*nF[None,None,:,None,None], tau3GA, ['k+q,k','k+q,k','w+z,z'], [0,1,2], [True,True,False], op='...ab,...bc->...ac')[:,:,:self.nr])
     
     #-----------------------------------------------------------    
-    def selfconsistency(self, sc_iter, frac=0.5, alpha=0.5, S0=None, PI0=None, mu0=None):
+    def selfconsistency(self, sc_iter, frac=0.5, fracR=0.5, alpha=0.5, S0=None, PI0=None, mu0=None, cont=False):
         
         savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0, mu0=mu0)
         
@@ -70,13 +70,25 @@ class RealAxisMigdal(Migdal):
         print('\nReal-axis selfconsistency')
         print('---------------------------------')
         
+        
         # imag axis failed to converge
         if savedir is None: exit()
 
         wn, vn, ek, w, nB, nF, DRbareinv = self.setup_realaxis()
+
+        if os.path.exists(savedir+'SR.npy'):
+            if cont:
+                print('CONTINUING FROM EXISTING REAL AXIS DATA')
+                SR = np.load(savedir+'SR', SR)
+                PIR = np.load(savedir+'PIR', PIR)
+            else:
+                print('data exists. Not continuing. Set cont=True or delete data.')
+                exit()
         
-        SR  = np.zeros([self.nk,self.nk,self.nr,2,2], dtype=complex)
-        PIR = np.zeros([self.nk,self.nk,self.nr], dtype=complex)
+        else:
+            SR  = np.zeros([self.nk,self.nk,self.nr,2,2], dtype=complex)
+            PIR = np.zeros([self.nk,self.nk,self.nr], dtype=complex)
+        
         GR  = self.compute_GR(w, ek, mu, SR)
         DR  = self.compute_DR(DRbareinv, PIR)
         
@@ -106,8 +118,8 @@ class RealAxisMigdal(Migdal):
         
         # selfconsistency loop
         change = [0,0]
-        fracR = 0.8
-        for i in range(10):
+        best_chg = None
+        for i in range(sc_iter):
             SR0 = SR[:]
             PIR0 = PIR[:]
 
@@ -128,13 +140,16 @@ class RealAxisMigdal(Migdal):
     
             if i>5 and np.sum(change)<2e-15: break
 
-            np.save('savedir.npy', [savedir])            
-            np.save('realchg.npy', [np.mean(change)])
-            np.save(savedir+'w', w)
-            np.save(savedir+'GR', GR)
-            np.save(savedir+'SR', SR)
-            np.save(savedir+'DR', DR)
-            np.save(savedir+'PIR', PIR)
+            if best_chg is None or np.mean(change) < best_chg:
+                best_chg = np.mean(change)
+            
+                np.save('savedir.npy', [savedir])            
+                np.save('realchg.npy', [np.mean(change)])
+                np.save(savedir+'w', w)
+                np.save(savedir+'GR', GR)
+                np.save(savedir+'SR', SR)
+                np.save(savedir+'DR', DR)
+                np.save(savedir+'PIR', PIR)
             
 
 if __name__=='__main__':
