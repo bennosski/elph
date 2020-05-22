@@ -7,6 +7,8 @@ class Interp:
     def __init__(self, folder, Nk):
         # folder is the location where previous data is stored
 
+        print('loading from ', folder)
+
         dim = int(np.load(folder + '/dim.npy'))
         sc = bool(np.load(folder + '/sc.npy'))
         S = np.load(folder + '/S.npy')
@@ -44,6 +46,7 @@ class Interp:
                 Ir = interpolate.interp2d(ks, ks, Sext[:,:,it].real, kind='linear')
                 Ii = interpolate.interp2d(ks, ks, Sext[:,:,it].imag, kind='linear')
                 self.S[:,:,it] = Ir(ksint, ksint) + 1j*Ii(ksint, ksint)
+
     
         self.PI = np.zeros([Nk, Nk, ntau], dtype=complex)
         for it in range(ntau):

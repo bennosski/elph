@@ -79,8 +79,8 @@ class RealAxisMigdal(Migdal):
         if os.path.exists(savedir+'SR.npy'):
             if cont:
                 print('CONTINUING FROM EXISTING REAL AXIS DATA')
-                SR = np.load(savedir+'SR', SR)
-                PIR = np.load(savedir+'PIR', PIR)
+                SR = np.load(savedir+'SR.npy')
+                PIR = np.load(savedir+'PIR.npy')
             else:
                 print('data exists. Not continuing. Set cont=True or delete data.')
                 exit()
