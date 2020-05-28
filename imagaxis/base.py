@@ -52,8 +52,7 @@ class MigdalBase:
         wn = (2*arange(self.nw)+1) * pi / self.beta
         vn = (2*arange(self.nw+1)) * pi / self.beta
         
-        ek = self.band(self.nk, self.t, self.tp, Q)
-        
+        ek = self.band(self.nk, self.t, self.tp, Q)        
         
         # estimate filling and dndmu at the desired filling
         mu = optimize.fsolve(lambda mu : 2.0*mean(1.0/(exp(self.beta*(ek-mu))+1.0))-self.dens, 0.0)[0]
@@ -344,9 +343,9 @@ class MigdalBase:
                 #S  = gamma*frac*r[:,:,None,None,None]*S + (1-gamma*frac*r[:,:,None,None,None])*S0
                 #S  = gamma*frac*S + (1-gamma*frac)*S0
                 
-                power = 0
-                if i>2:
-                    S = S0 - S0**(power+1) + S*S0**power 
+                #power = 0
+                #if i>2:
+                #    S = S0 - S0**(power+1) + S*S0**power 
 
                 S = frac*S + (1-frac)*S0
             else:
@@ -362,16 +361,13 @@ class MigdalBase:
                 if alpha is None:
                     #PI = r[:,:,None]*frac*PI + (1-r[:,:,None]*frac)*PI0
                     
-                    power = -1
-                    if False:
-                        PI = PI0 - PI0**(power+1) + PI*PI0**power 
+                    #power = -1
+                    #if False:
+                    #    PI = PI0 - PI0**(power+1) + PI*PI0**power 
                         
                     PI = frac*PI + (1-frac)*PI0
                 else:
                     PI = AMPI.step(PI0, PI)
-
-                # real part only?
-                # PI = PI.real
 
 
             #if i%max(sc_iter//30,1)==0:

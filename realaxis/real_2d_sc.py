@@ -138,19 +138,19 @@ class RealAxisMigdal(Migdal):
 
             if i%1==0: print('change = %1.3e, %1.3e'%(change[0], change[1]))
     
-            if i>5 and np.sum(change)<2e-15: break
-
             if best_chg is None or np.mean(change) < best_chg:
                 best_chg = np.mean(change)
             
-                np.save('savedir.npy', [savedir])            
-                np.save('realchg.npy', [np.mean(change)])
+                np.save(savedir+'savedir.npy', [savedir])            
+                np.save(savedir+'realchg.npy', [np.mean(change)])
                 np.save(savedir+'w', w)
                 np.save(savedir+'GR', GR)
                 np.save(savedir+'SR', SR)
                 np.save(savedir+'DR', DR)
                 np.save(savedir+'PIR', PIR)
-            
+    
+            if i>5 and np.sum(change)<2e-15: break
+        
 
 if __name__=='__main__':
     time0 = time.time()
