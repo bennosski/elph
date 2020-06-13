@@ -4,7 +4,8 @@ import matplotlib
 matplotlib.use('agg')
 from matplotlib.pyplot import *
 import fourier
-from params import g02lamb
+#from params import g02lamb
+from functions import g02lamb_ilya
 from collections import defaultdict
 from scipy.stats import linregress
 import shutil
@@ -140,7 +141,7 @@ def analyze_x_vs_lamb(basedir):
         print(folder)
         xs.append(Xsc)
         W = 8.0
-        lambs.append(g02lamb(g0, omega, W))
+        lambs.append(g02lamb_ilya(g0, omega, W))
         xcdws.append(amax(Xcdw))
 
     lambs, xs, xcdws = zip(*sorted(zip(lambs, xs, xcdws)))
@@ -193,7 +194,7 @@ def get_Tc(basedir):
         print(Xscs)
 
         W = 8
-        lamb = g02lamb(g0, omega, W)
+        lamb = g02lamb_ilya(g0, omega, W)
 
         figure()
         plot(1./Xscs[:,0], 1./Xscs[:,1], '.-')

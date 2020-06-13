@@ -91,15 +91,15 @@ class MigdalBase:
     def dyson_fermion(self, wn, ek, mu, S, axis):
         Sw, jumpS = fourier.t2w(S, self.beta, axis, 'fermion')
 
-        mu = self.fixed_mu
-        #mu = -1.11
-        '''
-        if abs(self.dens-1.0)>1e-10:
-            mu_new = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,Sw))-self.dens, mu)[0]
-            mu = mu_new*0.9 + mu*0.1
+        if hasattr(self, 'fixed_mu'):
+            mu = self.fixed_mu
         else:
-            mu = 0
-        '''
+            if abs(self.dens-1.0)>1e-10:
+                mu_new = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,Sw))-self.dens, mu)[0]
+                mu = mu_new*0.9 + mu*0.1
+            else:
+                mu = 0
+            
 
         Gw = self.compute_G(wn, ek, mu, Sw)        
 
@@ -126,7 +126,7 @@ class MigdalBase:
 
         np.save('savedir.npy', [savedir])
 
-        best_change = 1
+        best_change = None
         if interp:
             if len(os.listdir(savedir))>2:
                 print('DATA ALREADY EXISTS. PLEASE DELETE FIRST')
@@ -222,14 +222,14 @@ class MigdalBase:
 
 
             chg = np.mean(change)
-            if chg < best_change:
+            if best_change is None or chg < best_change:
                 best_change = chg
                 np.save(savedir+'bestchg.npy', [best_change, change[0], change[1]])
                 np.save(savedir+'mu.npy', [mu])
                 np.save(savedir+'S.npy', S)
                 np.save(savedir+'PI.npy', PI)
 
-            if i>10 and sum(change)<2e-14:
+            if sum(change)<2e-14:
                 # and abs(self.dens-n)<1e-5:
                 break
 
@@ -319,7 +319,7 @@ class MigdalBase:
         # compute the CDW susceptibility
         Xcdw = None
         if self.renormalized:
-            X0 = -GG[...,0]
+            X0 = -GG[...,0] #### IS THIS THE RIGHT INDEX? ivn for n=0????
             Xcdw = real(X0/(1.0 - 2.0*self.g0**2/self.omega * X0))
 
             Xcdw = ravel(Xcdw)
