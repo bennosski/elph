@@ -264,7 +264,7 @@ class MigdalBase:
 
         figure()
         plot(F0tau[0,0].real)
-        plot(F0tau[self.nk//2, self.nk//2].real)
+        plot(F0tau[self.nk//2, self.nk//2].rel)
         savefig(self.basedir+'F0tau')
         exit()
         '''
@@ -277,32 +277,37 @@ class MigdalBase:
         jumpF0 = np.zeros([self.nk]*self.dim+[1])
         jumpD  = None
        
-        x0 = self.compute_x0(F0, D, jumpF0, jumpD)
+        #gamma0 = 1 #self.compute_gamma(F0, D, jumpF0, jumpD)
+        gamma = np.ones([self.nk]*self.dim+[self.nw], dtype=complex)
 
-        jumpF0x = np.zeros([self.nk]*self.dim+[1], dtype=complex)
+        jumpF0gamma = np.zeros([self.nk]*self.dim+[1], dtype=complex)
 
         iteration = 0
-        x = np.zeros([self.nk]*self.dim+[self.nw], dtype=complex)
+        #gamma = np.ones([self.nk]*self.dim+[self.nw], dtype=complex)
         while iteration < sc_iter:
-            x_initial = x.copy()
+            gamma0 = gamma.copy()
+            
+            F0gamma = F0*gamma
+            
+            # compute jumpF0gamma
+            F0gamma_tau = fourier.w2t(F0gamma, self.beta, self.dim, 'fermion', jumpF0gamma)
+            jumpF0gamma = F0gamma_tau[...,0] + F0gamma_tau[...,-1]
+            jumpF0gamma = jumpF0gamma[...,None]
+            
+            #print('size of jumpF0gamma {:.5e}'.format(np.amax(np.abs(jumpF0gamma))))
 
-            # compute jumpF0x
-            F0x_tau = fourier.w2t(F0*x, self.beta, self.dim, 'fermion', jumpF0x)
-            jumpF0x = F0x_tau[...,0] + F0x_tau[...,-1]
-            jumpF0x = jumpF0x[...,None]
+            gamma = self.compute_gamma(F0gamma, D, jumpF0gamma, jumpD)
 
-            x = x0 - self.compute_x0(F0*x, D, jumpF0x, jumpD)
+            change = mean(abs(gamma - gamma0))/(mean(abs(gamma + gamma0))+1e-10)
 
-            change = mean(abs(x - x_initial))/(mean(abs(x + x_initial))+1e-10)
-
-            x = frac*x + (1-frac)*x_initial
+            gamma = frac*gamma + (1-frac)*gamma0
             
             if change < 1e-10:
                 break
 
-            if iteration%max(sc_iter//20,1)==0:
+            #if iteration%max(sc_iter//20,1)==0:
                 #print(f'change {change:.4e}')
-                print('change ', change)
+            print('change ', change)
                 
             iteration += 1
 
@@ -313,13 +318,14 @@ class MigdalBase:
             print('Susceptibility failed to converge')
             return None, None
     
-        Xsc = 1.0 / (self.beta * self.nk**self.dim) * 2.0*sum(F0*(1+x)).real
+        #Xsc = 1.0 / (self.beta * self.nk**self.dim) * 2.0*sum(F0*(1+x)).real
+        Xsc = 1.0 / (self.beta * self.nk**self.dim) * 2.0*sum(F0*gamma).real
         print(f'Xsc {Xsc:.4f}')
 
         # compute the CDW susceptibility
         Xcdw = None
         if self.renormalized:
-            X0 = -GG[...,0] #### IS THIS THE RIGHT INDEX? ivn for n=0????
+            X0 = -GG[...,0] 
             Xcdw = real(X0/(1.0 - 2.0*self.g0**2/self.omega * X0))
 
             Xcdw = ravel(Xcdw)
@@ -329,6 +335,8 @@ class MigdalBase:
             if Xsc<0.0 or any(Xcdw<0.0): 
                 print('Xcdw blew up')
                 return None, None
+
+        
 
         return Xsc, Xcdw
 

@@ -30,7 +30,7 @@ Marsiglio
 
 Hint ~ alpha / sqrt(2 omega) * (b + b^\dagger)
 
-D = [-(omega^2 + vn)^2 - PI]^(-1)
+D = [-(omega^2 + vn^2) - PI]^(-1)
 
 Sigma ~ -alpha^2 D G
 
@@ -76,6 +76,14 @@ So we need to determine g (g_phil) as input for the code...
 use lambda = 2*g_phil^2/(omega*W) as definition
 
 so g_phil = sqrt(lambda * omega * W / 2)
+
+----------------------------------------------
+
+relation to marsiglio:
+H_m ~ alpha_m / sqrt(2 omega) * (b + b^\dagger)
+-> g_phil = alpha_m / sqrt(2 omega)
+lamb_m = alpha_m^2 / omega^2 = 2 g_phil^2 / omega
+lamb_m = W * lamb_phil
 
 ----------------------------------------------
 

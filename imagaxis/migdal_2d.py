@@ -44,6 +44,10 @@ class Migdal(MigdalBase):
     def compute_x0(self, F0x, D, jumpF0, jumpD):
         return -self.g0**2/self.nk**2 * conv(F0x, D, ['k-q,q','k-q,q', 'm,n-m'], [0,1,2], [True,True,False], self.beta, kinds=('fermion','boson','fermion'), op='...,...', jumps=(jumpF0, jumpD))
 
+    def compute_gamma(self, F0gamma, D, jumpF0gamma, jumpD):
+        return 1 - self.g0**2/self.nk**2 * conv(F0gamma, D, ['k-q,q','k-q,q', 'm,n-m'], [0,1,2], [True,True,False], self.beta, kinds=('fermion','boson','fermion'), op='...,...', jumps=(jumpF0gamma, jumpD))
+
+
 
 if __name__=='__main__':
     def read_params(basedir, folder):

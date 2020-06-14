@@ -50,7 +50,8 @@ def compute_susceptibilities(basedir):
     
         sc_iter = 400
         savedir, mu, G, D, S, GG = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, frac=0.2)
-    
+        PI = params['g0']**2 * GG
+        
         if G is None: break
     
         sc_iter = 300
@@ -80,7 +81,7 @@ def compute_single_particle(basedir):
     
     lambs = [0.2, 0.4, 0.5]
     S0, PI0 = None, None
-    fracs = [0.8, 0.8, 0.2]
+    fracs = [0., 0.8, 0.2]
     
     for i,lamb in enumerate(lambs):
     
@@ -111,10 +112,10 @@ def compute_single_particle(basedir):
 
 #------------------------------------------------------------
 
-compute_single_particle(basedir)
-analyze_single_particle(basedir)
+#compute_single_particle(basedir)
+#analyze_single_particle(basedir)
 
 #compute_susceptibilities(basedir)
-#analyze_x_vs_lamb(basedir)
+analyze_x_vs_lamb(basedir)
 
 

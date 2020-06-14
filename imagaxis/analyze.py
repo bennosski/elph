@@ -153,9 +153,9 @@ def analyze_x_vs_lamb(basedir):
     f = figure()
     f.set_size_inches(8, 5)
     plot(array(lambs), xs, 'g')
-    plot(array(lambs), array(xcdws)/300.0, 'orange')
+    plot(array(lambs), array(xcdws)/80.0, 'orange')
     ylim(0, 1.0)
-    xlim(0, 0.65)
+    xlim(0, 0.55)
     savefig(basedir + 'xsc')
 
 #analyze_x_vs_lamb('test/data_ilya_susceptibilities/')
