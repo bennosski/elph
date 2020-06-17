@@ -13,8 +13,8 @@ matplotlib.use('TkAgg')
 from matplotlib.pyplot import *
 from anderson import AndersonMixing
 
-class MigdalBase:
 
+class MigdalBase:
 
     def __init__(self, params, basedir, loaddir=None):
         # basedir is the folder where results will be saved
@@ -244,7 +244,7 @@ class MigdalBase:
         return savedir, mu, G, D, S, GG
 
 
-    def susceptibilities(self, sc_iter, G, D, GG, frac=0.8): 
+    def susceptibilities(self, savedir, sc_iter, G, D, GG, frac=0.8): 
         print('\nComputing Susceptibilities\n--------------------------')
 
         assert self.sc==0
@@ -258,7 +258,6 @@ class MigdalBase:
         
         GG = fourier.t2w(GG, self.beta, self.dim, 'boson')
             
-
         F0 = G * conj(G)
 
         # confirm that F0 has no jump
@@ -273,8 +272,6 @@ class MigdalBase:
         exit()
         '''
 
-        #T  = ones([self.nk,self.nk,self.nw])
-
         jumpx = np.zeros([self.nk]*self.dim+[1])
         # momentum and frequency convolution 
         # the jump for F0 is zero
@@ -282,7 +279,11 @@ class MigdalBase:
         jumpD  = None
        
         #gamma0 = 1 #self.compute_gamma(F0, D, jumpF0, jumpD)
-        gamma = np.ones([self.nk]*self.dim+[self.nw], dtype=complex)
+        path = os.path.join(savedir, 'gamma.npy')
+        if os.path.exists(gamma):
+            gamma = np.load(path)
+        else:
+            gamma = np.ones([self.nk]*self.dim+[self.nw], dtype=complex)
 
         jumpF0gamma = np.zeros([self.nk]*self.dim+[1], dtype=complex)
 
@@ -321,6 +322,8 @@ class MigdalBase:
         if change>1e-5:
             print('Susceptibility failed to converge')
             return None, None
+
+        np.save(savedir+'gamma.npy', gamma)
     
         #Xsc = 1.0 / (self.beta * self.nk**self.dim) * 2.0*sum(F0*(1+x)).real
         Xsc = 1.0 / (self.beta * self.nk**self.dim) * 2.0*sum(F0*gamma).real
