@@ -114,7 +114,7 @@ def x_vs_t():
             S0 = S
             PI0 = GG * params['g0']**2
             
-            Xsc, Xcdw = migdal.susceptibilities(1000, G, D, GG, frac=1)
+            Xsc, Xcdw = migdal.susceptibilities(savedir, 1000, G, D, GG, frac=1)
             
             if Xcdw is None:
                 print('Xcdw blew up. Decrease beta')
@@ -166,7 +166,7 @@ def x_vs_t_interp():
             S0 = S
             PI0 = GG * params['g0']**2
             
-            Xsc, Xcdw = migdal.susceptibilities(1000, G, D, GG, frac=1)
+            Xsc, Xcdw = migdal.susceptibilities(savedir, 1000, G, D, GG, frac=1)
             
             if Xcdw is None:
                 print('Xcdw blew up. Decrease beta')

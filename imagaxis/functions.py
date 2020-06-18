@@ -1,5 +1,7 @@
 from numpy import *
+import numpy as np
 import sys
+import os
 
 '''
 Definitions:
@@ -190,3 +192,31 @@ params['band']  = band
 params['beta']  = 16.0
 params['g0']    = 0.125
 '''
+
+
+def read_params(basedir, folder):
+        
+    params = {}
+    for fname in os.listdir(os.path.join(basedir, 'data/', folder)):
+        if '.npy' in fname:
+            data = np.load(os.path.join(basedir, 'data/', folder, fname), allow_pickle=True)
+            params[fname[:-4]] = data
+
+    floats = ['beta', 'dens', 'dw', 'g0', 'mu', 'omega', \
+              'idelta', 't', 'tp', 'wmax', 'wmin']
+    ints   = ['dim', 'nk', 'nw']
+    bools  = ['sc']
+    
+    for f in floats:
+        if f in params:
+            params[f] = params[f][0]
+    for i in ints:
+        if i in ints:
+            params[i] = int(params[i][0])
+    for b in bools:
+        if b in bools:
+            params[b] = bool(params[b][0])
+        
+    params['band'] = None
+
+    return params

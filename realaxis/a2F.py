@@ -23,7 +23,6 @@ def kF(theta, x0, y0, t, tp, mu):
         kx, ky = r2k(r)
         return -2.0*t*(np.cos(kx)+np.cos(ky)) - 4.0*tp*np.cos(kx)*np.cos(ky) - mu
 
-    
     r = root_scalar(ek, bracket=(0, np.pi)).root
     #print('found kx, ky = ', r, r2k(r))
     deriv = derivative(ek, r, dx=1e-4)
@@ -54,6 +53,17 @@ def vel(kx, ky, dEdk, Is, wr, nr):
     #print('dEdk', dEdk)
     assert dSdE < 0
     return np.abs(dEdk) / (1 - dSdE)
+
+
+def vel_and_dSdE(kx, ky, dEdk, Is, wr, nr):
+    ys = [I(kx, ky)[0] for I in Is]
+    dw = wr[nr//2+2] - wr[nr//2-2]
+    dSdE = (ys[1] - ys[0]) / dw
+    #print('dSdE', dSdE)
+    #print('dEdk', dEdk)
+    assert dSdE < 0
+    return np.abs(dEdk) / (1 - dSdE), dSdE
+
  
 
 
@@ -79,8 +89,10 @@ print(v)
 # for each k, compute FS integral over k'
 # compute FS avg to get a2F
 
-def compute_lamb(basedir, folder, ntheta=5):
+def compute_lamb_old(basedir, folder, ntheta=5):
     # compute lambda without a2F (assuming fixed omega)
+    # this was wrong.....need to do second integral.....
+    # this was lambda_k not full averaged lambda
     # only for the unrenormalized case
     
     wr, nr, nk, SR, DR, mu, t, tp, g0, omega = load(basedir, folder)
@@ -121,6 +133,52 @@ def compute_lamb(basedir, folder, ntheta=5):
     np.save(basedir + 'data/'+folder+'/lamb_electronic.npy', [lamb])
     
     return lamb
+
+
+def compute_lamb_el(basedir, folder, ntheta=5):
+    
+    wr, nr, nk, SR, DR, mu, t, tp, g0, omega = load(basedir, folder)
+    
+    dtheta = np.pi/(2*ntheta)
+    thetas = np.arange(dtheta/2, np.pi/2, dtheta)
+    assert len(thetas) == ntheta
+    
+    corners = ((-np.pi,-np.pi), 
+               (np.pi, -np.pi),
+               (-np.pi, np.pi),
+               (np.pi, np.pi))
+    
+    kxfs  = []
+    kyfs  = []
+    dEdks = []
+    dSdEs = []
+    vels  = []
+    rs    = []
+    Is = interpS(SR, wr, nr, nk)
+    for corner in corners:
+        for theta in thetas:
+            (kx, ky), r, dEdk =  kF(theta, corner[0], corner[1], t, tp, mu)
+            kxfs.append(kx)
+            kyfs.append(ky)
+            rs.append(r)
+            dEdks.append(dEdk)
+            v, dSdE = vel_and_dSdE(kx, ky, dEdk, Is, wr, nr)
+            vels.append(v)
+            dSdEs.append(dSdE)
+    
+    # compute normalization factor
+    num = 0
+    dos = 0
+    for ik in range(ntheta):
+        dos += rs[ik] / vels[ik] * dtheta
+        num += -dSdEs[ik] * rs[ik] / vels[ik] * dtheta
+            
+    lamb = num / dos
+           
+    print('done lamb')
+    
+    print('lamb electronic = ', lamb)
+
 
 
 def a2F(basedir, folder, ntheta=5):

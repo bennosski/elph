@@ -280,7 +280,7 @@ class MigdalBase:
        
         #gamma0 = 1 #self.compute_gamma(F0, D, jumpF0, jumpD)
         path = os.path.join(savedir, 'gamma.npy')
-        if os.path.exists(gamma):
+        if os.path.exists(path):
             gamma = np.load(path)
         else:
             gamma = np.ones([self.nk]*self.dim+[self.nw], dtype=complex)
