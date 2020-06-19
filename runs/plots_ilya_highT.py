@@ -10,7 +10,7 @@ from matplotlib.pyplot import *
 from scipy import interpolate
 from interpolator import Interp
 import matplotlib.pyplot as plt
-
+from a2F import corrected_a2F, corrected_lamb_mass, corrected_lamb_bare
 import matplotlib.colors as mcolors
 
 def make_colormap(seq):
@@ -227,7 +227,6 @@ def smoothedB(basedir, folder):
 
 
 # a2F
-from a2F import a2F, compute_lamb
 def compute_a2F():
     #basedir = '/home/groups/tpd/bln/data/elph/imagaxis/2d_sc/'
  
@@ -252,7 +251,43 @@ def compute_a2F():
     #a2F(basedir, folder1, ntheta=40)
     #compute_lamb(basedir, folder0, ntheta=40)
     #compute_lamb(basedir, folder1, ntheta=40)
+    print('renormalized lamb')
+    #compute_lamb_el(basedir, folder0, ntheta=80)
+    #print('renormalized lamb corrected')
+    _, lambbarekr, weightsr = corrected_lamb_bare(basedir, folder0, ntheta=80)
+    lambmasskr, _ = corrected_lamb_mass(basedir, folder0, ntheta=80)
+    lamba2Fkr, _ = corrected_a2F(basedir, folder0, ntheta=4)
+    plt.figure()
+    plt.plot(np.linspace(0, 1, len(lambbarekr)//4), lambbarekr[:len(lambbarekr)//4], 'r--')
+    plt.plot(np.linspace(0, 1, len(lambmasskr)//4), lambmasskr[:len(lambmasskr)//4], 'r')
+    plt.plot(np.linspace(0, 1, len(lamba2Fkr)), lamba2Fkr, 'r', linestyle='dotted')
+    plt.savefig(basedir+'lambkr')
+    plt.close()
+    
+    
+    print('unrenormalized lamb')
+    #compute_lamb_el(basedir, folder1, ntheta=80)
+    #print('unrenormalized lamb corrected')
+    _, lambbareku, weightsu = corrected_lamb_bare(basedir, folder1, ntheta=80)
+    lambmassku, _ = corrected_lamb_mass(basedir, folder1, ntheta=80)
+    lamba2Fku, _ = corrected_a2F(basedir, folder1, ntheta=4)
+    plt.figure()
+    plt.plot(np.linspace(0, 1, len(lambbareku)//4), lambbareku[:len(lambbareku)//4], 'k--')
+    plt.plot(np.linspace(0, 1, len(lambmassku)//4), lambmassku[:len(lambmassku)//4], 'k')
+    plt.plot(np.linspace(0, 1, len(lamba2Fku)), lamba2Fku, 'k', linestyle='dotted')
+    plt.savefig(basedir+'lambku')
+    plt.close()
 
+
+    plt.figure()
+    plt.plot(weightsr)
+    plt.plot(weightsu)
+    plt.savefig(basedir+'weights')
+    
+
+    
+    return
+    
     w0   = np.load(basedir+'data/'+folder0+'/w.npy')
     a2F0 = np.load(basedir+'data/'+folder0+'/a2F.npy')
     lamb0 = np.load(basedir+'data/'+folder0+'/lamb_from_a2F.npy')[0]
@@ -790,10 +825,10 @@ def figure2_horizontal():
     plt.close()
 
     
-figure1()
+#figure1()
 #figure2_horizontal()
 
-#compute_a2F()
+compute_a2F()
 
 
 #old_plotting()
