@@ -70,7 +70,7 @@ class RealAxisMigdal(Migdal):
     
     #-----------------------------------------------------------    
     def selfconsistency(self, sc_iter, frac=0.5, alpha=0.5, S0=None, PI0=None, mu0=None, cont=False):
-        savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0, mu0=mu0, cont=cont)
+        savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0, mu0=mu0)
 
         for key in self.keys:
             np.save(savedir+key, [getattr(self, key)])
@@ -88,9 +88,20 @@ class RealAxisMigdal(Migdal):
         if savedir is None: exit()
 
         wn, vn, ek, w, nB, nF, DRbareinv = self.setup_realaxis()
+
+        if os.path.exists(savedir+'SR.npy'):
+            if cont:
+                print('CONTINUING FROM EXISTING REAL AXIS DATA')
+                SR = np.load(savedir+'SR.npy')
+                PIR = np.load(savedir+'PIR.npy')
+            else:
+                print('data exists. Not continuing. Set cont=True or delete data.')
+                exit()
         
-        SR  = np.zeros([self.nk,self.nk,self.nr], dtype=complex)
-        PIR = np.zeros([self.nk,self.nk,self.nr], dtype=complex)
+        else:
+            SR  = np.zeros([self.nk,self.nk,self.nr], dtype=complex)
+            PIR = np.zeros([self.nk,self.nk,self.nr], dtype=complex)
+
         GR  = self.compute_GR(w, ek, mu, SR)
         DR  = self.compute_DR(DRbareinv, PIR)
         
