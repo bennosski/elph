@@ -6,12 +6,14 @@ Created on Thu Apr  9 19:29:12 2020
 """
 
 
+import src
 import numpy as np
 import os
 from matplotlib import pyplot as plt
 from scipy.optimize import root_scalar
 from scipy.interpolate import interp2d
 from scipy.misc import derivative
+import fourier
 
 
 # function to compute kF(theta)
@@ -197,8 +199,8 @@ def corrected_lamb_bare(basedir, folder, ntheta=5):
     
     lamb *= 2 * g0**2 / omega / (2*np.pi)**2
 
-    print('lamb electronic = ', lamb)
-    np.save(basedir + 'data/'+folder+'/lamb_electronic.npy', [lamb])
+    print('lamb bare = ', lamb)
+    np.save(basedir + 'data/'+folder+'/lamb_bare.npy', [lamb])
     
     return lamb, lamb * np.ones(4*ntheta), np.array(rs)/np.array(vels)
 
@@ -291,7 +293,8 @@ def corrected_lamb_mass(basedir, folder, ntheta=5):
            
     print('done lamb')
     
-    print('lamb electronic = ', lamb)
+    print('lamb mass = ', lamb)
+    np.save(basedir + 'data/'+folder+'/lamb_mass.npy', [lamb])
 
     lambk = -np.array(dSdEs)
     return lambk, np.array(rs)/np.array(vels)
@@ -405,6 +408,7 @@ def corrected_a2F(basedir, folder, ntheta=5):
     # get B interp
     B = -1.0/np.pi * DR.imag
     
+    
     a2F = np.zeros(nr)
     lambk = np.zeros((ntheta, nr))
     
@@ -432,7 +436,7 @@ def corrected_a2F(basedir, folder, ntheta=5):
     
     plt.figure()
     plt.plot(wr, a2F)
-    plt.savefig(basedir + 'a2F')
+    plt.savefig(basedir + 'a2F single')
     
     np.save(basedir + 'data/'+folder+'/a2F.npy', a2F)
     
@@ -447,11 +451,8 @@ def corrected_a2F(basedir, folder, ntheta=5):
     return lambk, np.array(rs)/np.array(vels)
 
 
-def lamb_bare_single_iteration(basedir, folder, ntheta=5):
-    # compute lambda without a2F (assuming fixed omega)
-    # this was wrong.....need to do second integral.....
-    # this was lambda_k not full averaged lambda
-    # only for the unrenormalized case
+
+def corrected_a2F_imag(basedir, folder, ntheta=5):
     
     wr, nr, nk, SR, DR, mu, t, tp, g0, omega = load(basedir, folder)
     
@@ -472,7 +473,7 @@ def lamb_bare_single_iteration(basedir, folder, ntheta=5):
     Is = interpS(SR, wr, nr, nk)
     for corner in corners:
         for theta in thetas:
-            (kx, ky), r, dEdk =  kF(theta, corner[0], corner[1], corner[2], t, tp, mu)
+            (kx, ky), r, dEdk =  corrected_kF(Is, theta, corner[0], corner[1], corner[2], t, tp, mu)
             kxfs.append(kx)
             kyfs.append(ky)
             rs.append(r)
@@ -480,17 +481,62 @@ def lamb_bare_single_iteration(basedir, folder, ntheta=5):
             v = vel(kx, ky, dEdk, Is, wr, nr)
             vels.append(v)
     
-    lamb = 0
+    # compute normalization factor
+    dos = 0
     for ik in range(ntheta):
-        lamb += rs[ik] / vels[ik] * dtheta
-    lamb *= 4
+        dos += rs[ik] / vels[ik] * dtheta
+        
     
-    lamb *= 2 * g0**2 / omega / (2*np.pi)**2
+    lamb = 0
+    lambk = np.zeros(ntheta)   
+    
+    # extend D
+    D = np.load(basedir + 'data/' + folder + '/D.npy')
+    D = np.concatenate((D, D[0,:,:][None,:,:]), axis=0)
+    D = np.concatenate((D, D[:,0,:][:,None,:]), axis=1)
+    
+    
+    # fourier transform....
+    beta = np.load(basedir + 'data/' + folder + '/beta.npy')[0]
+    dim  = 2
+    D    = fourier.t2w(D, beta, dim, 'boson')
+    
+    plt.figure()
+    plt.imshow(D[:,:,0].real, origin='lower')
+    plt.colorbar()
+    plt.savefig(basedir + 'data/' + folder + '/Diw0')
+    plt.close()
+    
+    
+    ks = np.linspace(-np.pi, np.pi, nk+1)
+    
+    #I = interp2d(ks, ks, B[:,:,iw], kind='linear')
+    I = interp2d(ks, ks, D[:,:,0].real, kind='linear')
+    print('size of maximum real part : ', np.amax(np.real(D[:,:,0])))
+    
+    
+    #print('size of imag part : ', np.amax(np.imag(D[:,:,0])))
+    
+    for ik in range(ntheta):
+        a2Fk = 0
+        
+        for ikp in range(4*ntheta):
+            dkx = kxfs[ikp] - kxfs[ik]
+            dky = kyfs[ikp] - kyfs[ik]
+            a2Fk += -I(dkx, dky) / vels[ikp] / (2*np.pi)**2 * rs[ikp] * dtheta
+            
+        lambk[ik] = a2Fk
+        lamb += lambk[ik] / vels[ik] * rs[ik] * dtheta
+        
+    lambk *= g0**2
+    lamb  *= g0**2 / dos
+           
+    print('lamb a2F imag', lamb)
+    
+    np.save(basedir + 'data/'+folder+'/lambk_a2F_imag.npy', lambk)
+    np.save(basedir + 'data/'+folder+'/lamb_a2F_imag.npy', lamb)
 
-    print('lamb electronic = ', lamb)
-    np.save(basedir + 'data/'+folder+'/lamb_electronic.npy', [lamb])
-    
-    return lamb, 2 * g0**2 / omega * np.ones(ntheta)
+    return lambk, np.array(rs)/np.array(vels)
 
 
 
@@ -512,6 +558,7 @@ def load(basedir, folder):
     SR = np.concatenate((SR, SR[:,0,...][:,None,...]), axis=1)
     DR = np.concatenate((DR, DR[0,:,:][None,:,:]), axis=0)
     DR = np.concatenate((DR, DR[:,0,:][:,None,:]), axis=1)
+    
     
     '''
     print('SR shape', SR.shape)

@@ -10,8 +10,9 @@ from matplotlib.pyplot import *
 from scipy import interpolate
 from interpolator import Interp
 import matplotlib.pyplot as plt
-from a2F import corrected_a2F, corrected_lamb_mass, corrected_lamb_bare
+from a2F import corrected_a2F, corrected_lamb_mass, corrected_lamb_bare, corrected_a2F_imag
 import matplotlib.colors as mcolors
+from scipy.integrate import trapz
 
 def make_colormap(seq):
     """Return a LinearSegmentedColormap
@@ -226,6 +227,50 @@ def smoothedB(basedir, folder):
     return -1.0/np.pi * DRint[:,0,:].imag
 
 
+
+def debug():
+    #basedir = '../debug/'
+    
+    basedir = '../'
+    folder0 = 'data_renormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.800_beta16.0000_QNone'    
+    params = read_params(basedir, folder0)
+    
+    DR = np.load(basedir + 'data/' + folder0 + '/DR.npy')
+    B = -1.0/np.pi * DR.imag
+    nr = np.shape(B)[2]
+    Bn = np.sum(B[:,:,nr//2:], axis=2)
+    print('norm check DR renorm ', np.mean(Bn), ' +- ', np.std(Bn))
+    
+    
+    basedir = '../'
+    folder1 = 'data_unrenormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.800_beta16.0000_QNone'    
+    params = read_params(basedir, folder1)    
+    
+    print('dw', params['dw'])
+    print('idelta', params['idelta'])
+
+    DR = np.load(basedir + 'data/' + folder1 + '/DR.npy')
+    B = -1.0/np.pi * DR.imag
+    nr = np.shape(B)[2]
+    Bn = np.sum(B[:,:,nr//2:], axis=2)
+    print('norm check DR unrenorm ', np.mean(Bn), ' +- ', np.std(Bn))
+    
+    return
+
+
+    print('folder', folder1)
+
+    def imag():
+        lamba2Fiku, _ = corrected_a2F_imag(basedir, folder1, ntheta=40)
+
+    imag()        
+    lamba2Fiku = np.load(basedir + 'data/' + folder1 + '/lambk_a2F_imag.npy')
+
+    return
+
+
+
+
 # a2F
 def compute_a2F():
     #basedir = '/home/groups/tpd/bln/data/elph/imagaxis/2d_sc/'
@@ -241,61 +286,134 @@ def compute_a2F():
     
     
     params = read_params(basedir, folder0)
+    
+    print('dw', params['dw'])
+    print('idelta', params['idelta'])
+    
+    params = read_params(basedir, folder1)
+    
+    print('dw', params['dw'])
+    print('idelta', params['idelta'])
+    
+    #return
+    
+    
     for key in params:
         print(key, type(params[key]))
 
     print('folder', folder1)
 
-    # main computation
-    #a2F(basedir, folder0, ntheta=40)
-    #a2F(basedir, folder1, ntheta=40)
-    #compute_lamb(basedir, folder0, ntheta=40)
-    #compute_lamb(basedir, folder1, ntheta=40)
-    print('renormalized lamb')
-    #compute_lamb_el(basedir, folder0, ntheta=80)
-    #print('renormalized lamb corrected')
-    _, lambbarekr, weightsr = corrected_lamb_bare(basedir, folder0, ntheta=80)
-    lambmasskr, _ = corrected_lamb_mass(basedir, folder0, ntheta=80)
-    lamba2Fkr, _ = corrected_a2F(basedir, folder0, ntheta=4)
-    plt.figure()
-    plt.plot(np.linspace(0, 1, len(lambbarekr)//4), lambbarekr[:len(lambbarekr)//4], 'r--')
-    plt.plot(np.linspace(0, 1, len(lambmasskr)//4), lambmasskr[:len(lambmasskr)//4], 'r')
-    plt.plot(np.linspace(0, 1, len(lamba2Fkr)), lamba2Fkr, 'r', linestyle='dotted')
+
+    def main_computation():
+        # main computation
+        print('renormalized lamb')
+        #_, lambbarekr, weightsr = corrected_lamb_bare(basedir, folder0, ntheta=80)
+        #lambmasskr, _ = corrected_lamb_mass(basedir, folder0, ntheta=80)
+        #lamba2Fkr, _ = corrected_a2F(basedir, folder0, ntheta=40)
+        
+        #np.save(basedir + 'lambbarekr', lambbarekr)
+        #np.save(basedir + 'lambmasskr', lambmasskr)
+        #np.save(basedir + 'lamba2Fkr', lamba2Fkr)
+        
+        #np.save(basedir + 'weightsr', weightsr)
+
+        
+        print('unrenormalized lamb')
+        _, lambbareku, weightsu = corrected_lamb_bare(basedir, folder1, ntheta=80)
+        lambmassku, _ = corrected_lamb_mass(basedir, folder1, ntheta=80)
+        lamba2Fku, _ = corrected_a2F(basedir, folder1, ntheta=40)
+
+        np.save(basedir + 'lambbareku', lambbareku)
+        np.save(basedir + 'lambmassku', lambmassku)
+        np.save(basedir + 'lamba2Fku', lamba2Fku)
+        
+        np.save(basedir + 'weightsu', weightsu)
+    
+    #main_computation()    
+    
+    def imag():
+        lamba2Fikr, _ = corrected_a2F_imag(basedir, folder0, ntheta=40)
+        lamba2Fiku, _ = corrected_a2F_imag(basedir, folder1, ntheta=40)
+
+    #imag()        
+    
+    lamba2Fikr = np.load(basedir + 'data/' + folder0 + '/lambk_a2F_imag.npy')
+    lamba2Fiku = np.load(basedir + 'data/' + folder1 + '/lambk_a2F_imag.npy')
+
+    
+    
+    lambbarekr = np.load(basedir + 'lambbarekr.npy')
+    lambmasskr = np.load(basedir + 'lambmasskr.npy')
+    lamba2Fkr  = np.load(basedir + 'lamba2Fkr.npy')
+    lamba2Fkri = np.load(basedir + 'data/' + folder0 + '/lambk_a2F_imag.npy')
+    lambbareku = np.load(basedir + 'lambbareku.npy')
+    lambmassku = np.load(basedir + 'lambmassku.npy')
+    lamba2Fku  = np.load(basedir + 'lamba2Fku.npy')
+    weightsu   = np.load(basedir + 'weightsu.npy')
+    weightsr   = np.load(basedir + 'weightsr.npy')
+
+    
+    
+    f = plt.figure()
+    ntheta = len(lambmasskr)//4
+    dtheta = np.pi / (2 * ntheta)
+    thetas = np.arange(dtheta/2, np.pi/2, dtheta)
+    print('ntheta', ntheta, 'len thetas', len(thetas))
+    plt.plot(thetas * 180/np.pi, lambmasskr[:ntheta], 'k')
+    
+    ntheta = len(lamba2Fkr)
+    dtheta = np.pi / (2 * ntheta)
+    thetas = np.arange(dtheta/2, np.pi/2, dtheta)
+    plt.plot(thetas * 180/np.pi, lamba2Fkr, 'k', linestyle='dotted')
+    #plt.plot(thetas * 180/np.pi, lamba2Fkri * 2 / 2.5, 'k', linestyle='dotted')
+    plt.ylabel('$\lambda(\mathbf{k})$', fontsize=14)
+    plt.xlabel(r'$\theta$', fontsize=14)
+    plt.legend(['$\lambda_{m}$', '$\lambda_{a2F}$'], fontsize=12)
+    plt.xlim(0, 90)
+    
+    ax = f.add_axes([0.17, 0.4, 0.24, 0.24])
+    thetas = np.linspace(0, np.pi/2, 100)
+    ax.plot(np.pi - 0.8*np.pi*np.cos(thetas), np.pi - 0.8*np.pi*np.sin(thetas), 'k-')
+    ax.set_xlim(0, np.pi)
+    ax.set_ylim(0, np.pi)
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+    ax.plot([0, np.pi], [np.pi/2, np.pi], 'r')
+    ax.annotate(r'$\theta$', xy=(0.45, 0.83), xycoords='axes fraction')
+    ax.set_aspect(1)
+    
     plt.savefig(basedir+'lambkr')
     plt.close()
     
     
-    print('unrenormalized lamb')
-    #compute_lamb_el(basedir, folder1, ntheta=80)
-    #print('unrenormalized lamb corrected')
-    _, lambbareku, weightsu = corrected_lamb_bare(basedir, folder1, ntheta=80)
-    lambmassku, _ = corrected_lamb_mass(basedir, folder1, ntheta=80)
-    lamba2Fku, _ = corrected_a2F(basedir, folder1, ntheta=4)
+    
     plt.figure()
-    plt.plot(np.linspace(0, 1, len(lambbareku)//4), lambbareku[:len(lambbareku)//4], 'k--')
+    #plt.plot(np.linspace(0, 1, len(lambbareku)//4), lambbareku[:len(lambbareku)//4], 'k--')
     plt.plot(np.linspace(0, 1, len(lambmassku)//4), lambmassku[:len(lambmassku)//4], 'k')
     plt.plot(np.linspace(0, 1, len(lamba2Fku)), lamba2Fku, 'k', linestyle='dotted')
     plt.savefig(basedir+'lambku')
     plt.close()
-
-
+    
     plt.figure()
     plt.plot(weightsr)
     plt.plot(weightsu)
     plt.savefig(basedir+'weights')
-    
+    plt.close()
 
-    
-    return
     
     w0   = np.load(basedir+'data/'+folder0+'/w.npy')
     a2F0 = np.load(basedir+'data/'+folder0+'/a2F.npy')
     lamb0 = np.load(basedir+'data/'+folder0+'/lamb_from_a2F.npy')[0]
-    lamb0el = np.load(basedir+'data/'+folder0+'/lamb_electronic.npy')[0]
+    #lamb0el = np.load(basedir+'data/'+folder0+'/lamb_electronic.npy')[0]
     w1   = np.load(basedir+'data/'+folder1+'/w.npy')
     a2F1 = np.load(basedir+'data/'+folder1+'/a2F.npy')
     lamb1 = np.load(basedir+'data/'+folder1+'/lamb_from_a2F.npy')[0]
-    lamb1el = np.load(basedir+'data/'+folder1+'/lamb_electronic.npy')[0]
+    #lamb1el = np.load(basedir+'data/'+folder1+'/lamb_electronic.npy')[0]
+    
+    lamb0mass = np.load(basedir+'data/'+folder0+'/lamb_mass.npy')[0]
+    lamb1mass = np.load(basedir+'data/'+folder1+'/lamb_mass.npy')[0]
+    
+    print('len(w0)', len(w0), 'len(w1)', len(w1))
     
     figure()
     plot(w1, a2F1, '.-')
@@ -306,11 +424,38 @@ def compute_a2F():
     ylim(0, 3.1)
     xlabel('$\omega / t$', fontsize=13)
     ylabel(r'$\alpha^2 F$', fontsize=13)
-    savefig(basedir+'a2F')
+    savefig(basedir+'a2Fcomp')
     close()
     
-    print('lamb electronic unrenorm : ', lamb1el)
-    print('lamb electronic renorm : ', lamb0el)
+    print('lamb a2F unrenorm : ', lamb1)
+    #print('lamb bare unrenorm : ', lamb1el)
+    print('lamb mass unrenorm : ', lamb1mass)
+    print('lamb a2F renorm : ', lamb0)
+    #print('lamb electronic renorm : ', lamb0el)
+    print('lamb mass renorm : ', lamb0mass)
+
+
+    # McMillan Tc formula from a2F
+    
+    print('simple check of integral')
+    print('lamb0', lamb0)
+    dw = (w0[-1]-w0[0]) / (len(w0)-1)
+    nr = len(a2F0)
+    lambcheck = 2 * np.sum(a2F0[nr//2+1:] / w0[nr//2+1:]) * dw
+    print('lambcheck', lambcheck)
+    lambcheckquad = 2 * np.sum(a2F0[nr//2+1:] / w0[nr//2+1:]) * dw
+    L = len(w0[nr//2+1:])
+    ws =  np.arange(0, dw*L, dw)
+    print('lambcheck using quad : ', 2 * trapz(a2F0[nr//2+1:] / w0[nr//2+1:], ws))
+    
+    print('normalization a2F renormalized : ', trapz(a2F0[nr//2+1:], ws))
+    print('normalization a2F unrenormalized : ', trapz(a2F1[nr//2+1:], ws))
+    
+    
+    wln = np.exp( 2 / lamb0 * np.sum(np.log(w0[nr//2+1:]) * a2F0[nr//2+1:] / w0[nr//2+1:]) * dw)
+    print('wln ', wln)
+    
+    print('Tc ', wln/1.2 * np.exp(-1.04*(1 + lamb0) / lamb0))
 
 
 # plotting
@@ -828,7 +973,9 @@ def figure2_horizontal():
 #figure1()
 #figure2_horizontal()
 
-compute_a2F()
+#compute_a2F()
+
+debug()
 
 
 #old_plotting()
