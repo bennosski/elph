@@ -13,7 +13,8 @@ import numpy as np
 from interpolator import Interp
 
 basedir = '../'
-if not os.path.exists(basedir): os.mkdir(basedir)
+assert os.path.exists(basedir)
+#if not os.path.exists(basedir): os.mkdir(basedir)
 
 params = {}
 params['nw']    =  128
@@ -30,7 +31,6 @@ params['beta']  = 16.0
 params['dim']   = 2
 params['g0'] = mylamb2g0(lamb=1/6, omega=params['omega'], W=8.0)
 params['Q']  = None
-params['q0'] = None
 
 params['dw']     = 0.005
 params['wmin']   = -4.2
@@ -46,7 +46,7 @@ if False:
 #migdal.selfconsistency(sc_iter=100, frac=0.9, cont=True, interp=interp)
 
 migdal = RealAxisMigdal(params, basedir)
-migdal.selfconsistency(sc_iter=10, frac=0.8)
+migdal.selfconsistency(sc_iter=10, frac=0.8, cont=True)
 
 
 

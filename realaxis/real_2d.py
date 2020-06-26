@@ -154,6 +154,7 @@ class RealAxisMigdal(Migdal):
 
             if best_chg is None or np.mean(change) < best_chg:
                 best_chg = np.mean(change)
+                np.save('realchg.npy', [best_chg])
                 np.save('savedir.npy', [savedir])            
                 np.save(savedir+'w', w)
                 np.save(savedir+'GR', GR)
