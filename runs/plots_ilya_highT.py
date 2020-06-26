@@ -277,7 +277,9 @@ def compute_a2F():
  
     #folders = sorted(os.listdir(basedir+'data/'))
     
-    basedir = '../'
+    #basedir = '../'
+    basedir = '/scratch/users/bln/elph/data/2d/'
+
     #folder0 = 'data_renormalized_nk96_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.800_beta16.0000_QNone'
     #folder1 = 'data_unrenormalized_nk96_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.800_beta16.0000_QNone'
     
@@ -286,16 +288,12 @@ def compute_a2F():
     
     
     params = read_params(basedir, folder0)
-    
     print('dw', params['dw'])
     print('idelta', params['idelta'])
-    
+
     params = read_params(basedir, folder1)
-    
     print('dw', params['dw'])
     print('idelta', params['idelta'])
-    
-    #return
     
     
     for key in params:
@@ -307,15 +305,14 @@ def compute_a2F():
     def main_computation():
         # main computation
         print('renormalized lamb')
-        #_, lambbarekr, weightsr = corrected_lamb_bare(basedir, folder0, ntheta=80)
-        #lambmasskr, _ = corrected_lamb_mass(basedir, folder0, ntheta=80)
-        #lamba2Fkr, _ = corrected_a2F(basedir, folder0, ntheta=40)
+        _, lambbarekr, weightsr = corrected_lamb_bare(basedir, folder0, ntheta=80)
+        lambmasskr, _ = corrected_lamb_mass(basedir, folder0, ntheta=80)
+        lamba2Fkr, _ = corrected_a2F(basedir, folder0, ntheta=40)
         
-        #np.save(basedir + 'lambbarekr', lambbarekr)
-        #np.save(basedir + 'lambmasskr', lambmasskr)
-        #np.save(basedir + 'lamba2Fkr', lamba2Fkr)
-        
-        #np.save(basedir + 'weightsr', weightsr)
+        np.save(basedir + 'lambbarekr', lambbarekr)
+        np.save(basedir + 'lambmasskr', lambmasskr)
+        np.save(basedir + 'lamba2Fkr', lamba2Fkr)
+        np.save(basedir + 'weightsr', weightsr)
 
         
         print('unrenormalized lamb')
@@ -326,21 +323,23 @@ def compute_a2F():
         np.save(basedir + 'lambbareku', lambbareku)
         np.save(basedir + 'lambmassku', lambmassku)
         np.save(basedir + 'lamba2Fku', lamba2Fku)
-        
         np.save(basedir + 'weightsu', weightsu)
     
-    #main_computation()    
+    #############################
+    # compute a2F
+    main_computation()    
     
+
+    # compute lamb_a2F using imaginary axis only
     def imag():
         lamba2Fikr, _ = corrected_a2F_imag(basedir, folder0, ntheta=40)
         lamba2Fiku, _ = corrected_a2F_imag(basedir, folder1, ntheta=40)
 
-    #imag()        
+    imag()        
     
     lamba2Fikr = np.load(basedir + 'data/' + folder0 + '/lambk_a2F_imag.npy')
     lamba2Fiku = np.load(basedir + 'data/' + folder1 + '/lambk_a2F_imag.npy')
 
-    
     
     lambbarekr = np.load(basedir + 'lambbarekr.npy')
     lambmasskr = np.load(basedir + 'lambmasskr.npy')
@@ -973,9 +972,9 @@ def figure2_horizontal():
 #figure1()
 #figure2_horizontal()
 
-#compute_a2F()
+compute_a2F()
 
-debug()
+#debug()
 
 
 #old_plotting()
