@@ -307,29 +307,32 @@ def compute_a2F():
     def main_computation():
         # main computation
         print('renormalized lamb')
-        #_, lambbarekr, weightsr = corrected_lamb_bare(basedir, folder0, ntheta=80)
-        #lambmasskr, _ = corrected_lamb_mass(basedir, folder0, ntheta=80)
-        #lamba2Fkr, _ = corrected_a2F(basedir, folder0, ntheta=40)
+        _, lambbarekr, weightsr = corrected_lamb_bare(basedir, folder0, ntheta=80)
+        lambmasskr, _ = corrected_lamb_mass(basedir, folder0, ntheta=80)
+        lamba2Fkr, _ = corrected_a2F(basedir, folder0, ntheta=80)
         
-        #np.save(basedir + 'lambbarekr', lambbarekr)
-        #np.save(basedir + 'lambmasskr', lambmasskr)
-        #np.save(basedir + 'lamba2Fkr', lamba2Fkr)
+        np.save(basedir + 'lambbarekr', lambbarekr)
+        np.save(basedir + 'lambmasskr', lambmasskr)
+        np.save(basedir + 'lamba2Fkr', lamba2Fkr)
         
-        #np.save(basedir + 'weightsr', weightsr)
+        np.save(basedir + 'weightsr', weightsr)
 
-        
+        '''
         print('unrenormalized lamb')
         _, lambbareku, weightsu = corrected_lamb_bare(basedir, folder1, ntheta=80)
         lambmassku, _ = corrected_lamb_mass(basedir, folder1, ntheta=80)
-        lamba2Fku, _ = corrected_a2F(basedir, folder1, ntheta=40)
+        lamba2Fku, _ = corrected_a2F(basedir, folder1, ntheta=80)
 
         np.save(basedir + 'lambbareku', lambbareku)
         np.save(basedir + 'lambmassku', lambmassku)
         np.save(basedir + 'lamba2Fku', lamba2Fku)
         
         np.save(basedir + 'weightsu', weightsu)
+        '''
     
-    #main_computation()    
+    main_computation()    
+    return
+    
     
     def imag():
         lamba2Fikr, _ = corrected_a2F_imag(basedir, folder0, ntheta=40)
@@ -973,9 +976,9 @@ def figure2_horizontal():
 #figure1()
 #figure2_horizontal()
 
-#compute_a2F()
+compute_a2F()
 
-debug()
+#debug()
 
 
 #old_plotting()
