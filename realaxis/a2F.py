@@ -405,8 +405,8 @@ def corrected_a2F(basedir, folder, ntheta=5):
     for ik in range(ntheta):
         dos += rs[ik] / vels[ik] * dtheta
         
-    print('dos (should be 0.3) = ', 4 * dos / (2*np.pi)**2)
-        
+    print('dos renormalized (unrenormalized version is 0.3) = ', 4 * dos / (2*np.pi)**2)
+
     # get B interp
     B = -1.0/np.pi * DR.imag
     
@@ -447,7 +447,7 @@ def corrected_a2F(basedir, folder, ntheta=5):
     #lambk = 2 * np.sum(lambk[:,nr//2+1:] / wr[None,nr//2+1:], axis=1) * dw
     lamb = 2 * np.trapz(a2F[nr//2+1:] / wr[nr//2+1:], dx=dw)
     lambk = 2 * np.trapz(lambk[:,nr//2+1:] / wr[None,nr//2+1:], dx=dw, axis=1)
-    
+      
     print('lamb_from_a2F = ', lamb)
     
     np.save(basedir + 'data/'+folder+'/lamb_from_a2F.npy', [lamb])
