@@ -212,7 +212,8 @@ class MigdalBase:
 
 
             if True:
-                odrlo = ', ODLRO={:.4e}'.format(np.amax(abs(S[...,:,0,1]))) if self.sc else ''
+                hasodrlo = True if ((hasattr(self, 'sc') and self.sc) or (hasattr(self, 'cdw') and self.cdw)) else False
+                odrlo = ', ODLRO={:.4e}'.format(np.amax(abs(S[...,:,0,1]))) if hasodrlo else ''
 
                 if len(np.shape(PI)) == len(np.shape(S)):
                     odrlo += ' {:.4e} '.format(np.amax(abs(PI[...,:,0,1])))

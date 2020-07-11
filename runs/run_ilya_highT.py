@@ -24,7 +24,7 @@ params['tp']    = -0.3
 params['dens']  =  0.8     
 params['fixed_mu'] = -1.11                                                                                            
 params['omega'] =  0.17
-params['renormalized'] = False
+params['renormalized'] = True
 params['sc']    = False
 params['band']  = band_square_lattice
 params['beta']  = 16.0
@@ -43,7 +43,7 @@ if False:
     interp_folder = '../data/data_renormalized_nk96_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.800_beta16.0000_QNone'
     interp = Interp(interp_folder, params['nk'])
 
-#migdal.selfconsistency(sc_iter=100, frac=0.9, cont=True, interp=interp)
+migdal.selfconsistency(sc_iter=100, frac=0.9, cont=True, interp=interp)
 
 migdal = RealAxisMigdal(params, basedir)
 migdal.selfconsistency(sc_iter=10, frac=0.8, cont=True)

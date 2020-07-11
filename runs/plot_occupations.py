@@ -131,5 +131,3 @@ folder1 = 'data_unrenormalized_nk240_abstp0.300_dim2_g00.33665_nw256_omega0.170_
 ph_occ(basedir, folder1)
 
 plot_N_cut(basedir, folder0, folder1)
-
-
