@@ -39,7 +39,7 @@ class MigdalBase:
         if hasattr(self, 'sc'): print('sc     = {}'.format(self.sc))
         if hasattr(self, 'Q'): print('Q      = {}'.format(self.Q))
         self.dim = len(shape(self.band(1, 1.0, self.tp)))        
-        print('dim    = {}'.format(self.dim))
+        if hasattr(self, 'dim'): print('dim    = {}'.format(self.dim))
         
         Q = None if not hasattr(self, 'Q') else self.Q
         savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_beta{:.4f}_Q{}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), self.dim, self.g0, self.nw, self.omega, self.dens, self.beta, Q)
@@ -56,6 +56,7 @@ class MigdalBase:
         
         ek = self.band(self.nk, self.t, self.tp, Q)        
         
+        
         # estimate filling and dndmu at the desired filling
         mu = optimize.fsolve(lambda mu : 2.0*mean(1.0/(exp(self.beta*(ek-mu))+1.0))-self.dens, 0.0)[0]
         deriv = lambda mu : 2.0*mean(self.beta*exp(self.beta*(ek-mu))/(exp(self.beta*(ek-mu))+1.0)**2)
@@ -63,6 +64,10 @@ class MigdalBase:
         
         print('mu optimized = %1.3f'%mu)
         print('dndmu = %1.3f'%dndmu)
+        
+        
+        #mu = None
+        #dndmu = None
         
         return savedir, wn, vn, ek, mu, dndmu
 
@@ -215,7 +220,7 @@ class MigdalBase:
                 hasodrlo = True if ((hasattr(self, 'sc') and self.sc) or (hasattr(self, 'cdw') and self.cdw)) else False
                 odrlo = ', ODLRO={:.4e}'.format(np.amax(abs(S[...,:,0,1]))) if hasodrlo else ''
 
-                if len(np.shape(PI)) == len(np.shape(S)):
+                if hasodrlo and len(np.shape(PI)) == len(np.shape(S)):
                     odrlo += ' {:.4e} '.format(np.amax(abs(PI[...,:,0,1])))
                 
                 PImax = ', PImax={:.4e}'.format(np.amax(abs(PI))) if self.renormalized else ''
