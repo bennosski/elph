@@ -164,6 +164,11 @@ def band_square_lattice(nk, t, tp, Q=None):
 
     return ek
 
+
+def band_1site(*args):
+    return 0
+
+
 def gexp_1d(nk, q0):
     qs = arange(-pi, pi, 2*pi/nk)
     return exp(-abs(qs/q0))
