@@ -23,6 +23,14 @@ class Migdal(MigdalBase):
     #------------------------------------------------------------
     def compute_n(self, Gtau):
         return -2.0*mean(Gtau[...,-1,0,0]).real
+
+
+    def compute_n_tail(self, wn, ek, mu):
+        baresum = 1 + 4 * np.mean(1/4 * np.tanh(-self.beta*(ek-mu)/2))
+        bareGw = 1.0/(1j*wn[None,None,:] - (ek[:,:,None]-mu))
+        return baresum - (1 + 2/(self.nk**2 * self.beta) * 2*np.sum(bareGw.real))
+
+
     #------------------------------------------------------------
     def compute_G(self, wn, ek, mu, S):
         return linalg.inv(1j*wn[None,None,:,None,None]*Migdal.tau0[None,None,None,:,:] - (ek[:,:,None,None,None]-mu)*Migdal.tau3[None,None,None,:,:] - S)

@@ -11,14 +11,18 @@ from real_2d_sc import RealAxisMigdal
 from functions import band_square_lattice, mylamb2g0
 import numpy as np
 from interpolator import Interp
+import sys
 
 #basedir = '../'
 basedir = '/scratch/users/bln/elph/data/sc2dfixedn'
 if not os.path.exists(basedir): os.mkdir(basedir)
 
+nk_interp = int(sys.argv[1])
+nk = int(sys.argv[2])
+
 params = {}
 params['nw']    =  256
-params['nk']    =  240
+params['nk']    =  nk
 params['t']     =  1.0
 params['tp']    = -0.3                                                                                                 
 params['dens']  =  0.8                                             #params['fixed_mu'] = -1.11
@@ -40,9 +44,9 @@ params['idelta'] = 0.010j
 
 
 def imag_axis():
-    interp = True
-    if interp:
-        interp_folder = '/scratch/users/bln/elph/data/sc2dfixed/data/data_renormalized_nk240_abstp0.300_dim2_g00.33665_nw256_omega0.170_dens0.800_beta100.0000_QNone'
+    interp = None
+    if nk_interp > 0:
+        interp_folder = '/scratch/users/bln/elph/data/sc2dfixed/data/data_renormalized_nk{}_abstp0.300_dim2_g00.33665_nw256_omega0.170_dens0.800_beta100.0000_QNone'.format(nk_interp)
         interp = Interp(interp_folder, params['nk'])
 
     migdal = Migdal(params, basedir)
