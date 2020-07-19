@@ -44,7 +44,7 @@ lambda_dimen = alpha^2/(omega^2)
 Beth
 -------
 
-Hint ~ g n X = g (b + b^\dagger) / sqrt(2 omega)
+Hint ~ g n X = g n (b + b^\dagger) / sqrt(2 omega)
 
 lamb = g^2/(omega^2 * W)
 

@@ -410,11 +410,13 @@ def corrected_a2F(basedir, folder, ntheta=5):
     # get B interp
     B = -1.0/np.pi * DR.imag
     
+    max_w = 0.3
+    max_iw = np.argmin(np.abs(wr - max_w))
     
     a2F = np.zeros(nr)
     lambk = np.zeros((ntheta, nr))
     
-    for iw in range(nr//2, nr):
+    for iw in range(nr//2, max_iw):
         print(iw, end=' ')
         ks = np.linspace(-np.pi, np.pi, nk+1)
         I = interp2d(ks, ks, B[:,:,iw], kind='linear')

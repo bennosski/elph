@@ -9,7 +9,6 @@ from scipy.ndimage.filters import gaussian_filter
 from functions import lamb2g0_ilya
 import fourier
 import matplotlib 
-matplotlib.use('TkAgg')
 from matplotlib.pyplot import *
 from anderson import AndersonMixing
 
@@ -77,6 +76,9 @@ class MigdalBase:
 
     def compute_n(self, G): pass
 
+   
+    def compute_n_tail(self, wn, ek, mu): pass
+
 
     def compute_G(self, wn, ek, mu, S): pass
 
@@ -93,6 +95,9 @@ class MigdalBase:
     def init_selfenergies(self): pass
 
 
+    def n_from_Sw(self, wn, ek, mu, Sw): pass
+
+
     def dyson_fermion(self, wn, ek, mu, S, axis):
         Sw, jumpS = fourier.t2w(S, self.beta, axis, 'fermion')
 
@@ -100,11 +105,34 @@ class MigdalBase:
             mu = self.fixed_mu
         else:
             if abs(self.dens-1.0)>1e-10:
+
+                mu_new = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,Sw)) + self.compute_n_tail(wn, ek, mu) - self.dens, mu)[0]
+                mu = mu_new*0.9 + mu*0.1
+            else:
+                mu = 0
+
+        
+        # old way : misses the contribution to n from the sum in the tails
+        '''
+        else:
+            if abs(self.dens-1.0)>1e-10:
                 mu_new = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,Sw))-self.dens, mu)[0]
                 mu = mu_new*0.9 + mu*0.1
             else:
                 mu = 0
-            
+        '''
+
+
+        '''
+        # this is for density based on sum over iwn. 
+        # But this is not jump corrected (missing the infinite tail so, probably it is less accurate than using the tau value)
+        else:
+            if abs(self.dens-1.0)>1e-10:
+                mu_new = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,Sw))-self.dens, mu)[0]
+                mu = mu_new*0.9 + mu*0.1
+            else:
+                mu = 0
+        '''
 
         Gw = self.compute_G(wn, ek, mu, Sw)        
 
@@ -170,6 +198,23 @@ class MigdalBase:
 
         print('\nImag-axis selfconsistency\n--------------------------')
 
+        '''
+        # understand filling differences
+        mu, G = self.dyson_fermion(wn, ek, mu, S0, self.dim)
+        n_tau = self.compute_n(G)
+        Gw, jump = fourier.t2w(G, self.beta, 2, 'fermion')
+        print('Gw shape', Gw.shape)
+        n_w = self.compute_fill(Gw)
+        print('n_tau', n_tau)
+        print('n_w', n_w)
+        print('expected missing part')
+        mp = self.compute_n_tail(wn, ek, mu)
+        print('mp', mp)
+        print('correct fill', n_w + mp)
+        exit()
+        '''
+        
+
         if S0 is None: 
             S, PI = self.init_selfenergies()
         else:
@@ -191,7 +236,7 @@ class MigdalBase:
 
             '''
             if abs(self.dens-1.0)>1e-10:
-                mu -= 0.01*(n-self.dens)/dndmu
+                mu -= 0.1*(n-self.dens)/dndmu
             '''
 
             # compute new selfenergies S(tau) and PI(tau)

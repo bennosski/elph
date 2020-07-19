@@ -28,7 +28,7 @@ class Migdal(MigdalBase):
         return linalg.inv(1j*wn[None,None,:,None,None]*Migdal.tau0[None,None,None,:,:] - (ek[:,:,None,None,None]-mu)*Migdal.tau3[None,None,None,:,:] - S)
     #------------------------------------------------------------
     def compute_D(self, vn, PI):
-        return 1.0/(-((vn**2)[None,:] + self.omega**2)/(2.0*self.omega) - PI)
+        return 1.0/(-((vn**2)[None,None,:] + self.omega**2)/(2.0*self.omega) - PI)
     #------------------------------------------------------------
     def compute_S(self, G, D):
         if hasattr(self, 'gk2'):

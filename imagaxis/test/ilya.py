@@ -25,9 +25,6 @@ params['band']  = band_square_lattice
 #-----------------------------------------------------
 # to get Ilya's susceptibilities
 
-#basedir = '/scratch/users/bln/elph/imagaxis/ilya_x_vs_lamb/'
-basedir = '../../test_ilya/'
-if not os.path.exists(basedir): os.mkdir(basedir)
 
 def compute_susceptibilities(basedir):
     shutil.rmtree(basedir + 'data/')
@@ -49,13 +46,13 @@ def compute_susceptibilities(basedir):
         migdal = Migdal(params, basedir)
     
         sc_iter = 400
-        savedir, mu, G, D, S, GG = migdal.selfconsistency(sc_iter, S0=S0, PI0=PI0, frac=0.2)
+        savedir, mu, G, D, S, GG = migdal.selfconsistency(savedir, sc_iter, S0=S0, PI0=PI0, frac=0.2)
         PI = params['g0']**2 * GG
         
         if G is None: break
     
         sc_iter = 300
-        Xsc, Xcdw = migdal.susceptibilities(sc_iter, G, D, GG, frac=0.7)
+        Xsc, Xcdw = migdal.susceptibilities(savedir, sc_iter, G, D, GG, frac=0.7)
     
         save(savedir + 'Xsc.npy', [Xsc])
         save(savedir + 'Xcdw.npy', [Xcdw])
@@ -71,8 +68,6 @@ def compute_susceptibilities(basedir):
     
         S0, PI0 = S, PI
 
-#analyze_x_vs_lamb(basedir)
-#exit()
 
 #-----------------------------------------------------
 # to get Ilya's single particle quantities (Sigma and PI)
@@ -112,10 +107,12 @@ def compute_single_particle(basedir):
 
 #------------------------------------------------------------
 
-#compute_single_particle(basedir)
-#analyze_single_particle(basedir)
+basedir = '/scratch/users/bln/elph/migdal_check/single_particle/'
+compute_single_particle(basedir)
+#Aanalyze_single_particle(basedir)
 
-#compute_susceptibilities(basedir)
-analyze_x_vs_lamb(basedir)
+basedir = '/scratch/users/bln/elph/migdal_check/susceptibilities/'
+compute_susceptibilities(basedir)
+#analyze_x_vs_lamb(basedir)
 
 

@@ -8,6 +8,7 @@ import fourier
 from anderson import AndersonMixing
 import matplotlib.pyplot as plt
 
+
 class RealAxisMigdal(Migdal):
     #-----------------------------------------------------------
     def __init__(self, params, basedir):
@@ -30,7 +31,8 @@ class RealAxisMigdal(Migdal):
         wn = (2*np.arange(self.nw)+1) * np.pi / self.beta
         vn = (2*np.arange(self.nw+1)) * np.pi / self.beta
         ek = self.band(self.nk, self.t, self.tp)
-        
+        #ek = band_square_lattice(self.nk, self.t, self.tp)        
+
         return wn, vn, ek, w, nB, nF, DRbareinv
     #----------------------------------------------------------- 
     def compute_GR(self, w, ek, mu, SR):
@@ -67,6 +69,46 @@ class RealAxisMigdal(Migdal):
             return 2.0*self.g0**2*self.dw/self.nk**2*(basic_conv(A, Gsum, ['k+q,k','k+q,k','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
                -basic_conv(A, GA*nF[None,None,:], ['k+q,k','k+q,k','w+z,z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
                +basic_conv(A*nF[None,None,:], GA, ['k+q,k','k+q,k','w+z,z'], [0,1,2], [True,True,False])[:,:,:self.nr])
+
+
+    def compute_jjcorr(self, w, wn, G, GR, nF):
+        # convert to imaginary frequency
+        G = fourier.t2w(G, self.beta, self.dim, 'fermion')[0]
+
+        # compute Gsum
+        Gsum  = np.zeros([self.nk,self.nk,self.nr], dtype=complex)
+        for i in range(self.nr):
+            Gsum[:,:,i]  = np.sum(G/((w[i]+1j*wn)[None,None,:]), axis=2) / self.beta 
+        # handle sum over pos and negative freqs
+        Gsum  += np.conj(Gsum)
+        print('finished Gsum')    
+
+        del G
+
+        ks = np.arange(-np.pi, np.pi, 2*np.pi/self.nk)
+        sin = np.sin(ks)
+        cos = np.cos(ks)
+        fk = (-2*self.t*sin[:,None] - 4*self.tp*sin[:,None]*cos[None,:])
+        GA = np.conj(GR)
+        A  = -1.0/np.pi * GR.imag
+
+        A *= (fk**2)[:,:,None]
+        jj0w = 2.0 * self.dw / self.nk**2 * np.sum(
+                basic_conv(A, Gsum, ['z,w-z'], [2], [False])[:,:,:self.nr] \
+               -basic_conv(A, GA*nF[None,None,:], ['w+z,z'], [2], [False])[:,:,:self.nr] \
+               +basic_conv(A*nF[None,None,:], GA, ['w+z,z'], [2], [False])[:,:,:self.nr], axis=(0,1))
+
+        np.save('jj0w{}'.format('r' if self.renormalized else 'u'), jj0w)
+
+        del GA
+        del A
+        del Gsum
+
+        print('done jj0w')
+
+        jjw = jj0w / (1 + self.g0**2 * (-2/self.omega) * jj0w)
+        np.save('jjw{}'.format('r' if self.renormalized else 'u'), jjw)
+
     
     #-----------------------------------------------------------    
     def selfconsistency(self, sc_iter, frac=0.5, alpha=0.5, S0=None, PI0=None, mu0=None, cont=False):

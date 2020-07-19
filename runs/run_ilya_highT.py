@@ -13,9 +13,10 @@ from functions import band_square_lattice, mylamb2g0
 import numpy as np
 from interpolator import Interp
 
-basedir = '/scratch/users/bln/elph/data/2d/'
-assert os.path.exists(basedir)
-#if not os.path.exists(basedir): os.mkdir(basedir)
+basedir = '/scratch/users/bln/elph/data/2dfixedn/'
+#basedir = '/scratch/users/bln/elph/data/test/'
+if not os.path.exists(basedir): os.makedirs(basedir)
+#assert os.path.exists(basedir)
 
 renorm = int(sys.argv[1])
 
@@ -25,7 +26,7 @@ params['nk']    =  120
 params['t']     =  1.0
 params['tp']    = -0.3                                                                                                 
 params['dens']  =  0.8     
-params['fixed_mu'] = -1.11                                                                                            
+#params['fixed_mu'] = -1.11                                                                                            
 params['omega'] =  0.17
 params['renormalized'] = True if renorm==1 else False
 params['sc']    = False
@@ -42,14 +43,14 @@ params['idelta'] = 0.002j
 migdal = Migdal(params, basedir)
 
 interp = None
-if False:
-    interp_folder = '../data/data_renormalized_nk96_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.800_beta16.0000_QNone'
+if True:
+    interp_folder = '/scratch/users/bln/elph/data/2d/data/data_unrenormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.800_beta16.0000_QNone'
     interp = Interp(interp_folder, params['nk'])
 
-#migdal.selfconsistency(sc_iter=100, frac=0.9, cont=True, interp=interp)
+migdal.selfconsistency(sc_iter=200, frac=0.9, cont=True, interp=interp)
 
-migdal = RealAxisMigdal(params, basedir)
-migdal.selfconsistency(sc_iter=20, frac=0.8, cont=False)
+#migdal = RealAxisMigdal(params, basedir)
+#migdal.selfconsistency(sc_iter=20, frac=0.8, cont=False)
 
 
 

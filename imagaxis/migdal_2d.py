@@ -6,14 +6,24 @@ import os
 import time
 import matplotlib.pyplot as plt
 import numpy as np
+import fourier
+
 
 class Migdal(MigdalBase):
     #------------------------------------------------------------
     def compute_fill(self, Gw):
-        return real(1.0 + 2./(self.nk**2 * self.beta) * 2.0*sum(Gw))
+        return real(1.0 + 2./(self.nk**2 * self.beta) * 2.0*np.sum(Gw))
     #------------------------------------------------------------
     def compute_n(self, Gtau):
         return -2.0*mean(Gtau[:,:,-1]).real
+
+
+    def compute_n_tail(self, wn, ek, mu):
+        baresum = 1 + 4 * np.mean(1/4 * np.tanh(-self.beta*(ek-mu)/2))
+        bareGw = self.compute_G(wn, ek, mu, 0)
+        return baresum - (1 + 2/(self.nk**2 * self.beta) * 2*np.sum(bareGw.real))
+
+
     #------------------------------------------------------------
     def compute_G(self, wn, ek, mu, S):
         return 1.0/(1j*wn[None,None,:] - (ek[:,:,None]-mu) - S)
@@ -57,6 +67,27 @@ class Migdal(MigdalBase):
         else:
             return 1 - self.g0**2/self.nk**2 * conv(F0gamma, D, ['k-q,q','k-q,q', 'm,n-m'], [0,1,2], [True,True,False], self.beta, kinds=('fermion','boson','fermion'), op='...,...', jumps=(jumpF0gamma, jumpD))
 
+
+    def compute_jjcorr(self, G): 
+        ''' 
+        input is G(tau)
+        returns jjcorr(q=0, tau)
+        '''
+        ks = np.arange(-np.pi, np.pi, 2*np.pi/self.nk)
+        sin = np.sin(ks)
+        cos = np.cos(ks)
+        fk = (-2*self.t*sin[:,None] - 4*self.tp*sin[:,None]*cos[None,:])
+        jj0t = 2.0 / self.nk**2 * np.sum((fk**2)[:,:,None] * G * G[:,:,::-1], axis=(0,1))
+
+        np.save('jj0t{}'.format('r' if self.renormalized else 'u'), jj0t)
+         
+        jj0v = fourier.t2w(jj0t, self.beta, 0, 'boson')        
+        jjv = jj0v / (1 + self.g0**2 * (-2/self.omega) * jj0v)
+
+        ivn = 2*np.arange(len(jjv))*np.pi/self.beta
+
+        np.save('jjv{}'.format('r' if self.renormalized else 'u'), jjv)
+    
 
 
 if __name__=='__main__':
