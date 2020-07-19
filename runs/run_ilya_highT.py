@@ -42,16 +42,24 @@ params['wmax']   = +4.2
 params['idelta'] = 0.002j
 migdal = Migdal(params, basedir)
 
-interp = None
-if True:
-    interp_folder = '/scratch/users/bln/elph/data/2d/data/data_unrenormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.800_beta16.0000_QNone'
-    interp = Interp(interp_folder, params['nk'])
 
-migdal.selfconsistency(sc_iter=200, frac=0.9, cont=True, interp=interp)
+def imag_axis():
+    interp = None
+    if True:
+        interp_folder = '/scratch/users/bln/elph/data/2d/data/data_{}renormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.800_beta16.0000_QNone'.format('' if renorm==1 else 'un')
+        interp = Interp(interp_folder, params['nk'])
 
-#migdal = RealAxisMigdal(params, basedir)
-#migdal.selfconsistency(sc_iter=20, frac=0.8, cont=False)
+    migdal.selfconsistency(sc_iter=200, frac=0.9, cont=True, interp=interp)
 
 
+def real_axis():
+    migdal = RealAxisMigdal(params, basedir)
+    migdal.selfconsistency(sc_iter=20, frac=0.8, cont=False)
+
+
+# run the program
+# ----------------
+#imag_axis()
+real_axis()
 
 
