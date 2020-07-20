@@ -58,7 +58,7 @@ class RealAxisMigdal(Migdal):
                +basic_conv(B, GR*nF[None,None,:], ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr])
 
     #-----------------------------------------------------------
-    def compute_PIR(self, GR, Gsum, nF):
+    def compute_PIR(self, GR, Gsum, nF, DR):
         GA = np.conj(GR)
         A  = -1.0/np.pi * GR.imag
         if hasattr(self, 'gq2'):
@@ -71,7 +71,7 @@ class RealAxisMigdal(Migdal):
                +basic_conv(A*nF[None,None,:], GA, ['k+q,k','k+q,k','w+z,z'], [0,1,2], [True,True,False])[:,:,:self.nr])
 
 
-    def compute_jjcorr(self, w, wn, G, GR, nF):
+    def compute_jjcorr(self, w, wn, G, GR, nF, DR):
         # convert to imaginary frequency
         G = fourier.t2w(G, self.beta, self.dim, 'fermion')[0]
 
@@ -106,7 +106,7 @@ class RealAxisMigdal(Migdal):
 
         print('done jj0w')
 
-        jjw = jj0w / (1 + self.g0**2 * (-2/self.omega) * jj0w)
+        jjw = jj0w / (1 + self.g0**2 * DR[self.nk//2, self.nk//2] * jj0w)
         np.save('jjw{}'.format('r' if self.renormalized else 'u'), jjw)
 
     

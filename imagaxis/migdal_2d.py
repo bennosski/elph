@@ -68,7 +68,7 @@ class Migdal(MigdalBase):
             return 1 - self.g0**2/self.nk**2 * conv(F0gamma, D, ['k-q,q','k-q,q', 'm,n-m'], [0,1,2], [True,True,False], self.beta, kinds=('fermion','boson','fermion'), op='...,...', jumps=(jumpF0gamma, jumpD))
 
 
-    def compute_jjcorr(self, G): 
+    def compute_jjcorr(self, G, D): 
         ''' 
         input is G(tau)
         returns jjcorr(q=0, tau)
@@ -80,9 +80,11 @@ class Migdal(MigdalBase):
         jj0t = 2.0 / self.nk**2 * np.sum((fk**2)[:,:,None] * G * G[:,:,::-1], axis=(0,1))
 
         np.save('jj0t{}'.format('r' if self.renormalized else 'u'), jj0t)
+
+        Dw = fourier.t2w(D, self.beta, 2, 'boson')
          
         jj0v = fourier.t2w(jj0t, self.beta, 0, 'boson')        
-        jjv = jj0v / (1 + self.g0**2 * (-2/self.omega) * jj0v)
+        jjv = jj0v / (1 + self.g0**2 * Dw[self.nk//2, self.nk//2] * jj0v)
 
         ivn = 2*np.arange(len(jjv))*np.pi/self.beta
 
