@@ -13,8 +13,8 @@ from functions import band_square_lattice, mylamb2g0
 import numpy as np
 from interpolator import Interp
 
-basedir = '/scratch/users/bln/elph/data/2dfixedn/'
-#basedir = '/scratch/users/bln/elph/data/test/'
+#basedir = '/scratch/users/bln/elph/data/2dfixedn/'
+basedir = '../data/conductivity/'
 if not os.path.exists(basedir): os.makedirs(basedir)
 #assert os.path.exists(basedir)
 
@@ -46,10 +46,10 @@ def run(renorm, beta, S0, PI0):
 
     savedir, mu, G, D, S, GG = migdal.selfconsistency(sc_iter=200, frac=0.4, cont=True, S0=S0, PI0=PI0)
     migdal.compute_jjcorr(savedir, G, D)
-
+    PI = params['g0']**2 * GG
 
     migdal = RealAxisMigdal(params, basedir)
-    migdal.selfconsistency(sc_iter=20, frac=0.8, cont=False)
+    migdal.selfconsistency(sc_iter=35, frac=0.8, cont=False)
 
     path = os.path.join(savedir, 'G.npy')
     G  = np.load(path)

@@ -145,7 +145,7 @@ class RealAxisMigdal(Migdal):
                 PIR = np.load(savedir+'PIR.npy')
             else:
                 print('data exists. Not continuing. Set cont=True or delete data.')
-                exit()
+                return
         
         else:
             SR  = np.zeros([self.nk,self.nk,self.nr], dtype=complex)
@@ -180,7 +180,7 @@ class RealAxisMigdal(Migdal):
         change = [0,0]
         frac = 0.8
         best_chg = None
-        for i in range(100):
+        for i in range(sc_iter):
             SR0 = SR[:]
             PIR0 = PIR[:]
 
@@ -191,7 +191,7 @@ class RealAxisMigdal(Migdal):
             change[0] = np.mean(np.abs(SR-SR0))/np.mean(np.abs(SR+SR0))
 
             if self.renormalized:
-                PIR = self.compute_PIR(GR, Gsum_plus, nF)            
+                PIR = self.compute_PIR(GR, Gsum_plus, nF, DRbareinv)            
                 #PIR = AMPIR.step(PIR0, PIR)
                 PIR = frac*PIR + (1.0-frac)*PIR0
                 DR = self.compute_DR(DRbareinv, PIR)
