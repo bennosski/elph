@@ -14,7 +14,7 @@ from interpolator import Interp
 import sys
 
 #basedir = '../'
-basedir = '/scratch/users/bln/elph/data/sc2dfixedn'
+basedir = '/scratch/users/bln/elph/data/sc2dfixedn/'
 if not os.path.exists(basedir): os.mkdir(basedir)
 
 nk_interp = int(sys.argv[1])
