@@ -58,7 +58,7 @@ class RealAxisMigdal(Migdal):
                +basic_conv(B, GR*nF[None,None,:], ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr])
 
     #-----------------------------------------------------------
-    def compute_PIR(self, GR, Gsum, nF, DR):
+    def compute_PIR(self, GR, Gsum, nF, DRbareinv):
         GA = np.conj(GR)
         A  = -1.0/np.pi * GR.imag
         if hasattr(self, 'gq2'):
@@ -71,7 +71,9 @@ class RealAxisMigdal(Migdal):
                +basic_conv(A*nF[None,None,:], GA, ['k+q,k','k+q,k','w+z,z'], [0,1,2], [True,True,False])[:,:,:self.nr])
 
 
-    def compute_jjcorr(self, w, wn, G, GR, nF, DR):
+    def compute_jjcorr(self, savedir, G, GR):
+        wn, vn, ek, w, nB, nF, DRbareinv = self.setup_realaxis()
+
         # convert to imaginary frequency
         G = fourier.t2w(G, self.beta, self.dim, 'fermion')[0]
 
@@ -98,7 +100,8 @@ class RealAxisMigdal(Migdal):
                -basic_conv(A, GA*nF[None,None,:], ['w+z,z'], [2], [False])[:,:,:self.nr] \
                +basic_conv(A*nF[None,None,:], GA, ['w+z,z'], [2], [False])[:,:,:self.nr], axis=(0,1))
 
-        np.save('jj0w{}'.format('r' if self.renormalized else 'u'), jj0w)
+        path = os.path.join(savedir, 'jj0w') 
+        np.save(path, jj0w)
 
         del GA
         del A
@@ -106,8 +109,12 @@ class RealAxisMigdal(Migdal):
 
         print('done jj0w')
 
-        jjw = jj0w / (1 + self.g0**2 * DR[self.nk//2, self.nk//2] * jj0w)
-        np.save('jjw{}'.format('r' if self.renormalized else 'u'), jjw)
+        DR0 = 1 / DRbareinv
+
+        jjw = jj0w / (1 + self.g0**2 * DR0 * jj0w)
+
+        path = os.path.join(savedir, 'jjw') 
+        np.save(path, jjw)
 
     
     #-----------------------------------------------------------    

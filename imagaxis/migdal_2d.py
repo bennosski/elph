@@ -68,7 +68,7 @@ class Migdal(MigdalBase):
             return 1 - self.g0**2/self.nk**2 * conv(F0gamma, D, ['k-q,q','k-q,q', 'm,n-m'], [0,1,2], [True,True,False], self.beta, kinds=('fermion','boson','fermion'), op='...,...', jumps=(jumpF0gamma, jumpD))
 
 
-    def compute_jjcorr(self, G, D): 
+    def compute_jjcorr(self, savedir, G, D): 
         ''' 
         input is G(tau)
         returns jjcorr(q=0, tau)
@@ -79,16 +79,22 @@ class Migdal(MigdalBase):
         fk = (-2*self.t*sin[:,None] - 4*self.tp*sin[:,None]*cos[None,:])
         jj0t = 2.0 / self.nk**2 * np.sum((fk**2)[:,:,None] * G * G[:,:,::-1], axis=(0,1))
 
-        np.save('jj0t{}'.format('r' if self.renormalized else 'u'), jj0t)
+        path = os.path.join(savedir, 'jj0t') 
+        np.save(path, jj0t)
 
-        Dw = fourier.t2w(D, self.beta, 2, 'boson')
-         
+        vn = 2*np.arange(self.nw+1)*np.pi/self.beta
+
+        D0w = self.compute_D(vn, 0)
+        
         jj0v = fourier.t2w(jj0t, self.beta, 0, 'boson')        
-        jjv = jj0v / (1 + self.g0**2 * Dw[self.nk//2, self.nk//2] * jj0v)
+        jjv = jj0v / (1 + self.g0**2 * D0w[0,0] * jj0v)
+        #jjv = jj0v / (1 + self.g0**2 * (-2 / self.omega) * jj0v)
 
-        ivn = 2*np.arange(len(jjv))*np.pi/self.beta
+        path = os.path.join(savedir, 'jj0v') 
+        np.save(path, jj0v)
 
-        np.save('jjv{}'.format('r' if self.renormalized else 'u'), jjv)
+        path = os.path.join(savedir,'jjv') 
+        np.save(path, jjv) 
     
 
 
@@ -172,6 +178,7 @@ if __name__=='__main__':
     
         print('------------------------------------------')
         print('simulation took', time.time()-time0, 's')
+
     
     def run_dwave(l, beta=16.0, S0=None, PI0=None):
         time0 = time.time()
