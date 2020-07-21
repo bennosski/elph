@@ -25,9 +25,9 @@ params['nw']    =  256
 params['nk']    =  nk
 params['t']     =  1.0
 params['tp']    = -0.3                                                                                                 
-params['dens']  =  0.8
 
-#params['fixed_mu'] = -1.11
+params['dens']  =  0.8
+params['fixed_mu'] = -1.083
                                                     
 params['omega'] =  0.17
 params['renormalized'] = True
