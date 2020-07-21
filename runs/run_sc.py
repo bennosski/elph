@@ -25,7 +25,9 @@ params['nw']    =  256
 params['nk']    =  nk
 params['t']     =  1.0
 params['tp']    = -0.3                                                                                                 
-params['dens']  =  0.8                                             #params['fixed_mu'] = -1.11
+params['dens']  =  0.8
+
+#params['fixed_mu'] = -1.11
                                                     
 params['omega'] =  0.17
 params['renormalized'] = True
@@ -46,11 +48,11 @@ params['idelta'] = 0.010j
 def imag_axis():
     interp = None
     if nk_interp > 0:
-        interp_folder = '/scratch/users/bln/elph/data/sc2dfixed/data/data_renormalized_nk{}_abstp0.300_dim2_g00.33665_nw256_omega0.170_dens0.800_beta100.0000_QNone'.format(nk_interp)
+        interp_folder = '/scratch/users/bln/elph/data/sc2dfixedn/data/data_renormalized_nk{}_abstp0.300_dim2_g00.33665_nw256_omega0.170_dens0.800_beta100.0000_QNone'.format(nk_interp)
         interp = Interp(interp_folder, params['nk'])
 
     migdal = Migdal(params, basedir)
-    migdal.selfconsistency(sc_iter=400, frac=0.4, cont=True, interp=interp)
+    migdal.selfconsistency(sc_iter=10, frac=0.4, cont=True, interp=interp)
 
 
 def real_axis():    
