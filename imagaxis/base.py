@@ -160,15 +160,7 @@ class MigdalBase:
         np.save('savedir.npy', [savedir])
 
         best_change = None
-        if interp:
-            if len(os.listdir(savedir))>2:
-                print('DATA ALREADY EXISTS. PLEASE DELETE FIRST')
-                exit()
-
-            # used for seeding a calculation with more k points from a calculation done with fewer k points
-            S0 = interp.S
-            PI0 = interp.PI 
-        elif os.path.exists(savedir+'S.npy') and os.path.exists(savedir+'PI.npy'):
+        if os.path.exists(savedir+'S.npy') and os.path.exists(savedir+'PI.npy'):
             print('\nImag-axis calculation already done!!!! \n USING EXISTING DATA!!!!!')
             S0  = np.load(savedir+'S.npy')
             PI0 = np.load(savedir+'PI.npy')
@@ -182,7 +174,15 @@ class MigdalBase:
                 return savedir, mu0, G, D, S0, PI0 / self.g0**2
             else:
                 print('continuing with imag axis')
+        elif interp:
+            if len(os.listdir(savedir))>2:
+                print('DATA ALREADY EXISTS. PLEASE DELETE FIRST')
+                exit()
 
+            # used for seeding a calculation with more k points from a calculation done with fewer k points
+            S0 = interp.S
+            PI0 = interp.PI 
+        
 
         for key in self.keys:
             np.save(savedir+key, [getattr(self, key)])

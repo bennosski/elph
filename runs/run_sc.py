@@ -52,7 +52,7 @@ def imag_axis():
         interp = Interp(interp_folder, params['nk'])
 
     migdal = Migdal(params, basedir)
-    migdal.selfconsistency(sc_iter=10, frac=0.4, cont=True, interp=interp)
+    migdal.selfconsistency(sc_iter=30, frac=0.4, cont=True, interp=interp)
 
 
 def real_axis():    
