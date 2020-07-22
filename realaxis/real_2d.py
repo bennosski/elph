@@ -119,8 +119,12 @@ class RealAxisMigdal(Migdal):
     
     #-----------------------------------------------------------    
     def selfconsistency(self, sc_iter, frac=0.5, alpha=0.5, S0=None, PI0=None, mu0=None, cont=False):
-        savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0, mu0=mu0)
+        
+        if sc_iter == 1:
+            frac = 1
 
+        savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0, mu0=mu0)
+        
         for key in self.keys:
             np.save(savedir+key, [getattr(self, key)])
 
@@ -178,7 +182,7 @@ class RealAxisMigdal(Migdal):
         
         # selfconsistency loop
         change = [0,0]
-        frac = 0.8
+        
         best_chg = None
         for i in range(sc_iter):
             SR0 = SR[:]
