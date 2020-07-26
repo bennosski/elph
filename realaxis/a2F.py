@@ -184,13 +184,13 @@ def corrected_lamb_bare(basedir, folder, ntheta=5):
     Is = interpS(SR, wr, nr, nk)
     for corner in corners:
         for theta in thetas:
-            (kx, ky), r, dEdk =  corrected_kF(Is, theta, corner[0], corner[1], corner[2], t, tp, mu)
+            (kx, ky), r, dEdk =  kF(theta, corner[0], corner[1], corner[2], t, tp, mu)
             kxfs.append(kx)
             kyfs.append(ky)
             rs.append(r)
             dEdks.append(dEdk)
-            v = vel(kx, ky, dEdk, Is, wr, nr)
-            vels.append(v)
+            #v = vel(kx, ky, dEdk, Is, wr, nr)
+            vels.append(np.abs(dEdk))
     
     lamb = 0
     for ik in range(ntheta):
@@ -273,13 +273,14 @@ def corrected_lamb_mass(basedir, folder, ntheta=5):
     print('len(Is)', len(Is))
     for corner in corners:
         for theta in thetas:
+            #(kx, ky), r, dEdk =  kF(theta, corner[0], corner[1], corner[2], t, tp, mu)
             (kx, ky), r, dEdk =  corrected_kF(Is, theta, corner[0], corner[1], corner[2], t, tp, mu)
             kxfs.append(kx)
             kyfs.append(ky)
             rs.append(r)
             dEdks.append(dEdk)
-            v, dSdE = vel_and_dSdE(kx, ky, dEdk, Is, wr, nr)
-            vels.append(v)
+            _, dSdE = vel_and_dSdE(kx, ky, dEdk, Is, wr, nr)
+            vels.append(np.abs(dEdk))
             dSdEs.append(dSdE)
     
     # compute normalization factor
@@ -392,13 +393,14 @@ def corrected_a2F(basedir, folder, ntheta=5):
     Is = interpS(SR, wr, nr, nk)
     for corner in corners:
         for theta in thetas:
+            #(kx, ky), r, dEdk =  kF(theta, corner[0], corner[1], corner[2], t, tp, mu)
             (kx, ky), r, dEdk =  corrected_kF(Is, theta, corner[0], corner[1], corner[2], t, tp, mu)
             kxfs.append(kx)
             kyfs.append(ky)
             rs.append(r)
             dEdks.append(dEdk)
-            v = vel(kx, ky, dEdk, Is, wr, nr)
-            vels.append(v)
+            #v = vel(kx, ky, dEdk, Is, wr, nr)
+            vels.append(np.abs(dEdk))
     
     # compute normalization factor
     dos = 0
@@ -484,8 +486,8 @@ def corrected_a2F_imag(basedir, folder, ntheta=5):
             kyfs.append(ky)
             rs.append(r)
             dEdks.append(dEdk)
-            v = vel(kx, ky, dEdk, Is, wr, nr)
-            vels.append(v)
+            #v = vel(kx, ky, dEdk, Is, wr, nr)
+            vels.append(np.abs(dEdk))
     
     # compute normalization factor
     dos = 0

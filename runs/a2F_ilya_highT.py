@@ -18,8 +18,8 @@ from functions import read_params
 
 # a2F
 def compute_a2F():
-    #basedir = '/scratch/users/bln/elph/data/2dfixedn/'
-    basedir = '/scratch/users/bln/elph/data/single_iter/'
+    basedir = '/scratch/users/bln/elph/data/2dfixedn/'
+    #basedir = '/scratch/users/bln/elph/data/single_iter/'
 
 
     folder0 = 'data_renormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.800_beta16.0000_QNone'
@@ -64,17 +64,17 @@ def compute_a2F():
     
     #############################
     # compute a2F
-    main_computation()    
+    #main_computation()    
 
     # compute lamb_a2F using imaginary axis only
     def imag():
-        lamba2Fikr, _ = corrected_a2F_imag(basedir, folder0, ntheta=40)
-        lamba2Fiku, _ = corrected_a2F_imag(basedir, folder1, ntheta=40)
+        lamba2Fikr, _ = corrected_a2F_imag(basedir, folder0, ntheta=80)
+        lamba2Fiku, _ = corrected_a2F_imag(basedir, folder1, ntheta=80)
 
     #imag()        
     
-    #lamba2Fikr = np.load(basedir + 'data/' + folder0 + '/lambk_a2F_imag.npy')
-    #lamba2Fiku = np.load(basedir + 'data/' + folder1 + '/lambk_a2F_imag.npy')
+    lamba2Fikr = np.load(basedir + 'data/' + folder0 + '/lambk_a2F_imag.npy')
+    lamba2Fiku = np.load(basedir + 'data/' + folder1 + '/lambk_a2F_imag.npy')
 
     
     lambbarekr = np.load(basedir + 'lambbarekr.npy')
@@ -153,13 +153,13 @@ def compute_a2F():
     figure()
     plot(w1, a2F1)
     plot(w0, a2F0)
-    legend(['$\lambda_{ME}$'+'={:.2f}'.format(lamb1), '$\lambda_{RME}$'+'={:.2f}'.format(lamb0)])
-    xlim(0, 0.3)
+    legend(['$\lambda_{ME}$'+'=0.4'.format(lamb1), '$\lambda_{RME}$'+'=1.3'.format(lamb0)], fontsize=14, loc=2)
+    xlim(0, 0.25)
     #ylim(0, 0.8)
-    ylim(0, 3.1)
+    ylim(0, 2.0)
     xlabel('$\omega / t$', fontsize=13)
     ylabel(r'$\alpha^2 F$', fontsize=13)
-    savefig(basedir+'a2Fcomp')
+    savefig(basedir+'a2Fcomp', transparent=True)
     close()
 
     dw0 = (w0[-1]-w0[0]) / (len(w0)-1)
