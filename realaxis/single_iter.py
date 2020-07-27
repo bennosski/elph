@@ -4,13 +4,13 @@ import numpy as np
 from functions import band_square_lattice, mylamb2g0
 from scipy import optimize
 
-def compute_fill(w, ek, beta, mu, nk):
+def compute_fill(ek, beta, mu, nk):
     nF = 1/(np.exp(beta*(ek-mu)) + 1)
     return 2 * np.sum(nF) / nk**2
     
 
-def compute_mu(w, ek, beta, nk, dens):
-    mu = optimize.fsolve(lambda mu : compute_fill(w, ek, beta, mu, nk) - dens, 0)
+def compute_mu(ek, beta, nk, dens):
+    mu = optimize.fsolve(lambda mu : compute_fill(ek, beta, mu, nk) - dens, 0)
     print('mu = ', mu)
     return mu
     

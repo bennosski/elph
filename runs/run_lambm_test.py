@@ -35,7 +35,7 @@ params['sc']    = False
 params['band']  = band_square_lattice
 params['beta']  = 16.0
 params['dim']   = 2
-params['g0'] = mylamb2g0(lamb=0.1, omega=params['omega'], W=8.0)
+params['g0'] = mylamb2g0(lamb=0.4, omega=params['omega'], W=8.0)
 params['Q']  = None
 
 params['dw']     = 0.010
@@ -60,8 +60,11 @@ def real_axis():
 
 
 def plot():
-    folder = '/scratch/users/bln/elph/data/2dfixedn/data/data_{}renormalized_nk150_abstp0.300_dim2_g00.63246_nw128_omega1.000_dens0.800_beta16.0000_QNone'.format('' if params['renormalized'] else 'un')
+    #folder = '/scratch/users/bln/elph/data/2dfixedn/data/data_{}renormalized_nk150_abstp0.300_dim2_g00.63246_nw128_omega1.000_dens0.800_beta16.0000_QNone'.format('' if params['renormalized'] else 'un')
 
+    folder = '/scratch/users/bln/elph/data/2dfixedn/data/data_{}renormalized_nk150_abstp0.300_dim2_g01.26491_nw128_omega1.000_dens0.800_beta16.0000_QNone'.format('' if params['renormalized'] else 'un')
+
+    
     w = np.load(folder + '/w.npy')
     SR = np.load(folder + '/SR.npy')[0,0]
     

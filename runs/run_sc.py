@@ -57,12 +57,12 @@ def imag_axis():
 
 def real_axis():    
     migdal = RealAxisMigdal(params, basedir)
-    migdal.selfconsistency(sc_iter=30, fracR=0.4, cont=True)
+    migdal.selfconsistency(sc_iter=10, fracR=0.4, cont=True)
 
 
 # run the program
 # -----------------
-imag_axis()
-#real_axis()
+#imag_axis()
+real_axis()
 
 

@@ -103,7 +103,10 @@ def test(beta, g0):
     idelta = 1j/beta
     dw = 1/beta
     
-    w = np.arange(-2, 2, dw)
+    w = np.arange(-2.25, 2.25, dw)
+    
+    print('w[0] =', w[len(w)//2])
+    assert np.abs(w[len(w)//2]) < 1e-10
     
     omega = 1.0
     #idelta = 0.010j
@@ -113,11 +116,11 @@ def test(beta, g0):
     nk = 400
     ek = band_square_lattice(nk, 1, -0.3)
     
-    mu = single_iter.compute_mu(w, ek, beta, nk, dens)
+    mu = single_iter.compute_mu(ek, beta, nk, dens)
     #mu = -1.09928783
     mu, S = single_iter.get_S(w, ek, g0, beta, omega, nk, idelta, dens, mu)
 
-    print('filling', single_iter.compute_fill(w, ek, beta, mu, nk))
+    print('filling', single_iter.compute_fill(ek, beta, mu, nk))
     
     print('shape S', np.shape(S))
     
@@ -175,7 +178,9 @@ def plot():
     
     print('lambm not self-consistent', lambnsc)
     
-    folder = '/scratch/users/bln/elph/data/2dfixedn/data/data_unrenormalized_nk150_abstp0.300_dim2_g00.63246_nw128_omega1.000_dens0.800_beta16.0000_QNone'
+    #folder = '/scratch/users/bln/elph/data/2dfixedn/data/data_unrenormalized_nk150_abstp0.300_dim2_g00.63246_nw128_omega1.000_dens0.800_beta16.0000_QNone'
+    folder = '/scratch/users/bln/elph/data/2dfixedn/data/data_unrenormalized_nk150_abstp0.300_dim2_g01.26491_nw128_omega1.000_dens0.800_beta16.0000_QNone'
+
 
     w = np.load(folder + '/w.npy')
     S = np.load(folder + '/SR.npy')[0,0]
@@ -190,12 +195,14 @@ def plot():
     print('lambda m selfconsistent', lambsc)
     
     plt.xlim(0, 2)
-    #plt.ylim(-0.5, 1.6)
-    plt.ylim(-0.05, 0.27)
+    #plt.ylim(-0.05, 0.27)
+    plt.ylim(-0.1, 1.05)
+    
+    
     plt.legend(['single-iteration (-Re $\Sigma$)/$\omega$', 'self-consistent (-Re $\Sigma$)/$\omega$'], fontsize=10)
     plt.xlabel('$\omega$', fontsize=14)
 
-    plt.savefig('data/sigma_and_deriv')    
+    plt.savefig('data/sigma_and_deriv_0p4')    
     
     return lambnsc, lambsc
 
@@ -241,12 +248,15 @@ def compute_rhoEF():
 
 
 def main():
-    g0 = lamb2g0_ilya(0.1, 1, 8)
+    #g0 = lamb2g0_ilya(0.1, 1, 8)
+    g0 = lamb2g0_ilya(0.4, 1, 8)
+    
+    
     print('g0', g0)
     print('mylamb', myg02lamb(g0, 1, 8))
     print('lamb ilya', g02lamb_ilya(g0, 1, 8))
 
-    #test(16, g0)
+    test(16, g0)
     plot()
     
  
@@ -258,9 +268,7 @@ def main_vs_T():
 
     
     
-
-
-#main()
+main()
 
 
 
