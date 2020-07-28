@@ -39,10 +39,10 @@ params['g0'] = mylamb2g0(lamb=1/6, omega=params['omega'], W=8.0)
 params['Q']  = None
 params['q0'] = None
 
-params['dw']     = 0.005
+params['dw']     = 0.010
 params['wmin']   = -4.2
 params['wmax']   = +4.2
-params['idelta'] = 0.010j
+params['idelta'] = 0.020j
 
 
 def imag_axis():
