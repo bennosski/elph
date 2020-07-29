@@ -166,7 +166,7 @@ def band_square_lattice(nk, t, tp, Q=None):
 
 
 def band_1site(*args):
-    return 0
+    return 0.1
 
 
 def gexp_1d(nk, q0):

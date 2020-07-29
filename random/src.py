@@ -1,0 +1,4 @@
+import sys
+import os
+sys.path.append(os.path.join(os.getcwd(), '../imagaxis/'))
+sys.path.append(os.path.join(os.getcwd(), '../realaxis/'))
