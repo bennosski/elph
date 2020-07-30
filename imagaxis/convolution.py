@@ -4,9 +4,6 @@ import fourier
 
 def basic_conv(a, b, indices_list, axes, circular_list, op='...,...', izero=None):
     '''
-    todo: write optional zeros argument
-      - if x is the repeated index, then yz-xz=0 and xz=0 and yz=0
-    
     a and b must be the same size
     the length of each axis must be even
     
@@ -28,6 +25,8 @@ def basic_conv(a, b, indices_list, axes, circular_list, op='...,...', izero=None
     op specifies the tensor operation which to perform to the intermediate ffts
     it is a string which becomes the first argument to numpy.einsum
     by default it is elementwise multiplication
+    
+    izero is the index of x=0 in the arrays a and b
     '''
     
     if izero is None:
