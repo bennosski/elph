@@ -105,7 +105,6 @@ class MigdalBase:
             mu = self.fixed_mu
         else:
             if abs(self.dens-1.0)>1e-10:
-
                 mu_new = optimize.fsolve(lambda mu : self.compute_fill(self.compute_G(wn,ek,mu,Sw)) + self.compute_n_tail(wn, ek, mu) - self.dens, mu)[0]
                 mu = mu_new*0.9 + mu*0.1
             else:

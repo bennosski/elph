@@ -13,8 +13,9 @@ from functions import band_square_lattice, mylamb2g0
 import numpy as np
 from interpolator import Interp
 
-basedir = '/scratch/users/bln/elph/data/2dfixedn/'
+#basedir = '/scratch/users/bln/elph/data/2dfixedn/'
 #basedir = '/scratch/users/bln/elph/data/test/'
+basedir = '/scratch/users/bln/elph/data/2dn0p786/'
 if not os.path.exists(basedir): os.makedirs(basedir)
 #assert os.path.exists(basedir)
 
@@ -25,7 +26,7 @@ params['nw']    =  128
 params['nk']    =  120
 params['t']     =  1.0
 params['tp']    = -0.3                                                                                                 
-params['dens']  =  0.8     
+params['dens']  =  0.786     
 #params['fixed_mu'] = -1.11                                                                                            
 params['omega'] =  0.17
 params['renormalized'] = True if renorm==1 else False
@@ -59,7 +60,7 @@ def real_axis():
 
 # run the program
 # ----------------
-#imag_axis()
+imag_axis()
 real_axis()
 
 
