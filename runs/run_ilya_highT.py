@@ -37,10 +37,13 @@ params['dim']   = 2
 params['g0'] = mylamb2g0(lamb=1/6, omega=params['omega'], W=8.0)
 params['Q']  = None
 
-params['dw']     = 0.001
-params['wmin']   = -4.2
-params['wmax']   = +4.2
-params['idelta'] = 0.002j
+params['dw']     = 0.005
+params['idelta'] = 0.010j
+params['wmin'] = -1.9
+params['wmax'] =  6.5
+#params['wmin']   = -4.2
+#params['wmax']   = +4.2
+#params['idelta'] = 0.002j
 migdal = Migdal(params, basedir)
 
 
@@ -55,12 +58,12 @@ def imag_axis():
 
 def real_axis():
     migdal = RealAxisMigdal(params, basedir)
-    migdal.selfconsistency(sc_iter=20, frac=0.8, cont=False)
+    migdal.selfconsistency(sc_iter=40, frac=0.4, cont=False)
 
 
 # run the program
 # ----------------
-imag_axis()
+#imag_axis()
 real_axis()
 
 

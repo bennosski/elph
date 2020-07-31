@@ -18,7 +18,8 @@ class RealAxisMigdal(Migdal):
     def setup_realaxis(self):
         w = np.arange(self.wmin, self.wmax, self.dw)
         self.nr = len(w)
-        assert self.nr%2==0 and abs(w[self.nr//2])<1e-10
+        self.izero = np.argmin(np.abs(w))
+        assert self.nr%2==0 and abs(w[self.izero])<1e-10
 
         nB = 1.0/(np.exp(self.beta*w)-1.0)
         nF = 1.0/(np.exp(self.beta*w)+1.0)
@@ -48,27 +49,36 @@ class RealAxisMigdal(Migdal):
     #-----------------------------------------------------------
     def compute_SR(self, GR, Gsum, DR, nB, nF):
         B = -1.0/np.pi * DR.imag
+        izeros = [self.nk//2, self.nk//2, self.izero]
+
+
+        def convfunc(a, b):
+            return basic_conv(a, b, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False], izeros=izeros)[:,:,:self.nr]
+
+
         if hasattr(self, 'gq2'):
-            return -self.g0**2*self.dw/self.nk**2*(basic_conv(self.gq2[:,:,None]*B, Gsum, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr]                
-               -basic_conv(self.gq2[:,:,None]*B*(1+nB)[None,None,:], GR, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
-               +basic_conv(self.gq2[:,:,None]*B, GR*nF[None,None,:], ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr])        
+            return -self.g0**2*self.dw/self.nk**2*(convfunc(self.gq2[:,:,None]*B, Gsum) - convfunc(self.gq2[:,:,None]*B*(1+nB)[None,None,:], GR) + convfunc(self.gq2[:,:,None]*B, GR*nF[None,None,:]))        
         else:
-            return -self.g0**2*self.dw/self.nk**2*(basic_conv(B, Gsum, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr]                
-               -basic_conv(B*(1+nB)[None,None,:], GR, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
-               +basic_conv(B, GR*nF[None,None,:], ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr])
+            return -self.g0**2*self.dw/self.nk**2*(convfunc(B, Gsum) - convfunc(B*(1+nB)[None,None,:], GR) + convfunc(B, GR*nF[None,None,:]))
 
     #-----------------------------------------------------------
     def compute_PIR(self, GR, Gsum, nF, DRbareinv):
         GA = np.conj(GR)
         A  = -1.0/np.pi * GR.imag
+        izeros = [self.nk//2, self.nk//2, self.izero]
+
+         
+        def convfunc1(a, b):
+            return basic_conv(a, b, ['k+q,k','k+q,k','z,w-z'], [0,1,2], [True,True,False], izeros=izeros)[:,:,:self.nr]
+
+        def convfunc2(a, b):
+            return basic_conv(a, b, ['k+q,k','k+q,k','w+z,z'], [0,1,2], [True,True,False], izeros=izeros)[:,:,:self.nr]
+
+
         if hasattr(self, 'gq2'):
-            return 2.0*self.g0**2*self.gq2[:,:,None]*self.dw/self.nk**2*(basic_conv(A, Gsum, ['k+q,k','k+q,k','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
-               -basic_conv(A, GA*nF[None,None,:], ['k+q,k','k+q,k','w+z,z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
-               +basic_conv(A*nF[None,None,:], GA, ['k+q,k','k+q,k','w+z,z'], [0,1,2], [True,True,False])[:,:,:self.nr])
+            return 2.0*self.g0**2*self.gq2[:,:,None]*self.dw/self.nk**2*(convfunc1(A, Gsum) - convfunc2(A, GA*nF[None,None,:]) + convfunc2(A*nF[None,None,:], GA))
         else:
-            return 2.0*self.g0**2*self.dw/self.nk**2*(basic_conv(A, Gsum, ['k+q,k','k+q,k','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
-               -basic_conv(A, GA*nF[None,None,:], ['k+q,k','k+q,k','w+z,z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
-               +basic_conv(A*nF[None,None,:], GA, ['k+q,k','k+q,k','w+z,z'], [0,1,2], [True,True,False])[:,:,:self.nr])
+            return 2.0*self.g0**2*self.dw/self.nk**2*(convfunc1(A, Gsum) - convfunc2(A, GA*nF[None,None,:]) + convfunc2(A*nF[None,None,:], GA))
 
 
     def compute_jjcorr(self, savedir, G, GR):
@@ -96,9 +106,9 @@ class RealAxisMigdal(Migdal):
 
         A *= (fk**2)[:,:,None]
         jj0w = 2.0 * self.dw / self.nk**2 * np.sum(
-                basic_conv(A, Gsum, ['z,w-z'], [2], [False])[:,:,:self.nr] \
-               -basic_conv(A, GA*nF[None,None,:], ['w+z,z'], [2], [False])[:,:,:self.nr] \
-               +basic_conv(A*nF[None,None,:], GA, ['w+z,z'], [2], [False])[:,:,:self.nr], axis=(0,1))
+                basic_conv(A, Gsum, ['z,w-z'], [2], [False], izero=self.izero)[:,:,:self.nr] \
+               -basic_conv(A, GA*nF[None,None,:], ['w+z,z'], [2], [False], izero=self.izero)[:,:,:self.nr] \
+               +basic_conv(A*nF[None,None,:], GA, ['w+z,z'], [2], [False], izero=self.izero)[:,:,:self.nr], axis=(0,1))
 
         path = os.path.join(savedir, 'jj0w') 
         np.save(path, jj0w)

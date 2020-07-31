@@ -6,6 +6,7 @@ Created on Thu Jul 30 09:29:32 2020
 """
 
 import numpy as np
+import src
 from convolution import basic_conv
 
 
@@ -13,8 +14,51 @@ n = 20
 A = np.random.randn(n)
 B = np.random.randn(n)
 
+
+print('testing circular convolutions')
+print('')
+
 # convolve
-C0 = basic_conv(A, B, ['x,y-x'], [0], [False])[:n]
+C0 = basic_conv(A, B, ['x,y-x'], [0], [True], izeros=[n//2])[:n]
+
+# explicit convolve (assuming index 0 is at n//2)
+C1 = np.zeros(n)
+
+for iy in range(n):
+    for ix in range(n):
+        # when iy = n//2
+        # and  ix = n//2   
+        # C[iy] = A[ix] B[iy - ix + n//2]
+    
+        C1[iy] += A[ix] * B[(iy - ix + n//2)%n]
+
+print(np.mean((C0-C1)).real)
+
+
+# convolve
+C0 = basic_conv(A, B, ['x,x+y'], [0], [True], izeros=[n//2])[:n]
+
+# explicit convolve (assuming index 0 is at n//2)
+C1 = np.zeros(n)
+
+for iy in range(n):
+    for ix in range(n):
+        # when iy = n//2
+        # and  ix = n//2  
+        # C[iy] = A[ix] B[ix + iy - n//2]
+    
+        C1[iy] += A[ix] * B[(ix + iy - n//2)%n]
+
+print(np.mean((C0-C1)).real)
+
+
+
+
+print('testing non-circular convolutions')
+print('')
+
+# convolve
+C0 = basic_conv(A, B, ['x,y-x'], [0], [False], izeros=[n//2])[:n]
 #print(C0.real)
 
 # explicit convolve (assuming index 0 is at n//2)
@@ -35,7 +79,7 @@ print(np.mean((C0-C1)).real)
 
 
 # convolve
-C0 = basic_conv(A, B, ['x,x+y'], [0], [False])[:n]
+C0 = basic_conv(A, B, ['x,x+y'], [0], [False], izeros=[n//2])[:n]
 #print(C0.real)
 
 # explicit convolve (assuming index 0 is at n//2)
@@ -57,7 +101,7 @@ print(np.mean((C0-C1)).real)
 
 
 # convolve
-C0 = basic_conv(A, B, ['x,y-x'], [0], [False], izero=4)[:n]
+C0 = basic_conv(A, B, ['x,y-x'], [0], [False], izeros=[4])[:n]
 #print(C0.real)
 
 
@@ -78,7 +122,7 @@ print(np.mean((C0-C1)).real)
 
 
 # convolve
-C0 = basic_conv(A, B, ['x,x+y'], [0], [False], izero=4)[:n]
+C0 = basic_conv(A, B, ['x,x+y'], [0], [False], izeros=[4])[:n]
 #print(C0.real)
 
 

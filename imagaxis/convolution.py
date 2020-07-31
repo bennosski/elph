@@ -2,7 +2,7 @@ from numpy import *
 import fourier
 
 
-def basic_conv(a, b, indices_list, axes, circular_list, op='...,...', izero=None):
+def basic_conv(a, b, indices_list, axes, circular_list, izeros, op='...,...'):
     '''
     a and b must be the same size
     the length of each axis must be even
@@ -28,10 +28,7 @@ def basic_conv(a, b, indices_list, axes, circular_list, op='...,...', izero=None
     
     izero is the index of x=0 in the arrays a and b
     '''
-    
-    if izero is None:
-        izero = len(a)//2
-    
+        
     a_ = a[:]
     b_ = b[:]
     
@@ -46,7 +43,7 @@ def basic_conv(a, b, indices_list, axes, circular_list, op='...,...', izero=None
         a_ = concatenate((a_, zeros(2*dims-array(shape(a)))), axis=axis)
         b_ = concatenate((b_, zeros(2*dims-array(shape(b)))), axis=axis) 
     
-    for axis in axes:
+    for axis, izero in zip(axes, izeros):
         a_ = roll(a_, -izero, axis=axis)
         b_ = roll(b_, -izero, axis=axis)
         
@@ -63,7 +60,7 @@ def basic_conv(a, b, indices_list, axes, circular_list, op='...,...', izero=None
             else: raise ValueError
             
     x = fft.ifftn(einsum(op, a_, b_), axes=axes)
-    for axis in axes:
+    for axis, izero in zip(axes, izeros):
         x = roll(x, izero, axis=axis)
     
     return x
