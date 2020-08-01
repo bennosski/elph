@@ -10,7 +10,7 @@ import src
 from convolution import basic_conv
 
 
-n = 20
+n = 21
 A = np.random.randn(n)
 B = np.random.randn(n)
 

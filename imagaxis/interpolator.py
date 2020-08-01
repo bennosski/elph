@@ -4,7 +4,30 @@ from scipy import interpolate
 
 class Interp:
 
-    def __init__(self, folder, Nk):
+    def __init__(self, folder, arg, kind=None):
+        if kind is None or kind=='momentum':
+            self._interp_momentum(folder, arg)
+        elif kind=='frequency':
+            self._interp_frequency(folder, arg) 
+
+
+    def _interp_frequency(self, folder, W):
+        nk = np.load(folder + '/nk.npy')[0]
+        w  = np.load(folder + '/w.npy')
+
+        SR = np.load(folder + '/SR.npy')
+        PIR = np.load(folder + '/PIR.npy')
+
+        Ir = interpolate.interp1d(w, SR.real, axis=-1, kind='linear')
+        Ii = interpolate.interp1d(w, SR.imag, axis=-1, kind='linear')
+        self.SR = Ir(W) + 1j*Ii(W)
+
+        Ir = interpolate.interp1d(w, PIR.real, axis=-1, kind='linear')
+        Ii = interpolate.interp1d(w, PIR.imag, axis=-1, kind='linear')
+        self.PIR = Ir(W) + 1j*Ii(W)
+
+
+    def _interp_momentum(self, folder, Nk):
         # folder is the location where previous data is stored
 
         print('loading from ', folder)

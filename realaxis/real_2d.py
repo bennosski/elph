@@ -16,10 +16,10 @@ class RealAxisMigdal(Migdal):
         
     #-----------------------------------------------------------
     def setup_realaxis(self):
-        w = np.arange(self.wmin, self.wmax, self.dw)
+        w = np.arange(self.wmin, self.wmax + self.dw/2, self.dw)
         self.nr = len(w)
         self.izero = np.argmin(np.abs(w))
-        assert self.nr%2==0 and abs(w[self.izero])<1e-10
+        assert np.abs(w[self.izero])<1e-10
 
         nB = 1.0/(np.exp(self.beta*w)-1.0)
         nF = 1.0/(np.exp(self.beta*w)+1.0)
@@ -67,6 +67,8 @@ class RealAxisMigdal(Migdal):
         A  = -1.0/np.pi * GR.imag
         izeros = [self.nk//2, self.nk//2, self.izero]
 
+        def convfunc(a, b, fc):
+            return basic_conv(a, b, ['k+q,k','k+q,k',fc], [0,1,2], [True,True,False], izeros=izeros)[:,:,:self.nr]
          
         def convfunc1(a, b):
             return basic_conv(a, b, ['k+q,k','k+q,k','z,w-z'], [0,1,2], [True,True,False], izeros=izeros)[:,:,:self.nr]
@@ -76,9 +78,9 @@ class RealAxisMigdal(Migdal):
 
 
         if hasattr(self, 'gq2'):
-            return 2.0*self.g0**2*self.gq2[:,:,None]*self.dw/self.nk**2*(convfunc1(A, Gsum) - convfunc2(A, GA*nF[None,None,:]) + convfunc2(A*nF[None,None,:], GA))
+            return 2.0*self.g0**2*self.gq2[:,:,None]*self.dw/self.nk**2*(convfunc(A, Gsum, 'z,w-z') - convfunc(A, GA*nF[None,None,:], 'w+z,z') + convfunc(A*nF[None,None,:], GA, 'w+z,z'))
         else:
-            return 2.0*self.g0**2*self.dw/self.nk**2*(convfunc1(A, Gsum) - convfunc2(A, GA*nF[None,None,:]) + convfunc2(A*nF[None,None,:], GA))
+            return 2.0*self.g0**2*self.dw/self.nk**2*(convfunc(A, Gsum, 'z,w-z') - convfunc(A, GA*nF[None,None,:], 'w+z,z') + convfunc(A*nF[None,None,:], GA, 'w+z,z'))
 
 
     def compute_jjcorr(self, savedir, G, GR):
@@ -128,17 +130,24 @@ class RealAxisMigdal(Migdal):
 
     
     #-----------------------------------------------------------    
-    def selfconsistency(self, sc_iter, frac=0.5, alpha=0.5, S0=None, PI0=None, mu0=None, cont=False):
+    def selfconsistency(self, sc_iter, frac=0.5, alpha=0.5, S0=None, PI0=None, mu0=None, cont=False, interp=None):
         
         if sc_iter == 1:
             frac = 1
 
         savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0, mu0=mu0)
+
+        # imag axis failed to converge
+        if savedir is None: exit()
         
+        savedir = savedir[:-1] + '_idelta{:.4f}_w{:4f}_{:.4f}/'.format(self.idelta.imag, np.abs(self.wmin), self.wmax)
+        if not os.path.exists(savedir): os.makedirs(savedir)
+
         for key in self.keys:
             np.save(savedir+key, [getattr(self, key)])
 
         print('savedir ', savedir)
+
 
         del D
         del GG
@@ -147,12 +156,13 @@ class RealAxisMigdal(Migdal):
         print('\nReal-axis selfconsistency')
         print('---------------------------------')
         
-        # imag axis failed to converge
-        if savedir is None: exit()
 
         wn, vn, ek, w, nB, nF, DRbareinv = self.setup_realaxis()
 
-        if os.path.exists(savedir+'SR.npy'):
+        if interp is not None:
+            SR = interp.SR
+            PIR = interp.PIR
+        elif os.path.exists(savedir+'SR.npy'):
             if cont:
                 print('CONTINUING FROM EXISTING REAL AXIS DATA')
                 SR = np.load(savedir+'SR.npy')
@@ -217,7 +227,7 @@ class RealAxisMigdal(Migdal):
 
             if best_chg is None or np.mean(change) < best_chg:
                 best_chg = np.mean(change)
-                np.save('realchg.npy', [best_chg])
+                np.save(savedir+'realchg.npy', [best_chg])
                 np.save('savedir.npy', [savedir])            
                 np.save(savedir+'w', w)
                 np.save(savedir+'GR', GR)

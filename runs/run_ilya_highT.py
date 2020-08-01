@@ -39,8 +39,11 @@ params['Q']  = None
 
 params['dw']     = 0.005
 params['idelta'] = 0.010j
-params['wmin'] = -1.9
-params['wmax'] =  6.5
+params['wmin'] = -5.0
+params['wmax'] =  9.0
+
+#params['wmin'] = -1.9
+#params['wmax'] =  6.5
 #params['wmin']   = -4.2
 #params['wmax']   = +4.2
 #params['idelta'] = 0.002j
@@ -57,8 +60,14 @@ def imag_axis():
 
 
 def real_axis():
+    interp = None
+    if True:
+        interp_folder = '/scratch/users/bln/elph/data/2dn0p786/data/data_renormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.786_beta16.0000_QNone_idelta0.0200'
+        w = np.arange(params['wmin'], params['wmax'] + params['dw']/2, params['dw'])
+        interp = Interp(interp_folder, w, kind='frequency')
+
     migdal = RealAxisMigdal(params, basedir)
-    migdal.selfconsistency(sc_iter=40, frac=0.4, cont=False)
+    migdal.selfconsistency(sc_iter=40, frac=0.8, cont=True, interp=interp)
 
 
 # run the program

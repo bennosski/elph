@@ -39,8 +39,10 @@ class MigdalBase:
         if hasattr(self, 'Q'): print('Q      = {}'.format(self.Q))
         self.dim = len(shape(self.band(1, 1.0, self.tp)))        
         if hasattr(self, 'dim'): print('dim    = {}'.format(self.dim))
+        if hasattr(self, 'idelta'): print('idelta = {}'.format(self.idelta.imag))
         
         Q = None if not hasattr(self, 'Q') else self.Q
+
         savedir = self.basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_beta{:.4f}_Q{}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), self.dim, self.g0, self.nw, self.omega, self.dens, self.beta, Q)
         if not os.path.exists(self.basedir+'data/'): os.mkdir(self.basedir+'data/')
         if not os.path.exists(savedir): os.mkdir(savedir)

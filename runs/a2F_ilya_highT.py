@@ -18,18 +18,23 @@ from functions import read_params
 
 # a2F
 def compute_a2F():
-    basedir = '/scratch/users/bln/elph/data/2dfixedn/'
+    #basedir = '/scratch/users/bln/elph/data/2dfixedn/'
     #basedir = '/scratch/users/bln/elph/data/single_iter/'
+    #folder0 = 'data_renormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.800_beta16.0000_QNone'
+    #folder1 = 'data_unrenormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.800_beta16.0000_QNone'
 
-
-    folder0 = 'data_renormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.800_beta16.0000_QNone'
-    folder1 = 'data_unrenormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.800_beta16.0000_QNone'
+    basedir = '/scratch/users/bln/elph/data/2dn0p786/'
+    folder0 = 'data_renormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.786_beta16.0000_QNone'
+    folder1 = 'data_unrenormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.786_beta16.0000_QNone'
         
+
     params = read_params(basedir, folder0)
+    print('renormalized:')
     print('dw', params['dw'])
     print('idelta', params['idelta'])
 
     params = read_params(basedir, folder1)
+    print('unrenormalized')
     print('dw', params['dw'])
     print('idelta', params['idelta'])
     
@@ -61,6 +66,7 @@ def compute_a2F():
         np.save(basedir + 'lambmassku', lambmassku)
         np.save(basedir + 'lamba2Fku', lamba2Fku)
         np.save(basedir + 'weightsu', weightsu)
+
     
     #############################
     # compute a2F
@@ -181,18 +187,19 @@ def compute_a2F():
     print('lamb0', lamb0)
     dw = (w0[-1]-w0[0]) / (len(w0)-1)
     nr = len(a2F0)
-    lambcheck = 2 * np.sum(a2F0[nr//2+1:] / w0[nr//2+1:]) * dw
+    izero = np.argmin(np.abs(w0))
+    lambcheck = 2 * np.sum(a2F0[izero+1:] / w0[izero+1:]) * dw
     print('lambcheck', lambcheck)
-    lambcheckquad = 2 * np.sum(a2F0[nr//2+1:] / w0[nr//2+1:]) * dw
-    L = len(w0[nr//2+1:])
+    lambcheckquad = 2 * np.sum(a2F0[izero+1:] / w0[izero+1:]) * dw
+    L = len(w0[izero+1:])
     ws =  np.arange(0, dw*L, dw)
-    print('lambcheck using quad : ', 2 * trapz(a2F0[nr//2+1:] / w0[nr//2+1:], ws))
+    print('lambcheck using quad : ', 2 * trapz(a2F0[izero+1:] / w0[izero+1:], dx=dw))
     
-    print('normalization a2F renormalized : ', trapz(a2F0[nr//2+1:], ws))
-    print('normalization a2F unrenormalized : ', trapz(a2F1[nr//2+1:], ws))
+    print('normalization a2F renormalized : ', trapz(a2F0[izero+1:], dx=dw))
+    print('normalization a2F unrenormalized : ', trapz(a2F1[izero+1:], dx=dw))
     
     
-    wln = np.exp( 2 / lamb0 * np.sum(np.log(w0[nr//2+1:]) * a2F0[nr//2+1:] / w0[nr//2+1:]) * dw)
+    wln = np.exp( 2 / lamb0 * np.sum(np.log(w0[izero+1:]) * a2F0[izero+1:] / w0[izero+1:]) * dw)
     print('wln ', wln)
     
     print('Tc ', wln/1.2 * np.exp(-1.04*(1 + lamb0) / lamb0))

@@ -51,23 +51,23 @@ def corrected_kF(Is, theta, theta0, x0, y0, t, tp, mu):
 
 
 # function to interpolate sigma for 3 freq points
-def interpS(SR, wr, nr, nk):
+def interpS(SR, wr, nr, nk, izero):
     #ks = np.arange(-np.pi, np.pi, 2*np.pi/nk)
     ks = np.linspace(-np.pi, np.pi, nk+1)
     Is = []
     for iw in (-2, 0, 2):
         if len(SR)==5:
-            Ir = interp2d(ks, ks, SR[:,:,nr//2+iw,0,0].real, kind='linear')
+            Ir = interp2d(ks, ks, SR[:,:,izero+iw,0,0].real, kind='linear')
         else:
-            Ir = interp2d(ks, ks, SR[:,:,nr//2+iw].real, kind='linear')
+            Ir = interp2d(ks, ks, SR[:,:,izero+iw].real, kind='linear')
         Is.append(Ir)
     return Is
 
 
 # function to compute fermi velocity (need deriv sigma real)
-def vel(kx, ky, dEdk, Is, wr, nr):
+def vel(kx, ky, dEdk, Is, wr, nr, izero):
     ys = [I(kx, ky)[0] for I in Is]
-    dw = wr[nr//2+2] - wr[nr//2-2]
+    dw = wr[izero+2] - wr[izero-2]
     # ys[2] is SR at iw=nr//2+2
     # ys[1] is SR at iw=nr//2
     # ys[0] is SR at iw=nr//2-2
@@ -78,9 +78,9 @@ def vel(kx, ky, dEdk, Is, wr, nr):
     return np.abs(dEdk) / (1 - dSdE)
 
 
-def vel_and_dSdE(kx, ky, dEdk, Is, wr, nr):
+def vel_and_dSdE(kx, ky, dEdk, Is, wr, nr, izero):
     ys = [I(kx, ky)[0] for I in Is]
-    dw = wr[nr//2+2] - wr[nr//2-2]
+    dw = wr[izero+2] - wr[izero-2]
     # ys[2] is SR at iw=nr//2+2
     # ys[1] is SR at iw=nr//2
     # ys[0] is SR at iw=nr//2-2
@@ -123,6 +123,8 @@ def lamb_bare(basedir, folder, ntheta=5):
     
     wr, nr, nk, SR, DR, mu, t, tp, g0, omega = load(basedir, folder)
     
+    izero = np.argmin(np.abs(wr))
+
     dtheta = np.pi/(2*ntheta)
     thetas = np.arange(dtheta/2, np.pi/2, dtheta)
     assert len(thetas) == ntheta
@@ -137,7 +139,7 @@ def lamb_bare(basedir, folder, ntheta=5):
     dEdks = []
     vels  = []
     rs    = []
-    Is = interpS(SR, wr, nr, nk)
+    Is = interpS(SR, wr, nr, nk, izero)
     for corner in corners:
         for theta in thetas:
             (kx, ky), r, dEdk =  kF(theta, corner[0], corner[1], corner[2], t, tp, mu)
@@ -145,7 +147,7 @@ def lamb_bare(basedir, folder, ntheta=5):
             kyfs.append(ky)
             rs.append(r)
             dEdks.append(dEdk)
-            v = vel(kx, ky, dEdk, Is, wr, nr)
+            v = vel(kx, ky, dEdk, Is, wr, nr, izero)
             vels.append(v)
     
     lamb = 0
@@ -166,6 +168,8 @@ def corrected_lamb_bare(basedir, folder, ntheta=5):
     # corrected for Fermi surface
     
     wr, nr, nk, SR, DR, mu, t, tp, g0, omega = load(basedir, folder)
+
+    izero = np.argmin(np.abs(wr))
     
     dtheta = np.pi/(2*ntheta)
     thetas = np.arange(dtheta/2, np.pi/2, dtheta)
@@ -181,7 +185,7 @@ def corrected_lamb_bare(basedir, folder, ntheta=5):
     dEdks = []
     vels  = []
     rs    = []
-    Is = interpS(SR, wr, nr, nk)
+    Is = interpS(SR, wr, nr, nk, izero)
     for corner in corners:
         for theta in thetas:
             (kx, ky), r, dEdk =  kF(theta, corner[0], corner[1], corner[2], t, tp, mu)
@@ -207,6 +211,8 @@ def corrected_lamb_bare(basedir, folder, ntheta=5):
 def lamb_mass(basedir, folder, ntheta=5):
     
     wr, nr, nk, SR, DR, mu, t, tp, g0, omega = load(basedir, folder)
+
+    izero = np.argmin(np.abs(wr))
     
     dtheta = np.pi/(2*ntheta)
     thetas = np.arange(dtheta/2, np.pi/2, dtheta)
@@ -223,7 +229,7 @@ def lamb_mass(basedir, folder, ntheta=5):
     dSdEs = []
     vels  = []
     rs    = []
-    Is = interpS(SR, wr, nr, nk)
+    Is = interpS(SR, wr, nr, nk, izero)
     print('len(Is)', len(Is))
     for corner in corners:
         for theta in thetas:
@@ -232,7 +238,7 @@ def lamb_mass(basedir, folder, ntheta=5):
             kyfs.append(ky)
             rs.append(r)
             dEdks.append(dEdk)
-            v, dSdE = vel_and_dSdE(kx, ky, dEdk, Is, wr, nr)
+            v, dSdE = vel_and_dSdE(kx, ky, dEdk, Is, wr, nr, izero)
             vels.append(v)
             dSdEs.append(dSdE)
     
@@ -253,6 +259,8 @@ def corrected_lamb_mass(basedir, folder, ntheta=5):
     # corrected by Fermi Surface shift due to real part of Sigma
     
     wr, nr, nk, SR, DR, mu, t, tp, g0, omega = load(basedir, folder)
+
+    izero = np.argmin(np.abs(wr))
     
     dtheta = np.pi/(2*ntheta)
     thetas = np.arange(dtheta/2, np.pi/2, dtheta)
@@ -269,7 +277,7 @@ def corrected_lamb_mass(basedir, folder, ntheta=5):
     dSdEs = []
     vels  = []
     rs    = []
-    Is = interpS(SR, wr, nr, nk)
+    Is = interpS(SR, wr, nr, nk, izero)
     print('len(Is)', len(Is))
     for corner in corners:
         for theta in thetas:
@@ -279,7 +287,7 @@ def corrected_lamb_mass(basedir, folder, ntheta=5):
             kyfs.append(ky)
             rs.append(r)
             dEdks.append(dEdk)
-            _, dSdE = vel_and_dSdE(kx, ky, dEdk, Is, wr, nr)
+            _, dSdE = vel_and_dSdE(kx, ky, dEdk, Is, wr, nr, izero)
             vels.append(np.abs(dEdk))
             dSdEs.append(dSdE)
     
@@ -303,6 +311,7 @@ def corrected_lamb_mass(basedir, folder, ntheta=5):
 def a2F(basedir, folder, ntheta=5):
     
     wr, nr, nk, SR, DR, mu, t, tp, g0, omega = load(basedir, folder)
+    izero = np.argmin(np.abs(wr))
     
     dtheta = np.pi/(2*ntheta)
     thetas = np.arange(dtheta/2, np.pi/2, dtheta)
@@ -318,7 +327,7 @@ def a2F(basedir, folder, ntheta=5):
     dEdks = []
     vels  = []
     rs    = []
-    Is = interpS(SR, wr, nr, nk)
+    Is = interpS(SR, wr, nr, nk, izero)
     for corner in corners:
         for theta in thetas:
             (kx, ky), r, dEdk =  kF(theta, corner[0], corner[1], t, tp, mu)
@@ -326,7 +335,7 @@ def a2F(basedir, folder, ntheta=5):
             kyfs.append(ky)
             rs.append(r)
             dEdks.append(dEdk)
-            v = vel(kx, ky, dEdk, Is, wr, nr)
+            v = vel(kx, ky, dEdk, Is, wr, nr, izero)
             vels.append(v)
     
     # compute normalization factor
@@ -366,16 +375,18 @@ def a2F(basedir, folder, ntheta=5):
     np.save(basedir + 'data/'+folder+'/a2F.npy', a2F)
     
     dw = (wr[-1]-wr[0]) / (len(wr)-1)
-    lamb = 2 * np.sum(a2F[nr//2+1:] / wr[nr//2+1:]) * dw
+    lamb = 2 * np.sum(a2F[izero+1:] / wr[izero+1:]) * dw
     
     print('lamb_from_a2F = ', lamb)
     
     np.save(basedir + 'data/'+folder+'/lamb_from_a2F.npy', [lamb])
+
     
 def corrected_a2F(basedir, folder, ntheta=5):
     
     wr, nr, nk, SR, DR, mu, t, tp, g0, omega = load(basedir, folder)
-    
+    izero = np.argmin(np.abs(wr))
+
     dtheta = np.pi/(2*ntheta)
     thetas = np.arange(dtheta/2, np.pi/2, dtheta)
     assert len(thetas) == ntheta
@@ -390,7 +401,7 @@ def corrected_a2F(basedir, folder, ntheta=5):
     dEdks = []
     vels  = []
     rs    = []
-    Is = interpS(SR, wr, nr, nk)
+    Is = interpS(SR, wr, nr, nk, izero)
     for corner in corners:
         for theta in thetas:
             #(kx, ky), r, dEdk =  kF(theta, corner[0], corner[1], corner[2], t, tp, mu)
@@ -411,6 +422,8 @@ def corrected_a2F(basedir, folder, ntheta=5):
 
     # get B interp
     B = -1.0/np.pi * DR.imag
+
+    izero = np.argmin(np.abs(wr))
     
     max_w = 0.3
     max_iw = np.argmin(np.abs(wr - max_w))
@@ -418,7 +431,7 @@ def corrected_a2F(basedir, folder, ntheta=5):
     a2F = np.zeros(nr)
     lambk = np.zeros((ntheta, nr))
     
-    for iw in range(nr//2, max_iw):
+    for iw in range(izero, max_iw):
         print(iw, end=' ')
         ks = np.linspace(-np.pi, np.pi, nk+1)
         I = interp2d(ks, ks, B[:,:,iw], kind='linear')
@@ -449,8 +462,8 @@ def corrected_a2F(basedir, folder, ntheta=5):
     dw = (wr[-1]-wr[0]) / (len(wr)-1)
     #lamb = 2 * np.sum(a2F[nr//2+1:] / wr[nr//2+1:]) * dw
     #lambk = 2 * np.sum(lambk[:,nr//2+1:] / wr[None,nr//2+1:], axis=1) * dw
-    lamb = 2 * np.trapz(a2F[nr//2+1:] / wr[nr//2+1:], dx=dw)
-    lambk = 2 * np.trapz(lambk[:,nr//2+1:] / wr[None,nr//2+1:], dx=dw, axis=1)
+    lamb = 2 * np.trapz(a2F[izero+1:] / wr[izero+1:], dx=dw)
+    lambk = 2 * np.trapz(lambk[:,izero+1:] / wr[None,izero+1:], dx=dw, axis=1)
       
     print('lamb_from_a2F = ', lamb)
     
@@ -464,6 +477,8 @@ def corrected_a2F_imag(basedir, folder, ntheta=5):
     
     wr, nr, nk, SR, DR, mu, t, tp, g0, omega = load(basedir, folder)
     
+    izero = np.argmin(np.abs(wr))
+
     dtheta = np.pi/(2*ntheta)
     thetas = np.arange(dtheta/2, np.pi/2, dtheta)
     assert len(thetas) == ntheta
@@ -478,7 +493,7 @@ def corrected_a2F_imag(basedir, folder, ntheta=5):
     dEdks = []
     vels  = []
     rs    = []
-    Is = interpS(SR, wr, nr, nk)
+    Is = interpS(SR, wr, nr, nk, izero)
     for corner in corners:
         for theta in thetas:
             (kx, ky), r, dEdk =  corrected_kF(Is, theta, corner[0], corner[1], corner[2], t, tp, mu)
