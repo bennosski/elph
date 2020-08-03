@@ -166,7 +166,7 @@ class MigdalBase:
             S0  = np.load(savedir+'S.npy')
             PI0 = np.load(savedir+'PI.npy')
             mu0 = np.load(savedir+'mu.npy')[0]
-            best_change = np.load(savedir+'bestchg.npy')[0]
+            best_change = np.mean(np.load(savedir+'bestchg.npy'))
             print('best_change', best_change)
             if not cont:
                 print('NOT continuing with imag axis')
@@ -276,7 +276,7 @@ class MigdalBase:
             chg = np.mean(change)
             if best_change is None or chg < best_change:
                 best_change = chg
-                np.save(savedir+'bestchg.npy', [best_change, change[0], change[1]])
+                np.save(savedir+'bestchg.npy', change)
                 np.save(savedir+'mu.npy', [mu])
                 np.save(savedir+'S.npy', S)
                 np.save(savedir+'PI.npy', PI)

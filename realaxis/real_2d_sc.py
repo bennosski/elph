@@ -16,9 +16,10 @@ class RealAxisMigdal(Migdal):
         
     #-----------------------------------------------------------
     def setup_realaxis(self):
-        w = np.arange(self.wmin, self.wmax, self.dw)
+        w = np.arange(self.wmin, self.wmax + self.dw/2, self.dw)
         self.nr = len(w)
-        assert self.nr%2==0 and abs(w[self.nr//2])<1e-10
+        self.izero = np.argmin(np.abs(w))
+        assert abs(w[self.izero])<1e-10
         #assert self.sc is True
 
         nB = 1.0/(np.exp(self.beta*w)-1.0)
@@ -41,23 +42,41 @@ class RealAxisMigdal(Migdal):
         return 1.0/(DRbareinv[None,None,:] - PIR)
     
     #-----------------------------------------------------------
-    def compute_SR(self, GR, Gsum, DR, nB, nF):
-        B  = -1.0/np.pi * DR.imag[:,:,:,None,None] * np.ones([self.nk,self.nk,self.nr,2,2])
+    def compute_SR(self, GR, tau3Gsumtau3, DR, nB, nF):
+        B  = -1.0/np.pi * DR.imag[:,:,:,None,None] * np.ones([self.nk,self.nk,self.nr,2,2])        
         tau3GRtau3 = np.einsum('ab,...bc,cd->...ad',Migdal.tau3,GR,Migdal.tau3)
-        return -self.g0**2*self.dw/self.nk**2 * ( \
-              basic_conv(B, Gsum, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
-             -basic_conv(B*(1+nB[None,None,:,None,None]), tau3GRtau3, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr] \
-             +basic_conv(B, tau3GRtau3*nF[None,None,:,None,None], ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False])[:,:,:self.nr])
 
+        izeros = [self.nk//2, self.nk//2, self.izero]
+
+
+        def conv(a, b):
+            return basic_conv(a, b, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False], izeros=izeros)[:,:,:self.nr]
+
+
+        return -self.g0**2*self.dw/self.nk**2*(conv(B, tau3Gsumtau3) - conv(B*(1+nB)[None,None,:,None,None], tau3GRtau3) + conv(B, tau3GRtau3*nF[None,None,:,None,None]))
+
+        
     #-----------------------------------------------------------
-    def compute_PIR(self, GR, Gsum, nF):
-        tau3GA = np.einsum('ab,...bc->...ac', Migdal.tau3, np.conj(GR))
-        tau3A  = np.einsum('ab,...bc->...ac', Migdal.tau3, -1.0/np.pi * GR.imag)
+    def compute_PIR(self, GR, tau3Gsumtau3, nF):
+        tau3GAtau3 = np.einsum('ab,...bc,cd->...ad', Migdal.tau3, np.conj(GR), Migdal.tau3)
+        A  = -1.0/np.pi * GR.imag
+
+        izeros = [self.nk//2, self.nk//2, self.izero]
+         
+        def conv(a, b, fc):
+            return basic_conv(a, b, ['k+q,k','k+q,k',fc], [0,1,2], [True,True,False], izeros=izeros, op='...ab,...bc->...ac')[:,:,:self.nr]
+
+
+        return 2.0*self.g0**2*self.dw/self.nk**2*(conv(A, tau3Gsumtau3, 'z,w-z') - conv(A, tau3GAtau3*nF[None,None,:,None,None], 'w+z,z') + conv(A*nF[None,None,:,None,None], tau3GAtau3, 'w+z,z'))
+
+ 
+        '''
         return self.g0**2*self.dw/self.nk**2 * np.einsum('...aa->...', \
            basic_conv(tau3A, Gsum, ['k+q,k','k+q,k','z,w-z'], [0,1,2], [True,True,False], op='...ab,...bc->...ac')[:,:,:self.nr] \
           -basic_conv(tau3A, tau3GA*nF[None,None,:,None,None], ['k+q,k','k+q,k','w+z,z'], [0,1,2], [True,True,False], op='...ab,...bc->...ac')[:,:,:self.nr] \
           +basic_conv(tau3A*nF[None,None,:,None,None], tau3GA, ['k+q,k','k+q,k','w+z,z'], [0,1,2], [True,True,False], op='...ab,...bc->...ac')[:,:,:self.nr])
-    
+        '''
+
     #-----------------------------------------------------------    
     def selfconsistency(self, sc_iter, frac=0.5, fracR=0.5, alpha=0.5, S0=None, PI0=None, mu0=None, cont=False):
         
@@ -97,16 +116,20 @@ class RealAxisMigdal(Migdal):
 
         # compute Gsum
         if self.renormalized:
-            Gsum_plus  = np.zeros([self.nk,self.nk,self.nr,2,2], dtype=complex)
-        Gsum_minus = np.zeros([self.nk,self.nk,self.nr,2,2], dtype=complex)
+            tau3Gsum_plustau3  = np.zeros([self.nk,self.nk,self.nr,2,2], dtype=complex)
+        tau3Gsum_minustau3 = np.zeros([self.nk,self.nk,self.nr,2,2], dtype=complex)
         for i in range(self.nr):
             if self.renormalized:
-                Gsum_plus[:,:,i]  = np.sum(G/((w[i]+1j*wn)[None,None,:,None,None]), axis=2) / self.beta 
-            Gsum_minus[:,:,i] = np.sum(G/((w[i]-1j*wn)[None,None,:,None,None]), axis=2) / self.beta
+                tau3Gsum_plustau3[:,:,i]  = np.sum(G/((w[i]+1j*wn)[None,None,:,None,None]), axis=2) / self.beta 
+            tau3Gsum_minustua3[:,:,i] = np.sum(G/((w[i]-1j*wn)[None,None,:,None,None]), axis=2) / self.beta
         # handle sum over pos and negative freqs
         if self.renormalized:
-            Gsum_plus  += np.conj(Gsum_plus)
-        Gsum_minus += np.conj(Gsum_minus)
+            tau3Gsum_plustau3  += np.conj(tau3Gsum_plustau3)
+            tau3Gsum_plustau3 = np.einsum('ab,...bc,cd->...ad', Migdal.tau3, tau3Gsum_plustau3, Migdal.tau3)
+
+        tau3Gsum_minustau3 += np.conj(tau3Gsum_minustau3)
+        tau3Gsum_minustau3 = np.einsum('ab,...bc,cd->...ad', Migdal.tau3, tau3Gsum_minustau3, Migdal.tau3)
+
         print('finished Gsum')    
 
         del G
@@ -123,14 +146,14 @@ class RealAxisMigdal(Migdal):
             SR0 = SR[:]
             PIR0 = PIR[:]
 
-            SR  = self.compute_SR(GR, Gsum_minus, DR, nB, nF)
+            SR  = self.compute_SR(GR, tau3Gsum_minustau3, DR, nB, nF)
             #SR  = AMSR.step(SR0, SR)
             SR  = fracR*SR  + (1.0-fracR)*SR0
             GR = self.compute_GR(w, ek, mu, SR)
             change[0] = np.mean(np.abs(SR-SR0))/np.mean(np.abs(SR+SR0))
 
             if self.renormalized:
-                PIR = self.compute_PIR(GR, Gsum_plus, nF)            
+                PIR = self.compute_PIR(GR, tau3Gsum_plustau3, nF)            
                 #PIR = AMPIR.step(PIR0, PIR)
                 PIR = fracR*PIR + (1.0-fracR)*PIR0
                 DR = self.compute_DR(DRbareinv, PIR)

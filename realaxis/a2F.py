@@ -14,6 +14,9 @@ from scipy.optimize import root_scalar
 from scipy.interpolate import interp2d
 from scipy.misc import derivative
 import fourier
+from functions import read_params
+from migdal_2d import Migdal as RME2d
+from migdal_2d_sc import Migdal as RME2dsc
 
 
 # function to compute kF(theta)
@@ -473,11 +476,119 @@ def corrected_a2F(basedir, folder, ntheta=5):
 
 
 
+def a2F_imag(basedir, folder, ntheta=5):
+
+    params = read_params(basedir, folder)
+    t = params['t']
+    tp = params['tp']
+    mu = params['mu']
+     
+    nk = params['nk']
+    g0 = params['g0']
+
+
+    print('beta', params['beta'])
+   
+
+    dtheta = np.pi/(2*ntheta)
+    thetas = np.arange(dtheta/2, np.pi/2, dtheta)
+    assert len(thetas) == ntheta
+    
+    corners = ((0,        -np.pi, -np.pi), 
+               (-np.pi/2, -np.pi,  np.pi),
+               (-np.pi,    np.pi,  np.pi),
+               (np.pi/2,   np.pi, -np.pi))
+    
+    kxfs  = []
+    kyfs  = []
+    dEdks = []
+    vels  = []
+    rs    = []
+    for corner in corners:
+        for theta in thetas:
+            (kx, ky), r, dEdk = kF(theta, corner[0], corner[1], corner[2], t, tp, mu)
+            kxfs.append(kx)
+            kyfs.append(ky)
+            rs.append(r)
+            dEdks.append(dEdk)
+            vels.append(np.abs(dEdk))
+    
+    # compute normalization factor
+    dos = 0
+    for ik in range(ntheta):
+        dos += rs[ik] / vels[ik] * dtheta
+        
+    
+    lamb = 0
+    lambk = np.zeros(ntheta)   
+    
+    
+    # compute D
+    PI = np.load(basedir + 'data/' + folder + '/PI.npy')
+    PI = fourier.t2w(PI, params['beta'], 2, kind='boson')
+
+    if len(np.shape(PI))==3:
+        migdal = RME2d(params, basedir)    
+    elif len(np.shape(PI))==5:
+        migdal = RME2dsc(params, basedir)
+
+    vn = 2*np.arange(params['nw']+1) * np.pi / params['beta']
+    D = migdal.compute_D(vn, PI)
+
+    #D = np.load(basedir + 'data/' + folder + '/D.npy')
+
+    # extend D
+
+    D = np.concatenate((D, D[0,:,:][None,:,:]), axis=0)
+    D = np.concatenate((D, D[:,0,:][:,None,:]), axis=1)
+        
+    # fourier transform....
+    #beta = np.load(basedir + 'data/' + folder + '/beta.npy')[0]
+    #dim  = 2
+    #D    = fourier.t2w(D, beta, dim, 'boson')
+    
+    plt.figure()
+    plt.imshow(D[:,:,0].real, origin='lower')
+    plt.colorbar()
+    plt.savefig(basedir + 'data/' + folder + '/Diw0')
+    plt.close()
+    
+    
+    ks = np.linspace(-np.pi, np.pi, nk+1)
+    
+    #I = interp2d(ks, ks, B[:,:,iw], kind='linear')
+    I = interp2d(ks, ks, D[:,:,0].real, kind='linear')
+    print('size of maximum real part : ', np.amax(np.real(D[:,:,0])))
+    
+    
+    #print('size of imag part : ', np.amax(np.imag(D[:,:,0])))
+    
+    for ik in range(ntheta):
+        a2Fk = 0
+        
+        for ikp in range(4*ntheta):
+            dkx = kxfs[ikp] - kxfs[ik]
+            dky = kyfs[ikp] - kyfs[ik]
+            a2Fk += -I(dkx, dky) / vels[ikp] / (2*np.pi)**2 * rs[ikp] * dtheta
+            
+        lambk[ik] = a2Fk
+        lamb += lambk[ik] / vels[ik] * rs[ik] * dtheta
+        
+    lambk *= g0**2
+    lamb  *= g0**2 / dos
+           
+    print('lamb a2F imag', lamb)
+    
+    np.save(basedir + 'data/'+folder+'/lambk_a2F_imag.npy', lambk)
+    np.save(basedir + 'data/'+folder+'/lamb_a2F_imag.npy', lamb)
+
+    return lambk, np.array(rs)/np.array(vels)
+
+
 def corrected_a2F_imag(basedir, folder, ntheta=5):
     
     wr, nr, nk, SR, DR, mu, t, tp, g0, omega = load(basedir, folder)
-    
-    izero = np.argmin(np.abs(wr))
+        
 
     dtheta = np.pi/(2*ntheta)
     thetas = np.arange(dtheta/2, np.pi/2, dtheta)
@@ -560,6 +671,8 @@ def corrected_a2F_imag(basedir, folder, ntheta=5):
     np.save(basedir + 'data/'+folder+'/lamb_a2F_imag.npy', lamb)
 
     return lambk, np.array(rs)/np.array(vels)
+
+
 
 
 

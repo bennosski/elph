@@ -140,11 +140,13 @@ class RealAxisMigdal(Migdal):
         # imag axis failed to converge
         if savedir is None: exit()
         
-        savedir = savedir[:-1] + '_idelta{:.4f}_w{:4f}_{:.4f}/'.format(self.idelta.imag, np.abs(self.wmin), self.wmax)
+        savedir = savedir[:-1] + '_idelta{:.4f}_w{:.4f}_{:.4f}/'.format(self.idelta.imag, np.abs(self.wmin), self.wmax)
         if not os.path.exists(savedir): os.makedirs(savedir)
 
         for key in self.keys:
             np.save(savedir+key, [getattr(self, key)])
+
+        np.save(savedir+'mu', [mu])
 
         print('savedir ', savedir)
 
@@ -230,10 +232,17 @@ class RealAxisMigdal(Migdal):
                 np.save(savedir+'realchg.npy', [best_chg])
                 np.save('savedir.npy', [savedir])            
                 np.save(savedir+'w', w)
+
                 np.save(savedir+'GR', GR)
                 np.save(savedir+'SR', SR)
                 np.save(savedir+'DR', DR)
                 np.save(savedir+'PIR', PIR)
+
+                np.save(savedir+'GRbackup', GR)
+                np.save(savedir+'SRbackup', SR)
+                np.save(savedir+'DRbackup', DR)
+                np.save(savedir+'PIRbackup', PIR)
+
                 
             
 

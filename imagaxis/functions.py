@@ -214,13 +214,19 @@ def read_params(basedir, folder):
     
     for f in floats:
         if f in params:
-            params[f] = params[f][0]
+            try:
+                params[f] = params[f][0]
+            except: pass
     for i in ints:
         if i in ints:
-            params[i] = int(params[i][0])
+            try:
+                params[i] = int(params[i][0])
+            except: pass
     for b in bools:
         if b in bools:
-            params[b] = bool(params[b][0])
+            try:
+                params[b] = bool(params[b][0])
+            except: pass
         
     params['band'] = None
 

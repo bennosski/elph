@@ -10,7 +10,7 @@ from matplotlib.pyplot import *
 from scipy import interpolate
 from interpolator import Interp
 import matplotlib.pyplot as plt
-from a2F import corrected_a2F, corrected_lamb_mass, corrected_lamb_bare, corrected_a2F_imag
+from a2F import corrected_a2F, corrected_lamb_mass, corrected_lamb_bare, corrected_a2F_imag, a2F_imag
 import matplotlib.colors as mcolors
 from scipy.integrate import trapz
 from functions import read_params
@@ -23,11 +23,58 @@ def compute_a2F():
     #folder0 = 'data_renormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.800_beta16.0000_QNone'
     #folder1 = 'data_unrenormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.800_beta16.0000_QNone'
 
+
+    separate_imag_folder = False
+
+
+    # original data for n=0.8 and fine freq spacing
+    '''
+    basedir = '/scratch/users/bln/elph/data/2d/'
+    folder0 = 'data_renormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.800_beta16.0000_QNone'
+    folder1 = 'data_unrenormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.800_beta16.0000_QNone'
+    '''
+
+    # new data for n=0.786 but idelta ~ 0.010 I think
     basedir = '/scratch/users/bln/elph/data/2dn0p786/'
     folder0 = 'data_renormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.786_beta16.0000_QNone'
     folder1 = 'data_unrenormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.786_beta16.0000_QNone'
-        
+   
+    
+    # low temp data just beforce SC transition
+    basedir = '/scratch/users/bln/elph/data/sc2dfixed/'
+    folder0 = 'data_renormalized_nk200_abstp0.300_dim2_g00.33665_nw256_omega0.170_dens0.800_beta75.0000_QNone'
+    folder1 = folder0 
 
+
+    # new larger frequency range data but idelta ~ 0.050 and 64x64
+    basedir = '/scratch/users/bln/elph/data/debug/'
+    folder0 = 'data_renormalized_nk64_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.786_beta16.0000_QNone_idelta0.0500_w10.0000_14.0000'
+    separate_imag_folder = True
+    folder1 = folder0 
+
+
+    # new larger frequency range data but idelta ~ 0.025 and 64x64
+    basedir = '/scratch/users/bln/elph/data/debug/'
+    folder0 = 'data_renormalized_nk64_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.786_beta16.0000_QNone_idelta0.0250_w6.0000_10.0000'
+    separate_imag_folder = True
+    folder1 = folder0 
+
+
+    # new larger frequency range data but idelta ~ 0.015 and 64x64
+    basedir = '/scratch/users/bln/elph/data/debug/'
+    folder0 = 'data_renormalized_nk64_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.786_beta16.0000_QNone_idelta0.0150_w6.0000_10.0000'
+    separate_imag_folder = True
+    folder1 = folder0 
+
+
+    # new larger frequency range data but idelta ~ 0.008 and 64x64
+    basedir = '/scratch/users/bln/elph/data/debug/'
+    folder0 = 'data_renormalized_nk64_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.786_beta16.0000_QNone_idelta0.0080_w6.0000_10.0000'
+    separate_imag_folder = True
+    folder1 = folder0 
+
+
+        
     params = read_params(basedir, folder0)
     print('renormalized:')
     print('dw', params['dw'])
@@ -39,8 +86,8 @@ def compute_a2F():
     print('idelta', params['idelta'])
     
     
-    for key in params:
-        print(key, type(params[key]))
+    #for key in params:
+    #    print(key, type(params[key]))
 
     print('folder', folder1)
 
@@ -70,15 +117,35 @@ def compute_a2F():
     
     #############################
     # compute a2F
-    #main_computation()    
+    main_computation()    
 
     # compute lamb_a2F using imaginary axis only
     def imag():
-        lamba2Fikr, _ = corrected_a2F_imag(basedir, folder0, ntheta=80)
-        lamba2Fiku, _ = corrected_a2F_imag(basedir, folder1, ntheta=80)
+        #lamba2Fikr, _ = corrected_a2F_imag(basedir, folder0, ntheta=80)
+        #lamba2Fiku, _ = corrected_a2F_imag(basedir, folder1, ntheta=80)
+        
+        if not separate_imag_folder:
+            lamba2Fikr, _ = a2F_imag(basedir, folder0, ntheta=80)
+            lamba2Fiku, _ = a2F_imag(basedir, folder1, ntheta=80)
+        else:
+            i1 = len(folder0)
+            for _ in range(3):
+                i1 = folder0.rfind('_', 0, i1-1)
+            folder0_ = folder0[:i1]
 
-    #imag()        
-    
+            i1 = len(folder1)
+            for _ in range(3):
+                i1 = folder1.rfind('_', 0, i1-1)
+            folder1_ = folder1[:i1]
+
+            lamba2Fikr, _ = a2F_imag(basedir, folder0_, ntheta=80)
+            lamba2Fiku, _ = a2F_imag(basedir, folder1_, ntheta=80)
+
+
+    print('')
+    imag()        
+    print('')
+
     lamba2Fikr = np.load(basedir + 'data/' + folder0 + '/lambk_a2F_imag.npy')
     lamba2Fiku = np.load(basedir + 'data/' + folder1 + '/lambk_a2F_imag.npy')
 
@@ -86,13 +153,11 @@ def compute_a2F():
     lambbarekr = np.load(basedir + 'lambbarekr.npy')
     lambmasskr = np.load(basedir + 'lambmasskr.npy')
     lamba2Fkr  = np.load(basedir + 'lamba2Fkr.npy')
-    #lamba2Fkri = np.load(basedir + 'data/' + folder0 + '/lambk_a2F_imag.npy')
     lambbareku = np.load(basedir + 'lambbareku.npy')
     lambmassku = np.load(basedir + 'lambmassku.npy')
     lamba2Fku  = np.load(basedir + 'lamba2Fku.npy')
     weightsu   = np.load(basedir + 'weightsu.npy')
     weightsr   = np.load(basedir + 'weightsr.npy')
-
     
     
     f = plt.figure()
@@ -170,11 +235,14 @@ def compute_a2F():
 
     dw0 = (w0[-1]-w0[0]) / (len(w0)-1)
     dw1 = (w1[-1]-w1[0]) / (len(w1)-1)
-    
+
+    print('')    
     print('lamb a2F unrenorm : ', lamb1)
     #print('lamb bare unrenorm : ', lamb1el)
     print('area under a2F unrenorm : ', trapz(a2F1, dx=dw1))
     print('lamb mass unrenorm : ', lamb1mass)
+
+    print('')
     print('lamb a2F renorm : ', lamb0)
     print('area under a2F renorm : ', trapz(a2F0, dx=dw0))
     #print('lamb electronic renorm : ', lamb0el)
