@@ -67,7 +67,7 @@ class RealAxisMigdal(Migdal):
             return basic_conv(a, b, ['k+q,k','k+q,k',fc], [0,1,2], [True,True,False], izeros=izeros, op='...ab,...bc->...ac')[:,:,:self.nr]
 
 
-        return 2.0*self.g0**2*self.dw/self.nk**2*(conv(A, tau3Gsumtau3, 'z,w-z') - conv(A, tau3GAtau3*nF[None,None,:,None,None], 'w+z,z') + conv(A*nF[None,None,:,None,None], tau3GAtau3, 'w+z,z'))
+        return self.g0**2*self.dw/self.nk**2*np.einsum('...aa->...', conv(A, tau3Gsumtau3, 'z,w-z') - conv(A, tau3GAtau3*nF[None,None,:,None,None], 'w+z,z') + conv(A*nF[None,None,:,None,None], tau3GAtau3, 'w+z,z'))
 
  
         '''
@@ -121,7 +121,7 @@ class RealAxisMigdal(Migdal):
         for i in range(self.nr):
             if self.renormalized:
                 tau3Gsum_plustau3[:,:,i]  = np.sum(G/((w[i]+1j*wn)[None,None,:,None,None]), axis=2) / self.beta 
-            tau3Gsum_minustua3[:,:,i] = np.sum(G/((w[i]-1j*wn)[None,None,:,None,None]), axis=2) / self.beta
+            tau3Gsum_minustau3[:,:,i] = np.sum(G/((w[i]-1j*wn)[None,None,:,None,None]), axis=2) / self.beta
         # handle sum over pos and negative freqs
         if self.renormalized:
             tau3Gsum_plustau3  += np.conj(tau3Gsum_plustau3)
