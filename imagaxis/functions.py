@@ -2,6 +2,7 @@ from numpy import *
 import numpy as np
 import sys
 import os
+from glob import glob
 
 '''
 Definitions:
@@ -201,10 +202,15 @@ params['g0']    = 0.125
 
 def read_params(basedir, folder):
         
+    if basedir is not None:
+        path = os.path.join(basedir, 'data/', folder)
+    else:
+        path = folder
+
     params = {}
-    for fname in os.listdir(os.path.join(basedir, 'data/', folder)):
+    for fname in os.listdir(path):
         if '.npy' in fname:
-            data = np.load(os.path.join(basedir, 'data/', folder, fname), allow_pickle=True)
+            data = np.load(os.path.join(path, fname), allow_pickle=True)
             params[fname[:-4]] = data
 
     floats = ['beta', 'dens', 'dw', 'g0', 'mu', 'omega', \
@@ -233,4 +239,50 @@ def read_params(basedir, folder):
     return params
 
 
+
+def find_folder(basedir, params):
+    #savedir = basedir+'data/data_{}_nk{}_abstp{:.3f}_dim{}_g0{:.5f}_nw{}_omega{:.3f}_dens{:.3f}_beta{:.4f}_Q{}/'.format('renormalized' if self.renormalized else 'unrenormalized', self.nk, abs(self.tp), self.dim, self.g0, self.nw, self.omega, self.dens, self.beta, Q)
+
+    gstr = 'data_{}renormalized_'.format('' if params['renormalized'] else 'un')
+
+    if 'nk' in params:
+        gstr += 'nk{}_*'.format(params['nk'])
+
+    if 'g0' in params:
+        gstr += 'g0{:.5f}_*'.format(params['g0'])
+    
+    if 'nw' in params:
+        gstr += 'nw{}_*'.format(params['nw'])
+    
+    if 'omega' in params:
+        gstr += 'omega{:.3f}_*'.format(params['omega'])
+
+    if 'beta' in params:
+        gstr += 'beta{:.4f}_*'.format(params['beta'])
+
+    if 'idelta' in params:
+        gstr += 'idelta{:.4f}*'.format(params['idelta'])
+
+    if 'wmin' in params:
+        gstr += 'w{:.4f}_{:.4f}'.format(np.abs(params['wmin']), params['wmax'])
+
+
+    gstr = os.path.join(basedir, 'data', gstr)
+    #gstr = '/scratch/users/bln/elph/data/2dn0p786/data/data_renormalized_nk120_*beta16.0000_idelta0.0200'
+
+    print('searching for ', gstr)
+    folders = glob(gstr)
+
+    if len(folders)!=1:
+        print('Error. {} matching folders'.format(len(folders)))
+    assert len(folders)==1
+
+    return folders[0]
+   
+
+
+
+
+
+    
 
