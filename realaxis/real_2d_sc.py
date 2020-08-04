@@ -78,23 +78,37 @@ class RealAxisMigdal(Migdal):
         '''
 
     #-----------------------------------------------------------    
-    def selfconsistency(self, sc_iter, frac=0.5, fracR=0.5, alpha=0.5, S0=None, PI0=None, mu0=None, cont=False):
+    def selfconsistency(self, sc_iter, frac=0.5, fracR=0.5, alpha=0.5, S0=None, PI0=None, mu0=None, cont=False, interp=None):
         
-        savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0, mu0=mu0)
-        
+        savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0, mu0=mu0, cont=False)
+
+        # imag axis failed to converge
+        if savedir is None: exit()
+
+        savedir = savedir[:-1] + '_idelta{:.4f}_w{:.4f}_{:.4f}/'.format(self.idelta.imag, np.abs(self.wmin), self.wmax)
+        if not os.path.exists(savedir): os.makedirs(savedir)
+
+        for key in self.keys:
+            np.save(savedir+key, [getattr(self, key)])
+
+        np.save(savedir+'mu', [mu])
+
+        print('savedir ', savedir)
+
+
         del D
-        del S
         del GG
+        del S
+
 
         print('\nReal-axis selfconsistency')
         print('---------------------------------')
         
-        
-        # imag axis failed to converge
-        if savedir is None: exit()
 
         wn, vn, ek, w, nB, nF, DRbareinv = self.setup_realaxis()
 
+        if interp is not None:
+            raise NotImplementedError
         if os.path.exists(savedir+'SR.npy'):
             if cont:
                 print('CONTINUING FROM EXISTING REAL AXIS DATA')

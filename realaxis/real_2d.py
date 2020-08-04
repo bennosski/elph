@@ -135,7 +135,7 @@ class RealAxisMigdal(Migdal):
         if sc_iter == 1:
             frac = 1
 
-        savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0, mu0=mu0)
+        savedir, mu, G, D, S, GG = super().selfconsistency(sc_iter, frac=frac, alpha=alpha, S0=S0, PI0=PI0, mu0=mu0, cont=False)
 
         # imag axis failed to converge
         if savedir is None: exit()
