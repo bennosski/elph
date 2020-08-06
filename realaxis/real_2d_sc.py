@@ -108,7 +108,8 @@ class RealAxisMigdal(Migdal):
         wn, vn, ek, w, nB, nF, DRbareinv = self.setup_realaxis()
 
         if interp is not None:
-            raise NotImplementedError
+            SR = interp.SR
+            PIR = interp.PIR
         if os.path.exists(savedir+'SR.npy'):
             if cont:
                 print('CONTINUING FROM EXISTING REAL AXIS DATA')

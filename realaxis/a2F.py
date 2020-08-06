@@ -476,9 +476,17 @@ def corrected_a2F(basedir, folder, ntheta=5):
 
 
 
-def a2F_imag(basedir, folder, ntheta=5):
+def a2F_imag(basedir, folder, ntheta=5, separate_imag_folder=None):
 
-    params = read_params(basedir, folder)
+    if separate_imag_folder:
+        i1 = len(folder)
+        for _ in range(3):
+            i1 = folder.rfind('_', 0, i1-1)
+        folder_ = folder[:i1]
+    else:
+        folder_ = folder
+
+    params = read_params(basedir, folder_)
     t = params['t']
     tp = params['tp']
     mu = params['mu']
@@ -524,7 +532,7 @@ def a2F_imag(basedir, folder, ntheta=5):
     
     
     # compute D
-    PI = np.load(basedir + 'data/' + folder + '/PI.npy')
+    PI = np.load(basedir + 'data/' + folder_ + '/PI.npy')
     PI = fourier.t2w(PI, params['beta'], 2, kind='boson')
 
     if len(np.shape(PI))==3:

@@ -204,8 +204,15 @@ def read_params(basedir, folder):
         
     if basedir is not None:
         path = os.path.join(basedir, 'data/', folder)
+        print('basedir', basedir)
+        print('folder', folder)
+        print('path ', path)
     else:
         path = folder
+
+    print('basedir ', basedir)
+    print(basedir is not None)
+    print('path in read aparams', path)
 
     params = {}
     for fname in os.listdir(path):
@@ -263,9 +270,10 @@ def find_folder(basedir, params):
     if 'idelta' in params:
         gstr += 'idelta{:.4f}*'.format(params['idelta'])
 
-    if 'wmin' in params:
         gstr += 'w{:.4f}_{:.4f}'.format(np.abs(params['wmin']), params['wmax'])
 
+    else:
+        gstr += 'QNone'
 
     gstr = os.path.join(basedir, 'data', gstr)
     #gstr = '/scratch/users/bln/elph/data/2dn0p786/data/data_renormalized_nk120_*beta16.0000_idelta0.0200'
@@ -273,11 +281,16 @@ def find_folder(basedir, params):
     print('searching for ', gstr)
     folders = glob(gstr)
 
+    prefix = os.path.join(basedir, 'data')
+
     if len(folders)!=1:
         print('Error. {} matching folders'.format(len(folders)))
+        for folder in folders:
+            print(folder)
     assert len(folders)==1
 
-    return folders[0]
+    suffix = folders[0][len(prefix)+1:]
+    return folders[0], suffix
    
 
 

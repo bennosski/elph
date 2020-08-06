@@ -63,7 +63,7 @@ def real_axis():
     interp = None
     if True:
         ps = {'renormalized': True, 'nk': 120, 'nw': 128, 'omega': 0.170, 'beta': 16.0, 'idelta': 0.020}
-        interp_folder = find_folder(basedir, ps)
+        interp_folder, _ = find_folder(basedir, ps)
         #interp_folder = '/scratch/users/bln/elph/data/2dn0p786/data/data_renormalized_nk120_abstp0.300_dim2_g00.33665_nw128_omega0.170_dens0.786_beta16.0000_QNone_idelta0.0200'
 
         return

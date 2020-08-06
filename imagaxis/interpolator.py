@@ -11,6 +11,12 @@ class Interp:
             self._interp_frequency(folder, arg) 
 
 
+    def interp(self, w, W, X):
+        Ir = interpolate.interp1d(w, X.real, axis=-1, kind='linear')
+        Ii = interpolate.interp1d(w, X.imag, axis=-1, kind='linear')
+        return Ir(W) + 1j*Ii(W)
+
+
     def _interp_frequency(self, folder, W):
         nk = np.load(folder + '/nk.npy')[0]
         w  = np.load(folder + '/w.npy')
@@ -18,13 +24,26 @@ class Interp:
         SR = np.load(folder + '/SR.npy')
         PIR = np.load(folder + '/PIR.npy')
 
-        Ir = interpolate.interp1d(w, SR.real, axis=-1, kind='linear')
-        Ii = interpolate.interp1d(w, SR.imag, axis=-1, kind='linear')
-        self.SR = Ir(W) + 1j*Ii(W)
+        if len(np.shape(SR))==3:
 
-        Ir = interpolate.interp1d(w, PIR.real, axis=-1, kind='linear')
-        Ii = interpolate.interp1d(w, PIR.imag, axis=-1, kind='linear')
-        self.PIR = Ir(W) + 1j*Ii(W)
+            self.SR  = self.interp(w, W, SR)
+            self.PIR = self.interp(w, W, PIR)
+
+        elif len(np.shape(SR))==5:
+
+            shp = list(np.shape(SR))
+            shp[2] = len(W)
+            self.SR = np.zeros(shp, dtype=complex)
+
+            for a in range(2):
+                for b in range(2):
+                    self.SR[...,a,b] = self.interp(w, W, SR[...,a,b])
+
+            self.PIR = self.interp(w, W, PIR)
+
+        else:
+            raise NotImplementedError
+
 
 
     def _interp_momentum(self, folder, Nk):
