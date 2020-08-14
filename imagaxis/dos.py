@@ -150,6 +150,7 @@ def compute_spline2(tp):
     ylim(0, gca().get_ylim()[1])
     show()    
     
+    print('dos at n=0.4 : ', spl(0.4))
     print('dos at n=0.8 : ', spl(0.8))
 
 
@@ -167,11 +168,21 @@ def dos_from_delta_fcns(tp, fill, nk, gamma):
     deltas = gamma/np.pi / (band**2 + gamma**2)
     
     return np.sum(deltas) / nk**2
-    
 
+
+
+tp = 0.0
+fill = 0.4
+print('dos deltas : ', dos_from_delta_fcns(tp, fill, 800, 0.01))
+compute_fill2(-1.11, tp)
+compute_spline2(tp)
+
+
+'''
 tp = -0.3
 fill = 0.8
 print('dos deltas : ', dos_from_delta_fcns(tp, fill, 800, 0.01))
 
 compute_fill2(-1.11, tp)
 compute_spline2(-0.3)
+'''
