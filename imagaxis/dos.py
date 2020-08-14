@@ -1,6 +1,6 @@
 from numpy import *
 import matplotlib
-matplotlib.use('TkAgg')
+#matplotlib.use('TkAgg')
 #from params import params
 from scipy import optimize
 from matplotlib.pyplot import *
@@ -46,6 +46,7 @@ def compute_fill(mu, ntheta, tp):
     else:
         n = 2.0*area/pi**2 * 2.0
     return n
+
 
 def compute_spline(tp):
     ntheta = 300
@@ -119,12 +120,16 @@ def compute_spline2(tp):
     mu_max = E(kx, ky, tp)
     print('mu_max', mu_max)
     
-    mus = linspace(mu_min*0.9, mu_max*0.9, 200)
-    
+    mus = linspace(mu_min*0.9, mu_max*0.9, 200)    
     fills = array([compute_fill2(mu, tp) for mu in mus])
+
+    print('mu at n=0.8 : ', optimize.minimize(lambda mu : np.abs(compute_fill2(mu, tp) - 0.8), -1.11).x[0])
+
 
     deriv = 0.5 * (fills[1:] - fills[:-1]) / (mus[1:] - mus[:-1])
     mus_centered = (mus[1:] + mus[:-1]) / 2.0
+    fills_centered = (fills[1:] + fills[:-1]) / 2.0
+    
     
     figure()
     plot(mus_centered, deriv)
@@ -135,8 +140,6 @@ def compute_spline2(tp):
     ylim(0, gca().get_ylim()[1])
     show()
 
-    deriv = 0.5 * (mus[1:] - mus[:-1]) / (fills[1:] - fills[:-1])
-    fills_centered = (fills[1:] + fills[:-1]) / 2.0
     
     figure()
     plot(fills_centered, deriv)
@@ -146,11 +149,29 @@ def compute_spline2(tp):
     ylabel('dos')
     ylim(0, gca().get_ylim()[1])
     show()    
+    
+    print('dos at n=0.8 : ', spl(0.8))
 
 
+def dos_from_delta_fcns(tp, fill, nk, gamma):
+    mu = optimize.minimize(lambda mu : np.abs(compute_fill2(mu, tp) - fill), -1.11).x[0]
+    print('mu at n=0.8 : ', mu)
+    
+    ks = np.arange(-np.pi, np.pi, 2*np.pi/nk)
+    kx, ky = np.meshgrid(ks, ks)
+    band = E(kx, ky, tp) - mu  
+    
+    figure()
+    imshow(band < 0)
+
+    deltas = gamma/np.pi / (band**2 + gamma**2)
+    
+    return np.sum(deltas) / nk**2
+    
 
 tp = -0.3
+fill = 0.8
+print('dos deltas : ', dos_from_delta_fcns(tp, fill, 800, 0.01))
+
 compute_fill2(-1.11, tp)
 compute_spline2(-0.3)
-
-#exit()
