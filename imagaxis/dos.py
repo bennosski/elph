@@ -74,7 +74,7 @@ def compute_spline(tp):
     ylim(0, gca().get_ylim()[1])
     show()
 
-#compute_spline(0.0)
+
 
 def compute_fill2(mu, tp):
 
@@ -103,29 +103,24 @@ def compute_fill2(mu, tp):
         n = 2.0*area/pi**2 * 2.0
     return n
 
+
 def compute_spline2(tp):
     
-    #mus = linspace(-3.99, 0.0, 200)
-
-    def Eband(x, tp, minimize):
-        return minimize * E(x[0], x[1], tp)
+    def Eband(x, tp, sgn):
+        return sgn * E(x[0], x[1], tp)
     
     kx, ky = optimize.minimize(Eband, array([0,0]), args=(tp, 1)).x
     print(kx, ky)
-    print('mu_min', E(kx,ky,tp))
+    mu_min = E(kx, ky, tp)
+    print('mu_min', mu_min)
 
-    def Eband(x, tp, minimize):
-        return -E(x[0], x[1], tp)
-
-    kx, ky = optimize.minimize(Eband, array([0,0]), args=(tp, -1)).x
+    kx, ky = optimize.minimize(Eband, array([np.pi,np.pi]), args=(tp, -1)).x
     print(kx, ky)
-    print('mu_max', E(kx,ky,tp))
-
-    exit()
+    mu_max = E(kx, ky, tp)
+    print('mu_max', mu_max)
     
-    mus = linspace(mu_min, mu_max, 200)
+    mus = linspace(mu_min*0.9, mu_max*0.9, 200)
     
-
     fills = array([compute_fill2(mu, tp) for mu in mus])
 
     deriv = 0.5 * (fills[1:] - fills[:-1]) / (mus[1:] - mus[:-1])
@@ -152,7 +147,10 @@ def compute_spline2(tp):
     ylim(0, gca().get_ylim()[1])
     show()    
 
-    
+
+
+tp = -0.3
+compute_fill2(-1.11, tp)
 compute_spline2(-0.3)
 
-exit()
+#exit()
