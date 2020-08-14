@@ -52,6 +52,8 @@ class Migdal(MigdalBase):
             return 1.0/self.nk**2 * trace(conv(self.gk2[:,:,None,None,None]*tau3G, -tau3G[:,:,::-1], ['k,k+q','k,k+q'], [0,1], [True,True], beta=self.beta, op='...ab,...bc->...ac'), axis1=-2, axis2=-1)
         else:
             tau3G = einsum('ab,kqwbc->kqwac', Migdal.tau3, G)
+
+            # ARE WE SURE ABOUT THE THE ::-1 TERM? DOES ANYTHING NEED TO HAPPEN WITH THE NAMBU INDICES?
             return 1.0/self.nk**2 * trace(conv(tau3G, -tau3G[:,:,::-1], ['k,k+q','k,k+q'], [0,1], [True,True], beta=self.beta, op='...ab,...bc->...ac'), axis1=-2, axis2=-1)
     #------------------------------------------------------------
     def init_selfenergies(self):

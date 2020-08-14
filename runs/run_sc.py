@@ -79,8 +79,6 @@ def real_axis():
         w = np.arange(params['wmin'], params['wmax'] + params['dw']/2, params['dw'])
         interp = Interp(interp_folder, w, kind='frequency')
         
-        1/0
-
 
     migdal = RealAxisMigdal(params, basedir)
     migdal.selfconsistency(sc_iter=40, fracR=0.4, cont=True, interp=interp)

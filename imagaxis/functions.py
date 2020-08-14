@@ -287,7 +287,9 @@ def find_folder(basedir, params):
         print('Error. {} matching folders'.format(len(folders)))
         for folder in folders:
             print(folder)
-    assert len(folders)==1
+        return None, None
+
+    #assert len(folders)==1
 
     suffix = folders[0][len(prefix)+1:]
     return folders[0], suffix

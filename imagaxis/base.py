@@ -161,7 +161,8 @@ class MigdalBase:
         np.save('savedir.npy', [savedir])
 
         best_change = None
-        if os.path.exists(savedir+'S.npy') and os.path.exists(savedir+'PI.npy'):
+
+        if S0 is None and PI0 is None and os.path.exists(savedir+'S.npy') and os.path.exists(savedir+'PI.npy'):
             print('\nImag-axis calculation already done!!!! \n USING EXISTING DATA!!!!!')
             S0  = np.load(savedir+'S.npy')
             PI0 = np.load(savedir+'PI.npy')
@@ -285,7 +286,7 @@ class MigdalBase:
                 # and abs(self.dens-n)<1e-5:
                 break
 
-        if sc_iter>1 and sum(change)>1e-5:
+        if (sc_iter>1 and sum(change)>1e-5) or np.abs(self.dens-n)>0.05:
             # or abs(n-self.dens)>1e-3):
             print('Failed to converge')
             return None, None, None, None, None, None
@@ -309,6 +310,22 @@ class MigdalBase:
         D  = fourier.t2w(D,  self.beta, self.dim, 'boson')
         
         GG = fourier.t2w(GG, self.beta, self.dim, 'boson')
+
+        # compute the CDW susceptibility
+        Xcdw = None
+        
+        X0 = -GG[...,0] 
+        Xcdw = real(X0/(1.0 - 2.0*self.g0**2/self.omega * X0))
+
+        Xcdw = ravel(Xcdw)
+        a = argmax(abs(Xcdw))
+        print('Xcdw = %1.4f'%Xcdw[a])
+
+        if any(Xcdw<0.0) or np.isnan(a): 
+            print('Xcdw blew up')
+            return None, None
+
+
             
         F0 = G * conj(G)
 
@@ -381,19 +398,6 @@ class MigdalBase:
         Xsc = 1.0 / (self.beta * self.nk**self.dim) * 2.0*sum(F0*gamma).real
         print(f'Xsc {Xsc:.4f}')
 
-        # compute the CDW susceptibility
-        Xcdw = None
-        
-        X0 = -GG[...,0] 
-        Xcdw = real(X0/(1.0 - 2.0*self.g0**2/self.omega * X0))
-
-        Xcdw = ravel(Xcdw)
-        a = argmax(abs(Xcdw))
-        print('Xcdw = %1.4f'%Xcdw[a])
-
-        if any(Xcdw<0.0): 
-            print('Xcdw blew up')
-            return Xsc, None
 
         return Xsc, Xcdw
 
