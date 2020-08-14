@@ -1,6 +1,6 @@
 from numpy import *
 import matplotlib
-matplotlib.use('TkAgg')
+#matplotlib.use('TkAgg')
 #from params import params
 from scipy import optimize
 from matplotlib.pyplot import *
@@ -126,6 +126,9 @@ def compute_spline2(tp):
     deriv = 0.5 * (fills[1:] - fills[:-1]) / (mus[1:] - mus[:-1])
     mus_centered = (mus[1:] + mus[:-1]) / 2.0
     
+    #deriv = (fills[1:] - fills[:-1]) / (mus[1:] - mus[:-1])
+    #mus_centered = (mus[1:] + mus[:-1]) / 2
+    
     figure()
     plot(mus_centered, deriv)
     spl = UnivariateSpline(mus_centered, deriv, s=0)
@@ -135,7 +138,7 @@ def compute_spline2(tp):
     ylim(0, gca().get_ylim()[1])
     show()
 
-    deriv = 0.5 * (mus[1:] - mus[:-1]) / (fills[1:] - fills[:-1])
+    #deriv = 2.0 * (mus[1:] - mus[:-1]) / (fills[1:] - fills[:-1])
     fills_centered = (fills[1:] + fills[:-1]) / 2.0
     
     figure()
@@ -146,11 +149,13 @@ def compute_spline2(tp):
     ylabel('dos')
     ylim(0, gca().get_ylim()[1])
     show()    
+    
+    print('dos at n=0.8', spl(0.8))
 
 
 
 tp = -0.3
-compute_fill2(-1.11, tp)
+print('n at mu=-1.11', compute_fill2(-1.11, tp))
 compute_spline2(-0.3)
 
 #exit()
