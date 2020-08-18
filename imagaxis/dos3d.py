@@ -101,8 +101,17 @@ y1,y2 = gca().get_ylim()
 ylim(0, y2)
 '''
 
-
+'''
 print('filling = ', compute_fill(-2))
 uspl, fspl = compute_spline(np.linspace(-2.1, -2.0, 10))
 print('dos = ', uspl(-2))
+'''
+
+#fill = 0.4
+#mu = optimize.minimize(lambda mu : np.abs(compute_fill(mu) - fill), -2, tol=1e-3).x[0]
+#print('mu = ', mu)
+mu = -2.103700128624296
+print('corresponding filling ', compute_fill(mu))
+uspl, fspl = compute_spline(np.linspace(mu-0.1, -2.0, 20))
+print('dos ', uspl(mu))
 
