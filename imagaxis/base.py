@@ -286,7 +286,7 @@ class MigdalBase:
                 # and abs(self.dens-n)<1e-5:
                 break
 
-        if (sc_iter>1 and sum(change)>1e-5) or np.abs(self.dens-n)>0.05:
+        if (sc_iter>1 and sum(change)>1e-5) or np.abs(self.dens-n)>1:
             # or abs(n-self.dens)>1e-3):
             print('Failed to converge')
             return None, None, None, None, None, None

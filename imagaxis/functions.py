@@ -166,6 +166,13 @@ def band_square_lattice(nk, t, tp, Q=None):
     return ek
 
 
+def band_3d_lattice(nk, t, tp, Q=None):
+    ks = arange(-pi, pi, 2*pi/nk)
+    ek = -2.0*t*(cos(ks[:,None,None])+cos(ks[None,:,None])+cos(ks[None,None,:]))
+    return ek
+
+
+
 def band_1site(*args):
     return 0.1
 
