@@ -1,0 +1,6 @@
+#!/bin/bash
+
+module purge
+ml python/3.6.1
+#source ../imagaxis/migdal/bin/activate
+#source ../migdal/bin/activate
