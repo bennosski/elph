@@ -57,15 +57,18 @@ class MigdalBase:
         
         ek = self.band(self.nk, self.t, self.tp, Q)        
         
-        
+        '''        
         # estimate filling and dndmu at the desired filling
         mu = optimize.fsolve(lambda mu : 2.0*mean(1.0/(exp(self.beta*(ek-mu))+1.0))-self.dens, 0.0)[0]
         deriv = lambda mu : 2.0*mean(self.beta*exp(self.beta*(ek-mu))/(exp(self.beta*(ek-mu))+1.0)**2)
         dndmu = deriv(mu)
-        
-        print('mu optimized = %1.3f'%mu)
-        print('dndmu = %1.3f'%dndmu)
-        
+        '''
+
+        mu = None
+        dndmu = None
+ 
+        #print('mu optimized = %1.3f'%mu)
+        #print('dndmu = %1.3f'%dndmu)       
         
         #mu = None
         #dndmu = None
@@ -282,6 +285,12 @@ class MigdalBase:
                 np.save(savedir+'S.npy', S)
                 np.save(savedir+'PI.npy', PI)
 
+                np.save(savedir+'mubackup.npy', mu)
+                np.save(savedir+'Sbackup.npy', S)
+                np.save(savedir+'PIbackup.npy', PI)
+      
+
+
             if sum(change)<2e-14:
                 # and abs(self.dens-n)<1e-5:
                 break
@@ -311,19 +320,6 @@ class MigdalBase:
         
         GG = fourier.t2w(GG, self.beta, self.dim, 'boson')
 
-        # compute the CDW susceptibility
-        Xcdw = None
-        
-        X0 = -GG[...,0] 
-        Xcdw = real(X0/(1.0 - 2.0*self.g0**2/self.omega * X0))
-
-        Xcdw = ravel(Xcdw)
-        a = argmax(abs(Xcdw))
-        print('Xcdw = %1.4f'%Xcdw[a])
-
-        if any(Xcdw<0.0) or np.isnan(a): 
-            print('Xcdw blew up')
-            return None, None
 
 
             
@@ -397,6 +393,21 @@ class MigdalBase:
         #Xsc = 1.0 / (self.beta * self.nk**self.dim) * 2.0*sum(F0*(1+x)).real
         Xsc = 1.0 / (self.beta * self.nk**self.dim) * 2.0*sum(F0*gamma).real
         print(f'Xsc {Xsc:.4f}')
+
+
+        # compute the CDW susceptibility
+        Xcdw = None
+        
+        X0 = -GG[...,0] 
+        Xcdw = real(X0/(1.0 - 2.0*self.g0**2/self.omega * X0))
+
+        Xcdw = ravel(Xcdw)
+        a = argmax(abs(Xcdw))
+        print('Xcdw = %1.4f'%Xcdw[a])
+
+        if any(Xcdw<0.0) or np.isnan(a): 
+            print('Xcdw blew up')
+            return Xsc, None
 
 
         return Xsc, Xcdw

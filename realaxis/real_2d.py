@@ -238,10 +238,6 @@ class RealAxisMigdal(Migdal):
                 np.save(savedir+'DR', DR)
                 np.save(savedir+'PIR', PIR)
 
-                np.save(savedir+'GRbackup', GR)
-                np.save(savedir+'SRbackup', SR)
-                np.save(savedir+'DRbackup', DR)
-                np.save(savedir+'PIRbackup', PIR)
 
                 
             

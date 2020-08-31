@@ -55,11 +55,13 @@ def corrected_kF(Is, theta, theta0, x0, y0, t, tp, mu):
 
 # function to interpolate sigma for 3 freq points
 def interpS(SR, wr, nr, nk, izero):
+    print('shape SR', np.shape(SR))
+
     #ks = np.arange(-np.pi, np.pi, 2*np.pi/nk)
     ks = np.linspace(-np.pi, np.pi, nk+1)
     Is = []
     for iw in (-2, 0, 2):
-        if len(SR)==5:
+        if len(np.shape(SR))==5:
             Ir = interp2d(ks, ks, SR[:,:,izero+iw,0,0].real, kind='linear')
         else:
             Ir = interp2d(ks, ks, SR[:,:,izero+iw].real, kind='linear')
@@ -211,6 +213,7 @@ def corrected_lamb_bare(basedir, folder, ntheta=5):
     
     return lamb, lamb * np.ones(4*ntheta), np.array(rs)/np.array(vels)
 
+
 def lamb_mass(basedir, folder, ntheta=5):
     
     wr, nr, nk, SR, DR, mu, t, tp, g0, omega = load(basedir, folder)
@@ -257,6 +260,7 @@ def lamb_mass(basedir, folder, ntheta=5):
     print('done lamb')
     
     print('lamb electronic = ', lamb)
+
 
 def corrected_lamb_mass(basedir, folder, ntheta=5):
     # corrected by Fermi Surface shift due to real part of Sigma

@@ -48,10 +48,8 @@ class RealAxisMigdal(Migdal):
 
         izeros = [self.nk//2, self.nk//2, self.izero]
 
-
         def conv(a, b):
             return basic_conv(a, b, ['q,k-q','q,k-q','z,w-z'], [0,1,2], [True,True,False], izeros=izeros)[:,:,:self.nr]
-
 
         return -self.g0**2*self.dw/self.nk**2*(conv(B, tau3Gsumtau3) - conv(B*(1+nB)[None,None,:,None,None], tau3GRtau3) + conv(B, tau3GRtau3*nF[None,None,:,None,None]))
 
@@ -65,7 +63,6 @@ class RealAxisMigdal(Migdal):
          
         def conv(a, b, fc):
             return basic_conv(a, b, ['k+q,k','k+q,k',fc], [0,1,2], [True,True,False], izeros=izeros, op='...ab,...bc->...ac')[:,:,:self.nr]
-
 
         return self.g0**2*self.dw/self.nk**2*np.einsum('...aa->...', conv(A, tau3Gsumtau3, 'z,w-z') - conv(A, tau3GAtau3*nF[None,None,:,None,None], 'w+z,z') + conv(A*nF[None,None,:,None,None], tau3GAtau3, 'w+z,z'))
 
@@ -147,6 +144,10 @@ class RealAxisMigdal(Migdal):
 
         print('finished Gsum')    
 
+        np.save(os.path.join(savedir, 'tau3Gsum_minustau3.npy'), tau3Gsum_minustau3)
+        if self.renormalized:
+            np.save(os.path.join(savedir, 'tau3Gsum_plustau3.npy'), tau3Gsum_plustau3)
+
         del G
 
         # can I always use Gsum_plus[::-1]? what if w's are not symmetric?
@@ -186,6 +187,11 @@ class RealAxisMigdal(Migdal):
                 np.save(savedir+'SR', SR)
                 np.save(savedir+'DR', DR)
                 np.save(savedir+'PIR', PIR)
+
+                np.save(savedir+'GRbackup', GR)
+                np.save(savedir+'SRbackup', SR)
+                np.save(savedir+'DRbackup', DR)
+                np.save(savedir+'PIRbackup', PIR)
     
             if i>5 and np.sum(change)<2e-15: break
         

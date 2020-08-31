@@ -224,7 +224,11 @@ def read_params(basedir, folder):
     params = {}
     for fname in os.listdir(path):
         if '.npy' in fname:
-            data = np.load(os.path.join(path, fname), allow_pickle=True)
+            try: 
+                data = np.load(os.path.join(path, fname), allow_pickle=True)
+            except:
+                print('failed load of ', fname)
+                
             params[fname[:-4]] = data
 
     floats = ['beta', 'dens', 'dw', 'g0', 'mu', 'omega', \
@@ -278,7 +282,6 @@ def find_folder(basedir, params):
         gstr += 'idelta{:.4f}*'.format(params['idelta'])
 
         gstr += 'w{:.4f}_{:.4f}'.format(np.abs(params['wmin']), params['wmax'])
-
     else:
         gstr += 'QNone'
 
@@ -291,10 +294,10 @@ def find_folder(basedir, params):
     prefix = os.path.join(basedir, 'data')
 
     if len(folders)!=1:
-        print('Error. {} matching folders'.format(len(folders)))
+        print('{} matching folders'.format(len(folders)))
         for folder in folders:
             print(folder)
-        return None, None
+        return folders, [f[len(prefix)+1:] for f in folders]
 
     #assert len(folders)==1
 
