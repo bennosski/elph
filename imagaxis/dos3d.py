@@ -65,20 +65,11 @@ def compute_spline(mus):
     
 
 
-def dos_from_delta_fcns(tp, fill, nk, gamma):
-    mu = optimize.minimize(lambda mu : np.abs(compute_fill2(mu, tp) - fill), -1.11).x[0]
-    print('mu at n=0.8 : ', mu)
-    
-    ks = np.arange(-np.pi, np.pi, 2*np.pi/nk)
-    kx, ky = np.meshgrid(ks, ks)
-    band = E(kx, ky, tp) - mu  
-    
-    figure()
-    imshow(band < 0)
-
-    deltas = gamma/np.pi / (band**2 + gamma**2)
-    
-    return np.sum(deltas) / nk**2
+def dos_from_delta_fcns(mu, nk, gamma):    
+    ks = np.arange(0, np.pi, np.pi/nk)
+    band = E(ks[:,None,None], ks[None,:,None], ks[None,None,:]) - mu  
+    deltas = gamma/np.pi / (band**2 + gamma**2)    
+    return np.sum(deltas) / nk**3
 
 
 # tests showing the compute_fill via area integration works really well
@@ -107,6 +98,8 @@ uspl, fspl = compute_spline(np.linspace(-2.1, -2.0, 10))
 print('dos = ', uspl(-2))
 '''
 
+
+'''
 #fill = 0.4
 #mu = optimize.minimize(lambda mu : np.abs(compute_fill(mu) - fill), -2, tol=1e-3).x[0]
 #print('mu = ', mu)
@@ -114,4 +107,68 @@ mu = -2.103700128624296
 print('corresponding filling ', compute_fill(mu))
 uspl, fspl = compute_spline(np.linspace(mu-0.1, -2.0, 20))
 print('dos ', uspl(mu))
+'''
 
+def setup_fill0p4():
+    
+    mu = -2.103700128624296 # mu for filling of 0.4
+
+    nks = np.array([200, 400])
+    ds = [dos_from_delta_fcns(mu, nk, np.pi/nk*2) for nk in nks]
+    
+    figure()
+    plot(1/nks, ds, '.-')
+    x2 = gca().get_xlim()[1]
+    xlim(0, x2)
+    #print('dos = ', d)
+    
+    print('dos extrap : ', ds[-1]*(0-1/nks[-2])/(1/nks[-1]-1/nks[-2]) + ds[-2]*(0-1/nks[-1])/(1/nks[-2]-1/nks[-1]))
+    print('dos final', ds[-1])
+    
+    uspl, fspl = compute_spline(np.linspace(mu-0.1, -2.0, 20))
+    print('dos from surface int', uspl(mu))
+
+
+
+
+def setup_fill0p6():
+    
+    nks = np.arange(10, 200, 40)
+    fill_vs_nk = [compute_fill_naive(-1.4, nk) for nk in nks]
+    
+    figure()
+    plot(nks, fill_vs_nk, '.-')
+    x1, x2 = gca().get_xlim()
+    fill = compute_fill(-2)
+    hlines(fill, 0, x2)
+    
+    figure()
+    plot(1/nks, np.array(fill_vs_nk))
+    x1,x2 = gca().get_xlim()
+    xlim(0, x2)
+    y1,y2 = gca().get_ylim()
+    ylim(0, y2)
+    
+    # extrapolated filling:
+    
+    print('filling extrapolated')
+    
+    print(fill_vs_nk[-1]*(0-1/nks[-2])/(1/nks[-1]-1/nks[-2]) + fill_vs_nk[-2]*(0-1/nks[-1])/(1/nks[-2]-1/nks[-1]))
+    
+    
+    mu = -1.4 # mu for a filling of 0.4
+
+    nks = np.array([200, 400])
+    ds = [dos_from_delta_fcns(mu, nk, np.pi/nk*2) for nk in nks]
+    
+    figure()
+    plot(1/nks, ds, '.-')
+    x2 = gca().get_xlim()[1]
+    xlim(0, x2)
+    #print('dos = ', d)
+    
+    print('dos extrap : ', ds[-1]*(0-1/nks[-2])/(1/nks[-1]-1/nks[-2]) + ds[-2]*(0-1/nks[-1])/(1/nks[-2]-1/nks[-1]))
+    print('dos final', ds[-1])
+
+
+setup_fill0p4()
