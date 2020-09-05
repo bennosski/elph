@@ -64,7 +64,7 @@ class MigdalBase:
         dndmu = deriv(mu)
         '''
 
-        mu = None
+        mu = -1.11
         dndmu = None
  
         #print('mu optimized = %1.3f'%mu)
@@ -167,8 +167,20 @@ class MigdalBase:
 
         if S0 is None and PI0 is None and os.path.exists(savedir+'S.npy') and os.path.exists(savedir+'PI.npy'):
             print('\nImag-axis calculation already done!!!! \n USING EXISTING DATA!!!!!')
-            S0  = np.load(savedir+'S.npy')
-            PI0 = np.load(savedir+'PI.npy')
+
+            def load_with_backup(savedir, x):
+                try:
+                    out = np.load(savedir + x + '.npy')
+                    print('regular load successful')
+                except:
+                    out = np.load(savedir + x + 'backup.npy')
+                    print('backup load successful')
+                return out
+
+            #S0  = np.load(savedir+'S.npy')       
+            #PI0 = np.load(savedir+'PI.npy')
+            S0  = load_with_backup(savedir, 'S')
+            PI0 = load_with_backup(savedir, 'PI')
             mu0 = np.load(savedir+'mu.npy')[0]
             best_change = np.mean(np.load(savedir+'bestchg.npy'))
             print('best_change', best_change)

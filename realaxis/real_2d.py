@@ -197,10 +197,14 @@ class RealAxisMigdal(Migdal):
         Gsum_minus += np.conj(Gsum_minus)
         print('finished Gsum')    
 
+        np.save(os.path.join(savedir, 'Gsum_minus.npy'), Gsum_minus)
+        if self.renormalized:
+            np.save(os.path.join(savedir, 'Gsum_plus.npy'), Gsum_plus)
+
         # can I always use Gsum_plus[::-1]? what if w's are not symmetric?
 
-        AMSR  = AndersonMixing(alpha=alpha)
-        AMPIR = AndersonMixing(alpha=alpha)
+        #AMSR  = AndersonMixing(alpha=alpha)
+        #AMPIR = AndersonMixing(alpha=alpha)
         
         # selfconsistency loop
         change = [0,0]
