@@ -279,7 +279,8 @@ def find_folder(basedir, params):
         gstr += 'beta{:.4f}_*'.format(params['beta'])
 
     if 'idelta' in params:
-        gstr += 'idelta{:.4f}*'.format(params['idelta'])
+        #gstr += 'idelta{:.4f}*'.format(params['idelta'])
+        gstr += 'idelta{:.4f}*'.format(np.abs(params['idelta']))
 
         gstr += 'w{:.4f}_{:.4f}'.format(np.abs(params['wmin']), params['wmax'])
     else:

@@ -13,9 +13,15 @@ from functions import band_square_lattice, mylamb2g0
 import numpy as np
 from interpolator import Interp
 import matplotlib.pyplot as plt
+from scipy.interpolate import UnivariateSpline
+
+plt.style.use('../matplotlibrc')
 
 #basedir = '../test_marsiglio/'
-basedir = '../reproduce_marsiglio/'
+#basedir = '../reproduce_marsiglio/'
+
+basedir = '/scratch/users/bln/elph/data/reproduce_marsiglio/'
+
 if not os.path.exists(basedir): os.mkdir(basedir)
 
 params = {}
@@ -31,15 +37,14 @@ params['band']  = band_square_lattice
 params['beta']  = 6.0
 params['dim']   = 2
 params['g0'] = mylamb2g0(lamb=1/4, omega=params['omega'], W=8.0)
-#params['Q']  = None
-#params['q0'] = None
-#params['fixed_mu'] = -1.11
 
+
+'''
 params['dw']     = 0.005
 params['wmin']   = -4.2
 params['wmax']   = +4.2
 params['idelta'] = 0.025j
-
+'''
 
 def read_params(basedir, folder):
     
@@ -49,8 +54,7 @@ def read_params(basedir, folder):
             data = np.load(os.path.join(basedir, 'data', folder, fname), allow_pickle=True)
             params[fname[:-4]] = data
 
-    floats = ['beta', 'dens', 'dw', 'g0', 'mu', 'omega', \
-              'idelta', 't', 'tp', 'wmax', 'wmin']
+    floats = ['beta', 'dens', 'g0', 'mu', 'omega', 't', 'tp']
     ints   = ['dim', 'nk', 'nw']
     bools  = ['sc']
     
@@ -69,31 +73,34 @@ def read_params(basedir, folder):
 def test1():
     migdal = Migdal(params, basedir)
     savedir, mu, G, D, S, GG = migdal.selfconsistency(sc_iter=200, frac=0.6, cont=True)
-    Xsc, Xcdw = migdal.susceptibilities(500, G, D, GG, frac=0.7)
+    Xsc, Xcdw = migdal.susceptibilities(savedir, 500, G, D, GG, frac=0.7)
     print('Xsc', Xsc)
         
 
 def x_vs_t():
     
-    params['beta'] = 2.0
-    dbeta = 2.0
+    params['beta'] = 5.0
+    dbeta = 1.0
     S0, PI0 = None, None
     
-    while dbeta > 1.5 and params['beta']<12:
+    while dbeta > 0.2 and params['beta'] < 11:
+
+        S0, PI0 = None, None
         
         migdal = Migdal(params, basedir)
-        savedir, mu, G, D, S, GG = migdal.selfconsistency(sc_iter=400, frac=0.2, S0=S0, PI0=PI0, cont=True)
+        savedir, mu, G, D, S, GG = migdal.selfconsistency(sc_iter=1000, frac=0.2, S0=S0, PI0=PI0, cont=True)
         
         if G is not None:
             params['beta'] += dbeta
             S0 = S
             PI0 = GG * params['g0']**2
             
-            Xsc, Xcdw = migdal.susceptibilities(1000, G, D, GG, frac=0.99)
-            print('Xsc', Xsc)
+            Xsc, Xcdw = migdal.susceptibilities(savedir, 1000, G, D, GG, frac=0.99)
             np.save(savedir + 'Xsc.npy', [Xsc])
             np.save(savedir + 'Xcdw.npy', Xcdw)
+
         else:
+            print('decreasing beta\n')
             dbeta /= 2
             params['beta'] -= dbeta
         
@@ -138,44 +145,28 @@ def plot_x_vs_t():
     ub = np.array(ub)
     ux = np.array(ux)
     uc = np.array(uc)
-    
-    
-    f, (ax1, ax2) = plt.subplots(1, 2)
-    f.set_size_inches(6, 3)
-    plt.title('lamb=1/6, n=0.8, 16x16, t\'=-0.3')
-    #plt.title('$\lambda_0=2$'+', $\Omega=1$,'+r'$\langle n \rangle$'+'=0.8')
-   
-    ax1.plot(1/ub, 1/ux, 'k-')
-    ind = uc!=None
-    ax1.plot(1/ub[ind], 20/uc[ind], 'k--')
-    ax1.legend(['1/Xsc', '20/Xcdw'])
-    ax1.set_title('unrenormalized ME')
-    ax1.set_xlabel('T', fontsize=13)
-     
-    ax1.set_xlim(0, 1)
-    ax1.set_ylim(0, 10)
-    
-    ax2.plot(1/rb, 1/rx, 'k-')
-    ind = rc!=None
-    ax2.plot(1/rb[ind], 20/rc[ind], 'k--')
-    
-    ax2.set_xlim(0, 0.17)
-    #ax2.set_ylim(0, 1.5)
-    ax2.legend(['1/Xsc', '20/Xcdw'])
-    ax2.set_title('renormalized ME')
-    ax2.set_xlabel('T', fontsize=13)
-    
-    
-    plt.tight_layout()
- 
-    
-    data = [(b,x) for b,x in zip(rb,rx)]
-    for x in data:
-        print(x)
 
+    print('ub and rb')
+    print(ub)
+    print(rb)
+
+    uspl = UnivariateSpline(1/ub[::-1], ux[::-1], s=0)
+    rspl = UnivariateSpline(1/rb[::-1], rx[::-1], s=0)
     
-    plt.savefig(basedir+'div')
-    plt.close()
+    ut = np.linspace(1/ub[-1], 1/ub[0], 500)
+    rt = np.linspace(1/rb[-1], 1/rb[0], 500)
+    
+
+    plt.figure()
+    plt.plot(ut, uspl(ut), 'k--')
+    plt.plot(rt, rspl(rt), 'k')
+    plt.legend(['unrenormalized', 'renormalized'], fontsize=12)
+    plt.xlim(0, 0.2)
+    plt.ylim(0, 3)
+    plt.xlabel('T', fontsize=16)
+    plt.ylabel('$\chi^{SP}$', fontsize=16)
+    plt.tight_layout()
+    plt.savefig(basedir + 'div.png')
  
     
     
@@ -195,12 +186,13 @@ def x_vs_n():
             S0 = S
             PI0 = GG * params['g0']**2
             
-            Xsc, Xcdw = migdal.susceptibilities(1000, G, D, GG, frac=0.99)
+            Xsc, Xcdw = migdal.susceptibilities(savedir, 1000, G, D, GG, frac=0.99)
             print('Xsc', Xsc)
             np.save(savedir + 'Xsc.npy', [Xsc])
             np.save(savedir + 'Xcdw.npy', Xcdw)
         else:
             break
+
             
 def plot_x_vs_n():
     df = os.path.join(basedir, 'data/')
@@ -254,10 +246,11 @@ def plot_x_vs_n():
     
     
 #test1()
+
 #x_vs_t()
-#plot_x_vs_t()
+plot_x_vs_t()
             
-x_vs_n()
-plot_x_vs_n()
+#x_vs_n()
+#plot_x_vs_n()
 
 

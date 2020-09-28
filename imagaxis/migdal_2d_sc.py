@@ -60,8 +60,8 @@ class Migdal(MigdalBase):
         S  = zeros([self.nk,self.nk,self.ntau,2,2], dtype=complex)
         PI = zeros([self.nk,self.nk,self.ntau], dtype=complex)
         if self.sc:
-           S[...,0,0,1] = 1e-2
-           S[...,0,1,0] = 1e-2
+           S[...,0,0,1] = 1e-4
+           S[...,0,1,0] = 1e-4
            
            if hasattr(self, 'gk2'):
                S *= self.gk2[:,:,None,None,None]

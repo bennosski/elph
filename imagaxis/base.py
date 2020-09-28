@@ -199,7 +199,7 @@ class MigdalBase:
             # used for seeding a calculation with more k points from a calculation done with fewer k points
             S0 = interp.S
             PI0 = interp.PI 
-        
+
 
         for key in self.keys:
             np.save(savedir+key, [getattr(self, key)])
@@ -334,6 +334,16 @@ class MigdalBase:
 
 
 
+        # compute the CDW susceptibility
+        Xcdw = None
+        
+        X0 = -GG[...,0] 
+        Xcdw = real(X0/(1.0 - 2.0*self.g0**2/self.omega * X0))
+
+        Xcdw = ravel(Xcdw)
+        a = argmax(abs(Xcdw))
+        print('Xcdw = %1.4f'%Xcdw[a])
+
             
         F0 = G * conj(G)
 
@@ -384,13 +394,20 @@ class MigdalBase:
 
             gamma = frac*gamma + (1-frac)*gamma0
             
-            if change < 1e-10:
+            if change < 1e-12:
                 break
 
             #if iteration%max(sc_iter//20,1)==0:
                 #print(f'change {change:.4e}')
             print('change ', change)
-                
+
+            if change < 1e-3:
+                Xsc = 1.0 / (self.beta * self.nk**self.dim) * 2.0*sum(F0*gamma).real
+                np.save(savedir + 'Xsc.npy', [Xsc])
+                np.save(savedir + 'Xcdw.npy', Xcdw)
+
+            np.save(savedir+'gamma.npy', gamma)
+
             iteration += 1
 
         #print(f'change {change:.4e}')
@@ -400,27 +417,15 @@ class MigdalBase:
             print('Susceptibility failed to converge')
             return None, None
 
-        np.save(savedir+'gamma.npy', gamma)
     
         #Xsc = 1.0 / (self.beta * self.nk**self.dim) * 2.0*sum(F0*(1+x)).real
         Xsc = 1.0 / (self.beta * self.nk**self.dim) * 2.0*sum(F0*gamma).real
         print(f'Xsc {Xsc:.4f}')
 
 
-        # compute the CDW susceptibility
-        Xcdw = None
-        
-        X0 = -GG[...,0] 
-        Xcdw = real(X0/(1.0 - 2.0*self.g0**2/self.omega * X0))
-
-        Xcdw = ravel(Xcdw)
-        a = argmax(abs(Xcdw))
-        print('Xcdw = %1.4f'%Xcdw[a])
-
         if any(Xcdw<0.0) or np.isnan(a): 
             print('Xcdw blew up')
             return Xsc, None
-
 
         return Xsc, Xcdw
 
